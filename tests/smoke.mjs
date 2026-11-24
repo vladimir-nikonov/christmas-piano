@@ -191,6 +191,78 @@ try {
   assert.equal(await sn(() => window.__sn.db.profiles.length), 0);
   await ctx.close();
 
+  log('microphone denied: mic state with a hint per error kind');
+  {
+    const dctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await dctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+    // getUserMedia fails with window.__micMode as the error name until it is set to 'ok'; then it returns a silent stream.
+    // The microphone permission is a stub whose state the test flips.
+    await dctx.addInitScript(() => {
+      window.__micMode = 'NotAllowedError'; window.__gumCalls = 0;
+      navigator.mediaDevices.getUserMedia = async () => {
+        window.__gumCalls++; await new Promise(r => setTimeout(r, 50));
+        if (window.__micMode !== 'ok') throw new DOMException('stub', window.__micMode);
+        return new window.AudioContext().createMediaStreamDestination().stream;
+      };
+      const perm = new EventTarget(); perm.state = 'denied'; window.__perm = perm;
+      const query = navigator.permissions.query.bind(navigator.permissions);
+      navigator.permissions.query = d => d && d.name === 'microphone' ? Promise.resolve(perm) : query(d);
+    });
+    const dp = await dctx.newPage();
+    dp.on('pageerror', e => errors.push('pageerror: ' + e.message));
+    dp.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+    const dsn = (fn, arg) => dp.evaluate(fn, arg);
+    await dp.goto(url);
+    await dp.fill('#newName', 'NoMic');
+    await dp.click('#btnStep2');
+    await dp.click('#btnNewOk');
+    await dp.locator('#home').waitFor({ state: 'visible' });
+    await dp.click('#btnPlay');
+    await dp.locator('#micErr').waitFor({ state: 'visible', timeout: 5000 });
+    assert.equal(await dsn(() => window.__sn.state), 'home', 'the game does not start without the microphone');
+    assert.equal(await dp.locator('#micHint').getAttribute('data-t'), 'micDenied');
+    assert.ok(await dp.locator('#btnMicRetry').isVisible());
+    assert.ok(await dp.locator('#btnMicTouch').isVisible());
+    assert.ok(await dp.locator('#micErr .micbadge svg').count() >= 2, 'mic icon with a badge');
+    for (const [mode, key] of [['NotFoundError', 'micMissing'], ['NotReadableError', 'micBusy'], ['TypeError', 'micOther']]){
+      await dsn(m => { window.__micMode = m; }, mode);
+      await dp.click('#btnMicRetry');
+      await dp.waitForFunction(k => !document.querySelector('#micErr').hidden && document.querySelector('#micHint').dataset.t === k, key, { timeout: 5000 });
+    }
+
+    log('microphone denied: two quick taps ask the browser once');
+    const calls = await dsn(() => window.__gumCalls);
+    await dsn(() => { const b = document.querySelector('#btnPlay'); b.click(); b.click(); });
+    await dp.locator('#micErr').waitFor({ state: 'visible' });
+    await dp.waitForTimeout(150);
+    assert.equal(await dsn(() => window.__gumCalls), calls + 1);
+
+    log('microphone denied: play with screen taps');
+    await dp.click('#btnMicTouch');
+    await dp.waitForFunction(() => window.__sn.state === 'playing');
+    assert.equal(await dsn(() => window.__sn.db.device.touch), true);
+    assert.ok(await dp.locator('#micErr').isHidden());
+    await dp.click('#btnPause');
+    await dp.click('#btnQuit');
+    await dp.locator('#home').waitFor({ state: 'visible' });
+    await dsn(() => { window.__sn.db.device.touch = false; return window.__sn.save(); });
+
+    log('microphone allowed later: the error clears and Try again starts the game');
+    await dsn(() => { window.__micMode = 'NotAllowedError'; });
+    await dp.click('#btnPlay');
+    await dp.locator('#micErr').waitFor({ state: 'visible' });
+    await dsn(() => { window.__perm.state = 'granted'; window.__perm.dispatchEvent(new Event('change')); });
+    await dp.locator('#micErr').waitFor({ state: 'hidden', timeout: 2000 });
+    await dsn(() => { window.__perm.state = 'denied'; });
+    await dp.click('#btnPlay');
+    await dp.locator('#micErr').waitFor({ state: 'visible' });
+    await dsn(() => { window.__micMode = 'ok'; });
+    await dp.click('#btnMicRetry');
+    await dp.waitForFunction(() => window.__sn.state === 'playing');
+    assert.ok(await dp.locator('#micErr').isHidden());
+    await dctx.close();
+  }
+
   log('microphone: a played E4 is heard and counted');
   const wav = join(await mkdtemp(join(tmpdir(), 'sn-mic-')), 'e4.wav');
   await writeFile(wav, toneWav(329.63));

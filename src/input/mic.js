@@ -7,16 +7,41 @@ import { $ } from '../dom.js';
 import { noteName } from '../ui/labels.js';
 
 /* ================= Microphone: McLeod pitch + onset tracking ================= */
-let mic = null, noiseFloor = 0.004;
-export async function startMic(){
-  if (mic) return true;
+let mic = null, noiseFloor = 0.004, micPending = null;
+// Why the microphone could not start: 'denied' (permission), 'missing' (no device), 'busy' (used by another app) or 'other'.
+function micErrorKind(e){
+  const n = e && e.name;
+  if (n === 'NotAllowedError' || n === 'PermissionDeniedError' || n === 'SecurityError') return 'denied';
+  if (n === 'NotFoundError' || n === 'DevicesNotFoundError' || n === 'OverconstrainedError') return 'missing';
+  if (n === 'NotReadableError' || n === 'TrackStartError' || n === 'AbortError') return 'busy';
+  return 'other';
+}
+// Resolves to { ok:true } or { ok:false, kind }. Never rejects. Concurrent calls share one request.
+export function startMic(){
+  if (mic) return Promise.resolve({ ok:true });
+  if (micPending) return micPending;
+  const req = (async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return { ok:false, kind:'other' };
+      const stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+      const a = audio(), src = a.createMediaStreamSource(stream), analyser = a.createAnalyser();
+      analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0; src.connect(analyser);
+      mic = { analyser, buf: new Float32Array(2048), sr: a.sampleRate, calib: [], calibUntil: performance.now() + 700 };
+      return { ok:true };
+    } catch(e){ return { ok:false, kind: micErrorKind(e) }; }
+  })();
+  micPending = req; req.then(() => { if (micPending === req) micPending = null; });
+  return req;
+}
+// Calls cb(state) with the microphone permission ('granted' | 'denied' | 'prompt') now and on every change,
+// where the Permissions API knows it. Does nothing otherwise.
+export async function watchMicPermission(cb){
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
-    const a = audio(), src = a.createMediaStreamSource(stream), analyser = a.createAnalyser();
-    analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0; src.connect(analyser);
-    mic = { analyser, buf: new Float32Array(2048), sr: a.sampleRate, calib: [], calibUntil: performance.now() + 700 };
-    return true;
-  } catch(e){ $('#micErr').hidden = false; return false; }
+    if (!navigator.permissions || !navigator.permissions.query) return;
+    const st = await navigator.permissions.query({ name:'microphone' });
+    cb(st.state);
+    st.addEventListener('change', () => cb(st.state));
+  } catch(e){ /* microphone is not a known permission name in this browser */ }
 }
 const trk = { held:null, cand:null, candN:0, candAt:0, attackAt:-1, lastEmit:0, hist:[] };
 let micBarsLvl = -1;

@@ -7,7 +7,7 @@ import { db, save, P, dev, prog, unlocked } from '../../data/storage.js';
 import { $, showOnly } from '../../dom.js';
 import { state, G, startGame, setState, setPaused, setGame } from '../../game/game.js';
 import { tx, fmtDate } from '../../i18n/index.js';
-import { startMic } from '../../input/mic.js';
+import { startMic, watchMicPermission } from '../../input/mic.js';
 import { avatarSVG, blockSVG } from '../art.js';
 import { px } from '../canvas.js';
 import { icon } from '../icons.js';
@@ -64,11 +64,24 @@ export function goHome(){
   renderHome(); showOnly('#home'); updateBackupNag();
 }
 
-$('#btnPlay').onclick = async () => {
-  audio(); $('#micErr').hidden = true;
-  if (!dev().touch){ if (!(await startMic())) return; } else startMic();
+// Mic state on home: why the microphone did not start, with Try again and a screen-taps fallback.
+const MIC_HINT = { denied:'micDenied', missing:'micMissing', busy:'micBusy', other:'micOther' };
+function showMicState(kind){
+  const h = $('#micHint'); h.dataset.t = MIC_HINT[kind] || MIC_HINT.other; h.textContent = tx(h.dataset.t);
+  $('#micErr').dataset.kind = kind; $('#micErr').hidden = false;
+}
+const hideMicState = () => { $('#micErr').hidden = true; };
+// Permission granted in the browser (e.g. from the site settings): clear the error, the next Play starts at once.
+watchMicPermission(st => { if (st === 'granted') hideMicState(); });
+async function playWithMic(){
+  audio(); hideMicState();
+  if (!dev().touch){ const r = await startMic(); if (!r.ok){ showMicState(r.kind); return; } } else startMic();
   startGame(false);
-};
+}
+$('#btnPlay').onclick = playWithMic;
+$('#btnMicRetry').onclick = playWithMic;
+// Play without the microphone: count screen taps on this device (the parent setting) and start.
+$('#btnMicTouch').onclick = () => { audio(); dev().touch = true; save(); hideMicState(); startGame(false); };
 $('#btnListen').onclick = () => { audio(); startGame(true); };
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
 const toggleFull = () => {
