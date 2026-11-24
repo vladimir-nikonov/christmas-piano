@@ -227,7 +227,7 @@ svg.off{color:var(--border)}
     <button class="b ico qlang" data-ta="language"></button>
     <button class="b ico qtheme" data-ta="theme"></button>
     <button class="b ico" id="btnBackupNag" data-ta="backupNag" data-icon="arrow-down" hidden style="opacity:.6"></button>
-    <button class="b ico" id="btnFull" data-ta="full" data-icon="fullscreen"></button>
+    <button class="b ico qfull" id="btnFull" data-ta="full" data-icon="fullscreen"></button>
     <button class="b ico" id="btnSettings" data-ta="settings" data-icon="gear"></button>
   </div>
   <div class="songs" id="songs"></div>
@@ -289,7 +289,7 @@ svg.off{color:var(--border)}
     <button class="b ico" id="btnRestart" data-ta="restart" data-icon="retry"></button>
     <button class="b primary wide" id="btnResume" data-ta="resume" data-icon="play" data-fill="1"></button>
   </div>
-  <div class="btnrow"><button class="b ico qlang" data-ta="language"></button><button class="b ico qtheme" data-ta="theme"></button></div></div>
+  <div class="btnrow"><button class="b ico qlang" data-ta="language"></button><button class="b ico qtheme" data-ta="theme"></button><button class="b ico qfull" data-ta="full" data-icon="fullscreen"></button></div></div>
 </div>
 
 <div class="screen" id="settings" hidden>
@@ -1134,7 +1134,7 @@ $('#btnPlay').onclick = async () => {
 };
 $('#btnListen').onclick = () => { audio(); startGame(true); };
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
-$('#btnFull').onclick = () => {
+const toggleFull = () => {
   const d = document.documentElement;
   try {
     const pr = fsEl()
@@ -1143,12 +1143,15 @@ $('#btnFull').onclick = () => {
     if (pr && pr.catch) pr.catch(() => {});
   } catch(e){}
 };
-// The full-screen button doubles as the exit button while the app is in full screen
+// The full-screen buttons (home and pause menu) double as exit buttons while the app is in full screen
+document.querySelectorAll('.qfull').forEach(b => b.onclick = toggleFull);
 function syncFull(){
-  const b = $('#btnFull'), on = !!fsEl();
-  b.dataset.ta = on ? 'fullExit' : 'full';
-  b.setAttribute('aria-label', tx(b.dataset.ta));
-  b.innerHTML = icon(on ? 'fullscreen-exit' : 'fullscreen');
+  const on = !!fsEl();
+  document.querySelectorAll('.qfull').forEach(b => {
+    b.dataset.ta = on ? 'fullExit' : 'full';
+    b.setAttribute('aria-label', tx(b.dataset.ta));
+    b.innerHTML = icon(on ? 'fullscreen-exit' : 'fullscreen');
+  });
 }
 document.addEventListener('fullscreenchange', syncFull);
 document.addEventListener('webkitfullscreenchange', syncFull);
