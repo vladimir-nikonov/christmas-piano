@@ -57,6 +57,25 @@ try {
   assert.equal(await page.locator('#btnWho .nm').textContent(), 'Tester');
   assert.ok(await page.locator('#songs button').count() >= 2);
 
+  log('home: one primary button, the current level is marked and selected');
+  assert.equal(await page.locator('#home .b.primary').count(), 1);
+  assert.equal(await page.locator('#levels .tile.cur').count(), 1);
+  assert.equal(await page.locator('#levels .tile').nth(0).getAttribute('data-current'), '1');
+  assert.equal(await page.locator('#levels .tile').nth(0).getAttribute('aria-pressed'), 'true');
+
+  log('switching the song selects that song\'s current level');
+  await sn(() => { window.__sn.db.profiles[0].prog.birthday.level = 2; });
+  await page.locator('#levels .tile').nth(1).click();
+  assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 1);
+  await page.locator('#songs button').nth(1).click();
+  assert.equal(await sn(() => window.__sn.db.profiles[0].sel.song), 'birthday');
+  assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 2);
+  assert.equal(await page.locator('#levels .tile').nth(2).getAttribute('data-current'), '1');
+  assert.equal(await page.locator('#levels .tile').nth(2).getAttribute('aria-pressed'), 'true');
+  await page.locator('#songs button').nth(0).click();
+  assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 0);
+  await sn(() => { window.__sn.db.profiles[0].prog.birthday.level = 0; return window.__sn.save(); });
+
   log('parent settings: count screen taps');
   await page.click('#btnSettings');
   await visible('#settings');
@@ -64,9 +83,11 @@ try {
   await page.click('#btnSetClose');
   assert.equal(await sn(() => window.__sn.db.device.touch), true);
 
-  log('play level 1 (notes wait for the player) without mistakes');
+  log('play level 1 (notes wait for the player) without mistakes, after the zoom-in entry');
   await page.click('#btnPlay');
+  assert.ok(await sn(() => document.querySelector('#levels .tile[aria-pressed="true"]').getAnimations().some(a => a.playState === 'running' && !a.animationName)), 'entry zoom on the selected tile');
   await page.waitForFunction(() => window.__sn.state === 'playing');
+  assert.equal(await page.locator('#home').isHidden(), true);
   const total = await sn(() => window.__sn.game.notes.length);
   for (let i = 0; i < total; i++){
     await waitAtNextNote();
@@ -99,9 +120,12 @@ try {
   assert.equal(await sn(() => window.__sn.db.profiles[0].lang), 'ru');
   await page.click('#btnPopClose');
 
-  log('listen to the tune, then stop');
+  log('listen to the tune with reduced motion (fade only), then stop');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.click('#btnListen');
+  assert.deepEqual(await sn(() => [...new Set(document.getAnimations().map(a => a.effect.target.id))]), ['home']);
   await page.waitForFunction(() => window.__sn.state === 'demo');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.waitForTimeout(800);
   await page.click('#btnPause');
   await visible('#home');
@@ -168,6 +192,9 @@ try {
   assert.equal(await sn(() => window.__sn.db.profiles[0].opts.tempo), 130);
   await page.click('#btnSetClose');
   await page.locator('#levels button').nth(1).click();
+  await page.click('#btnSettings');
+  await page.click('#btnSetClose');
+  assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 1, 'a level picked by hand survives closing settings');
   await page.click('#btnPlay');
   await page.waitForFunction(() => window.__sn.state === 'playing' && !window.__sn.game.wait);
   await page.locator('#results').waitFor({ state: 'visible', timeout: 30000 });
@@ -176,6 +203,7 @@ try {
   assert.equal(await sn(() => window.__sn.db.profiles[0].hist['1:short'].length), 1);
   await page.click('#btnHome');
   await visible('#home');
+  assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 0, 'back home after a game selects the current level');
 
   log('portrait layout');
   await page.setViewportSize({ width: 800, height: 1280 });

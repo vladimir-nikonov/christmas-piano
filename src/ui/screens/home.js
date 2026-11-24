@@ -17,6 +17,9 @@ import { updateBackupNag } from './settings.js';
 import { applyTheme } from '../theme.js';
 
 /* ================= Screens ================= */
+// Level the child picked by hand during this home visit; while it is set, coming back to home keeps it.
+// Otherwise home selects the current level of the song (the one the child is working on).
+let homePick = null;
 const starRow = on => [0,1,2].map(i => icon('star', { fill: i < on, cls: i < on ? '' : 'off' })).join('');
 export function renderHome(){
   const p = P(); applyTheme(p.theme); updateQuick();
@@ -25,18 +28,19 @@ export function renderHome(){
   const songs = $('#songs'); songs.textContent = '';
   SONG_KEYS.forEach(k => {
     const b = document.createElement('button'); b.className = 'b song'; b.setAttribute('aria-pressed', songKey(p) === k);
-    b.textContent = SONGS[k].title(); b.onclick = () => { p.sel.song = k; save(); renderHome(); };
+    b.textContent = SONGS[k].title(); b.onclick = () => { p.sel.song = k; p.sel.level = prog(p, k).level; homePick = null; save(); renderHome(); };
     songs.appendChild(b);
   });
   const box = $('#levels'), pr = prog(p); box.textContent = '';
   LEVELS.forEach((L, i) => {
     const open = unlocked(p, i), b = document.createElement('button');
-    b.className = 'b tile' + (open ? '' : ' locked'); b.setAttribute('aria-pressed', i === p.sel.level); b.setAttribute('aria-label', tx('level') + ' ' + (i + 1) + ': ' + tx('levels')[i]);
+    const cur = i === pr.level;
+    b.className = 'b tile' + (open ? '' : ' locked') + (cur ? ' cur' : ''); if (cur) b.dataset.current = '1'; b.setAttribute('aria-pressed', i === p.sel.level); b.setAttribute('aria-label', tx('level') + ' ' + (i + 1) + ': ' + tx('levels')[i]);
     const stars = Math.max(0, ...PART_KEYS.map(k => p.best[bestKey(songKey(p), i, k)] || 0));
-    b.innerHTML = '<span class="blk">' + blockSVG(i) + '</span>' + (open ? '' : '<span class="lock">' + icon('lock') + '</span>') +
+    b.innerHTML = (cur ? '<span class="curmark">' + icon('play', { fill: true }) + '</span>' : '') + '<span class="blk">' + blockSVG(i) + '</span>' + (open ? '' : '<span class="lock">' + icon('lock') + '</span>') +
       '<span class="stars">' + (open ? starRow(stars) : '') + '</span>' +
       (i === pr.level && i < LEVELS.length - 1 ? '<span class="pips"><i class="' + (pr.streak > 0 ? 'on' : '') + '"></i><i></i></span>' : '');
-    b.onclick = () => { if (!open){ b.animate([{ transform:'translateX(-6px)' }, { transform:'translateX(6px)' }, { transform:'none' }], 200); return; } p.sel.level = i; save(); renderHome(); };
+    b.onclick = () => { if (!open){ b.animate([{ transform:'translateX(-6px)' }, { transform:'translateX(6px)' }, { transform:'none' }], 200); return; } p.sel.level = i; homePick = { id: p.id, song: songKey(p) }; save(); renderHome(); };
     box.appendChild(b);
   });
   const parts = $('#parts'); parts.textContent = '';
@@ -60,8 +64,50 @@ export function goHome(){
   setState('home'); setPaused(false); setGame(null);
   if (!db.profiles.length){ syncLang(); openNewProfile(); return; }
   if (!P()) db.current = db.profiles[0].id;
+  const p = P();
+  if (!(homePick && homePick.id === p.id && homePick.song === songKey(p))) p.sel.level = prog(p).level;
   syncLang();
+  const home = $('#home'), wasHidden = home.hidden;
   renderHome(); showOnly('#home'); updateBackupNag();
+  if (wasHidden) zoomOutHome(home);
+}
+
+/* ---- Entry / return transitions (Web Animations, so they run alongside the CSS reduced-motion rule) ---- */
+const reduceMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+const anim = (el, frames, opts) => (el && el.animate ? el.animate(frames, opts) : null);
+function zoomOutHome(home){
+  const r = reduceMotion();
+  anim(home, r ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'scale(1.06)' }, { opacity: 1, transform: 'none' }],
+    { duration: r ? 150 : 280, easing: 'ease-out' });
+}
+// Play / Listen: the selected level tile grows towards the centre while the rest of home fades out,
+// then the game starts (count-in included) and the HUD fades in. Reduced motion: a quick fade only.
+// Home ignores taps during the transition; the game clock starts only after it.
+let entering = false;
+export function enterGame(demo){
+  const home = $('#home');
+  if (entering) return;
+  if (home.hidden || !home.animate){ startGame(demo); return; }
+  entering = true; homePick = null;
+  const r = reduceMotion(), dur = r ? 160 : 340, opts = { duration: dur, easing: 'ease-in', fill: 'forwards' }, list = [];
+  const fade = el => list.push(anim(el, [{ opacity: 1 }, { opacity: 0 }], opts));
+  home.style.pointerEvents = 'none';
+  const tile = !r && $('#levels .tile[aria-pressed="true"]');
+  if (tile){
+    const b = tile.getBoundingClientRect(), dx = innerWidth / 2 - (b.left + b.width / 2), dy = innerHeight / 2 - (b.top + b.height / 2);
+    tile.style.zIndex = '2';
+    list.push(anim(tile, [{ transform: 'none', opacity: 1 }, { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(2.4)', opacity: 1, offset: 0.7 },
+      { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(2.8)', opacity: 0 }], { ...opts, easing: 'ease-in-out' }));
+    [...home.children].forEach(el => { if (el.id !== 'levels') fade(el); });
+    [...$('#levels').children].forEach(el => { if (el !== tile) fade(el); });
+    list.push(anim(home, [{}, { backgroundColor: 'transparent' }], opts));
+  } else fade(home);
+  setTimeout(() => {
+    entering = false;
+    startGame(demo);
+    list.forEach(a => a && a.cancel()); home.style.pointerEvents = ''; if (tile) tile.style.zIndex = '';
+    anim($('#hud'), [{ opacity: 0 }, { opacity: 1 }], { duration: r ? 120 : 220, easing: 'ease-out' });
+  }, dur);
 }
 
 // Mic state on home: why the microphone did not start, with Try again and a screen-taps fallback.
@@ -76,13 +122,13 @@ watchMicPermission(st => { if (st === 'granted') hideMicState(); });
 async function playWithMic(){
   audio(); hideMicState();
   if (!dev().touch){ const r = await startMic(); if (!r.ok){ showMicState(r.kind); return; } } else startMic();
-  startGame(false);
+  enterGame(false);
 }
 $('#btnPlay').onclick = playWithMic;
 $('#btnMicRetry').onclick = playWithMic;
 // Play without the microphone: count screen taps on this device (the parent setting) and start.
-$('#btnMicTouch').onclick = () => { audio(); dev().touch = true; save(); hideMicState(); startGame(false); };
-$('#btnListen').onclick = () => { audio(); startGame(true); };
+$('#btnMicTouch').onclick = () => { audio(); dev().touch = true; save(); hideMicState(); enterGame(false); };
+$('#btnListen').onclick = () => { audio(); enterGame(true); };
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
 const toggleFull = () => {
   const d = document.documentElement;

@@ -67,6 +67,14 @@ svg.off{color:var(--border)}
 .pips i.on{background:var(--accent);border-color:var(--accent-dark)}
 .tile[aria-pressed="true"]{outline:calc(4*var(--u)) solid var(--text);outline-offset:calc(3*var(--u));animation:bob 1.2s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(calc(-5*var(--u)))}}
+/* Current level (the one the child is working on): a ring and a soft glow that pulses, plus a marker above the tile,
+   so it does not rely on colour alone. The selected tile keeps its outline and bob. */
+.tile.cur{box-shadow:var(--bevel),0 calc(5*var(--u)) 0 var(--accent-dark),0 0 0 calc(4*var(--u)) var(--reward);animation:curglow 1.8s ease-in-out infinite}
+.tile.cur[aria-pressed="true"]{animation:bob 1.2s ease-in-out infinite,curglow 1.8s ease-in-out infinite}
+@keyframes curglow{50%{box-shadow:var(--bevel),0 calc(5*var(--u)) 0 var(--accent-dark),0 0 0 calc(4*var(--u)) var(--reward),0 0 calc(28*var(--u)) calc(8*var(--u)) color-mix(in srgb, var(--reward) 70%, transparent)}}
+.tile .curmark{position:absolute;top:calc(-22*var(--u));left:50%;width:calc(34*var(--u));height:calc(34*var(--u));margin-left:calc(-17*var(--u));
+  display:grid;place-items:center;border-radius:50%;background:var(--reward);color:var(--accent-dark);border:2px solid var(--accent-dark);z-index:1}
+.tile .curmark svg{width:calc(18*var(--u));height:calc(18*var(--u));transform:rotate(90deg)}
 
 .songs{display:flex;gap:calc(14*var(--u));flex-wrap:wrap;justify-content:center}
 .song{height:calc(68*var(--u));padding:0 calc(22*var(--u));font-size:calc(30*var(--u));font-weight:900;color:var(--reward)}
@@ -76,6 +84,11 @@ svg.off{color:var(--border)}
 .part svg{width:calc(30*var(--u));height:calc(30*var(--u))}
 .part[aria-pressed="true"]{background:var(--border);outline:calc(4*var(--u)) solid var(--text);outline-offset:calc(3*var(--u))}
 
+/* Home corner (language, theme, backup, full screen, settings): same places and touch size, but calmer than Play */
+#home .corner.r .b{background:color-mix(in srgb, var(--panel) 45%, transparent);border-color:transparent;box-shadow:none;opacity:.72}
+#home .corner.r .b svg{width:calc(26*var(--u));height:calc(26*var(--u))}
+#home .corner.r .b:active{transform:translateY(calc(2*var(--u)));box-shadow:none}
+#home .corner.r .b:focus-visible{opacity:1}
 .playrow{display:flex;gap:calc(18*var(--u));align-items:center}
 .play{width:calc(380*var(--u));height:calc(112*var(--u))}
 .play svg{width:calc(60*var(--u));height:calc(60*var(--u))}
