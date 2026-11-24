@@ -529,7 +529,7 @@ function normalizeDB(d){
   r.profiles.forEach(p => { p.theme = THEMES[p.theme] ? p.theme : 'pixel'; p.opts = Object.assign({}, DEF_OPTS, p.opts); if (p.opts.labels === 'ru') p.opts.labels = 'native'; if (p.opts.labels === 'en') p.opts.labels = 'letters'; delete p.opts.unlockAll; p.sel = p.sel || { level:0, part:'short' }; p.best = p.best || {};
     p.hist = normHist(p.hist); p.top = (p.top && typeof p.top === 'object' && !Array.isArray(p.top)) ? p.top : {};
     Object.keys(p.hist).forEach(k => { p.top[k] = Math.max(+p.top[k] || 0, ...p.hist[k].map(e => e.pct)); });
-    p.name = typeof p.name === 'string' ? p.name : ''; p.level = Math.max(0, Math.floor(+p.level) || 0); p.streak = +p.streak || 0; p.avatar = Math.max(0, Math.floor(+p.avatar) || 0); });
+    p.name = typeof p.name === 'string' ? p.name : ''; p.level = Math.max(0, Math.floor(+p.level) || 0); p.streak = +p.streak || 0; p.avatar = Math.max(0, Math.floor(+p.avatar) || 0); normProg(p); });
   if (!r.profiles.some(p => p.id === r.current)) r.current = r.profiles[0] ? r.profiles[0].id : null;
   return r;
 }
@@ -546,6 +546,17 @@ function normHist(h){
   });
   return out;
 }
+// Progress to the next level is kept per song: p.prog[song] = { level, streak }. Records made before
+// that have only p.level / p.streak, which every song inherits so nobody loses a level.
+// p.level stays as the highest level across songs (profile badge, older app versions).
+function normProg(p){
+  const old = p.prog && typeof p.prog === 'object' && !Array.isArray(p.prog) ? p.prog : {}, top = LEVELS.length - 1;
+  p.prog = {};
+  SONG_KEYS.forEach(k => { const o = old[k] && typeof old[k] === 'object' ? old[k] : { level: p.level, streak: p.streak };
+    p.prog[k] = { level: Math.max(0, Math.min(top, Math.floor(+o.level) || 0)), streak: Math.max(0, Math.floor(+o.streak) || 0) }; });
+  p.level = Math.max(0, ...SONG_KEYS.map(k => p.prog[k].level));
+}
+const freshProg = () => Object.fromEntries(SONG_KEYS.map(k => [k, { level:0, streak:0 }]));
 function lsRead(){ try { const raw = localStorage.getItem(DB_KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; } }
 function lsWrite(d){ try { localStorage.setItem(DB_KEY, JSON.stringify(d)); return true; } catch(e){ return false; } }
 let idbP = null;
@@ -605,7 +616,8 @@ function askPersist(){
 const P = () => db.profiles.find(p => p.id === db.current) || null;
 const opts = () => (P() || { opts: DEF_OPTS }).opts;
 const dev = () => db.device;
-const unlocked = (p, i) => !p.opts.lockLevels || i <= p.level;
+const prog = (p, song) => p.prog[song || songKey(p)];
+const unlocked = (p, i, song) => !p.opts.lockLevels || i <= prog(p, song).level;
 
 /* ================= Music ================= */
 const LETTERS = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
@@ -830,20 +842,22 @@ function finish(){
   (p.hist[key] = p.hist[key] || []).push({ at: Date.now(), pct: metric, stars, score: G.score });
   if (p.hist[key].length > HIST_MAX) p.hist[key].splice(0, p.hist[key].length - HIST_MAX);
   let levelUp = false;
-  if (G.level === p.level && !o.tolMs && o.tempo >= 100){
-    if (metric >= 85){ p.streak = (p.streak || 0) + 1; if (p.streak >= 2 && p.level < LEVELS.length - 1){ p.level++; p.streak = 0; levelUp = true; } }
-    else p.streak = 0;
+  const pr = prog(p, G.song);
+  if (G.level === pr.level && !o.tolMs && o.tempo >= 100){
+    if (metric >= 85){ pr.streak++; if (pr.streak >= 2 && pr.level < LEVELS.length - 1){ pr.level++; pr.streak = 0; levelUp = true; } }
+    else pr.streak = 0;
   }
-  if (levelUp) p.sel.level = p.level;
+  p.level = Math.max(p.level, pr.level);
+  if (levelUp) p.sel.level = pr.level;
   save();
   $('#resStars').innerHTML = [0,1,2].map(i => '<span style="animation-delay:' + (i * 0.15) + 's">' + icon('star', { fill: i < stars, cls: i < stars ? '' : 'off' }) + '</span>').join('');
   $('#resPct').textContent = metric + '%';
   const lu = $('#resLevelUp'); lu.hidden = !levelUp;
-  if (levelUp) lu.innerHTML = '<span class="blk">' + blockSVG(p.level) + '</span><span>+1</span>';
-  $('#resXp').innerHTML = (!levelUp && G.level === p.level && p.level < LEVELS.length - 1)
-    ? '<span class="blk">' + blockSVG(p.level + 1) + '</span><span class="pips"><i class="' + (p.streak > 0 ? 'on' : '') + '"></i><i></i></span>' + (o.lockLevels ? icon('lock') : '') : '';
+  if (levelUp) lu.innerHTML = '<span class="blk">' + blockSVG(pr.level) + '</span><span>+1</span>';
+  $('#resXp').innerHTML = (!levelUp && G.level === pr.level && pr.level < LEVELS.length - 1)
+    ? '<span class="blk">' + blockSVG(pr.level + 1) + '</span><span class="pips"><i class="' + (pr.streak > 0 ? 'on' : '') + '"></i><i></i></span>' + (o.lockLevels ? icon('lock') : '') : '';
   $('#resHist').innerHTML = histHTML(p, key, true) + (record ? '<span class="rec">' + tx('record') + '</span>' : '');
-  $('#btnNext').hidden = !(G.level < LEVELS.length - 1 && unlocked(p, G.level + 1));
+  $('#btnNext').hidden = !(G.level < LEVELS.length - 1 && unlocked(p, G.level + 1, G.song));
   showOnly('#results');
   if (stars) for (let i = 0; i < 4; i++) setTimeout(() => burst(W * (0.2 + Math.random() * 0.6), H * 0.4, NOTE_COLORS[(i * 2) % 7], 30), i * 180);
 }
@@ -997,21 +1011,21 @@ const px = n => Math.round(n * U);
 function renderHome(){
   const p = P(); applyTheme(p.theme); updateQuick();
   $('#btnWho').innerHTML = avatarSVG(p.avatar, px(50)) + '<span class="nm"></span>'; $('#btnWho .nm').textContent = p.name || '';
-  if (!unlocked(p, p.sel.level)) p.sel.level = Math.min(p.level, LEVELS.length - 1);
+  if (!unlocked(p, p.sel.level)) p.sel.level = prog(p).level;
   const songs = $('#songs'); songs.textContent = '';
   SONG_KEYS.forEach(k => {
     const b = document.createElement('button'); b.className = 'b song'; b.setAttribute('aria-pressed', songKey(p) === k);
     b.textContent = SONGS[k].title(); b.onclick = () => { p.sel.song = k; save(); renderHome(); };
     songs.appendChild(b);
   });
-  const box = $('#levels'); box.textContent = '';
+  const box = $('#levels'), pr = prog(p); box.textContent = '';
   LEVELS.forEach((L, i) => {
     const open = unlocked(p, i), b = document.createElement('button');
     b.className = 'b tile' + (open ? '' : ' locked'); b.setAttribute('aria-pressed', i === p.sel.level); b.setAttribute('aria-label', tx('level') + ' ' + (i + 1) + ': ' + tx('levels')[i]);
     const stars = Math.max(0, ...PART_KEYS.map(k => p.best[bestKey(songKey(p), i, k)] || 0));
     b.innerHTML = '<span class="blk">' + blockSVG(i) + '</span>' + (open ? '' : '<span class="lock">' + icon('lock') + '</span>') +
       '<span class="stars">' + (open ? starRow(stars) : '') + '</span>' +
-      (i === p.level && i < LEVELS.length - 1 ? '<span class="pips"><i class="' + (p.streak > 0 ? 'on' : '') + '"></i><i></i></span>' : '');
+      (i === pr.level && i < LEVELS.length - 1 ? '<span class="pips"><i class="' + (pr.streak > 0 ? 'on' : '') + '"></i><i></i></span>' : '');
     b.onclick = () => { if (!open){ b.animate([{ transform:'translateX(-6px)' }, { transform:'translateX(6px)' }, { transform:'none' }], 200); return; } p.sel.level = i; save(); renderHome(); };
     box.appendChild(b);
   });
@@ -1086,7 +1100,7 @@ function wizStep(n){
 $('#btnStep2').onclick = () => { pickName = $('#newName').value.trim(); wizStep(2); };
 $('#newName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnStep2').click(); });
 $('#btnNewOk').onclick = () => {
-  const p = { id: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1e4), name: pickName, avatar: pickAv, theme: pickTheme, lang: LANG, level:0, streak:0, best:{}, hist:{}, top:{}, sel:{ level:0, part:'short' }, opts: Object.assign({}, DEF_OPTS) };
+  const p = { id: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1e4), name: pickName, avatar: pickAv, theme: pickTheme, lang: LANG, level:0, streak:0, prog: freshProg(), best:{}, hist:{}, top:{}, sel:{ level:0, part:'short' }, opts: Object.assign({}, DEF_OPTS) };
   db.profiles.push(p); db.current = p.id; save(); goHome();
 };
 $('#btnNewBack').onclick = () => { if (wizAt === 2) wizStep(1); else { if (P()) applyTheme(P().theme); openProfiles(); } };
@@ -1193,7 +1207,7 @@ function openSettings(){
   $('#sLabels').value = p.opts.labels; $('#sLabels').onchange = e => { p.opts.labels = e.target.value; heardShown = undefined; save(); };
   [['#sHint','hint'],['#sOct','anyOct'],['#sLock','lockLevels']].forEach(([id, k]) => { $(id).checked = !!p.opts[k]; $(id).onchange = e => { p.opts[k] = e.target.checked; save(); }; });
   $('#sTouch').checked = dev().touch; $('#sTouch').onchange = e => { dev().touch = e.target.checked; save(); };
-  armButton('#btnReset', tx('sReset'), () => { p.level = 0; p.streak = 0; p.best = {}; p.hist = {}; p.top = {}; p.sel.level = 0; save(); });
+  armButton('#btnReset', tx('sReset'), () => { p.level = 0; p.streak = 0; p.prog = freshProg(); p.best = {}; p.hist = {}; p.top = {}; p.sel.level = 0; save(); });
   armButton('#btnDelete', tx('sDelete'), () => { db.profiles = db.profiles.filter(x => x.id !== p.id); db.current = db.profiles[0] ? db.profiles[0].id : null; save(); $('#settings').hidden = true; goHome(); });
   renderBackupInfo(); $('#restoreAsk').hidden = true;
   $('#settings').hidden = false;
