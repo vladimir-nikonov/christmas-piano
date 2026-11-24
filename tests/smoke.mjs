@@ -69,8 +69,8 @@ try {
   // Web fonts are not needed for the test; answer with empty CSS so the run works offline.
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
   const page = await ctx.newPage();
-  page.on('pageerror', e => errors.push('pageerror: ' + e.message));
-  page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+  page.on('pageerror', e => errors.push('[' + step + '] pageerror: ' + e.message));
+  page.on('console', m => { if (m.type() === 'error') errors.push('[' + step + '] console: ' + m.text()); });
   const sn = (fn, arg) => page.evaluate(fn, arg);
   const visible = sel => page.locator(sel).waitFor({ state: 'visible', timeout: 10000 });
   // Results: exactly one primary button, which action it runs, which secondary icons are shown, and the slot positions.
@@ -425,10 +425,12 @@ try {
   assert.equal(await sn(() => window.__sn.db.profiles.length), 0);
 
   log('danger zone: erase all players and achievements, with a confirmation');
-  await sn(() => { const d = window.__sn.db; d.profiles.push({ id: 'w1', name: 'Ann' }, { id: 'w2', name: 'Bob' }); d.current = 'w1'; d.device.latency = 200; return window.__sn.save(); });
-  await page.reload();
-  if (await page.locator('#splash').isVisible()) await page.click('#splash');
+  // Seed only complete players: a bare { id, name } in the live database makes the next canvas frame throw.
+  await page.fill('#newName', 'Ann');
+  await page.click('#btnStep2');
+  await page.click('#btnNewOk');
   await visible('#home');
+  await sn(() => { const d = window.__sn.db; d.profiles.push(Object.assign(structuredClone(d.profiles[0]), { id: 'w2', name: 'Bob' })); d.device.latency = 200; return window.__sn.save(); });
   await page.click('#btnSettings');
   await visible('#settings');
   await page.click('#btnWipe');
@@ -462,8 +464,8 @@ try {
       navigator.permissions.query = d => d && d.name === 'microphone' ? Promise.resolve(perm) : query(d);
     });
     const dp = await dctx.newPage();
-    dp.on('pageerror', e => errors.push('pageerror: ' + e.message));
-    dp.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+    dp.on('pageerror', e => errors.push('[' + step + '] pageerror: ' + e.message));
+    dp.on('console', m => { if (m.type() === 'error') errors.push('[' + step + '] console: ' + m.text()); });
     const dsn = (fn, arg) => dp.evaluate(fn, arg);
     await dp.goto(url);
     await dp.fill('#newName', 'NoMic');
@@ -525,7 +527,7 @@ try {
     const rctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
     await rctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
     const rp = await rctx.newPage();
-    rp.on('pageerror', e => errors.push('pageerror: ' + e.message));
+    rp.on('pageerror', e => errors.push('[' + step + '] pageerror: ' + e.message));
     await rp.goto(url);
     await rp.fill('#newName', 'Calm');
     await rp.click('#btnStep2');
@@ -557,7 +559,7 @@ try {
   const micBrowser = await chromium.launch({ ...launchOpts, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--use-file-for-fake-audio-capture=' + wav, '--autoplay-policy=no-user-gesture-required'] });
   try {
     const mp = await micBrowser.newPage();
-    mp.on('pageerror', e => errors.push('pageerror: ' + e.message));
+    mp.on('pageerror', e => errors.push('[' + step + '] pageerror: ' + e.message));
     await mp.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
     await mp.goto(url);
     await mp.fill('#newName', 'Mic');
