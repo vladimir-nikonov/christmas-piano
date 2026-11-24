@@ -186,6 +186,7 @@ svg.off{color:var(--border)}
 <div class="screen" id="home" hidden>
   <div class="corner l"><button class="b who" id="btnWho" aria-label="Сменить игрока"></button></div>
   <div class="corner r">
+    <button class="b ico" id="btnBackupNag" aria-label="Пора сохранить резервную копию" data-icon="arrow-down" hidden style="opacity:.6"></button>
     <button class="b ico" id="btnFull" aria-label="Во весь экран" data-icon="fullscreen"></button>
     <button class="b ico" id="btnSettings" aria-label="Настройки для родителя" data-icon="gear"></button>
   </div>
@@ -263,7 +264,16 @@ svg.off{color:var(--border)}
     <div class="row"><label for="sSens">Чувствительность микрофона</label><output id="oSens"></output>
       <input type="range" id="sSens" min="1" max="10" step="1"><small>Выше означает, что слышит тихие ноты, но больше реагирует на шум.</small></div>
     <div class="row"><label for="sTouch">Нажатия по экрану</label><input type="checkbox" id="sTouch"><small>Засчитывать касания нарисованных клавиш, чтобы проверить без синтезатора.</small></div>
-    <p style="opacity:.75;font-size:13px;margin:14px 0 0">Всё сохраняется только в этом браузере на этом планшете.</p>
+    <div class="row"><label>Резервная копия</label><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+      <button class="b txtbtn" id="btnBackup">Сохранить копию</button>
+      <button class="b txtbtn" id="btnRestore">Восстановить из файла</button></div>
+      <input type="file" id="restoreFile" hidden>
+      <small id="backupInfo"></small>
+      <div id="restoreAsk" hidden style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
+        <span id="restoreText" style="flex:1 1 220px;font-size:14px;line-height:1.35"></span>
+        <button class="b txtbtn" id="btnRestoreNo">Отмена</button>
+        <button class="b txtbtn danger" id="btnRestoreYes">Заменить</button></div></div>
+    <p style="opacity:.75;font-size:13px;margin:14px 0 0">Всё сохраняется только в этом браузере на этом планшете. Копия в файле поможет перенести игроков на другое устройство или вернуть их, если браузер очистит данные.</p>
   </div>
 </div>
 
@@ -367,10 +377,78 @@ function blockSVG(i){
 const DB_KEY = 'snezhnye-noty-v2';
 const DEF_OPTS = { tempo:100, tolMs:0, labels:'ru', anyOct:true, hint:true, unlockAll:false };
 const DEF_DEV = { latency:80, sens:5, touch:false };
-let db = { profiles:[], current:null, device:Object.assign({}, DEF_DEV) };
-try { const raw = localStorage.getItem(DB_KEY); if (raw){ const d = JSON.parse(raw); db = Object.assign(db, d); db.device = Object.assign({}, DEF_DEV, d.device); } } catch(e){}
-db.profiles.forEach(p => { p.theme = THEMES[p.theme] ? p.theme : 'pixel'; p.opts = Object.assign({}, DEF_OPTS, p.opts); p.sel = p.sel || { level:0, part:'short' }; p.best = p.best || {}; });
-function save(){ try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch(e){} }
+// Primary store: IndexedDB (db 'snezhnye-noty', store 'kv', key 'db'). localStorage[DB_KEY] is the legacy
+// store, migrated once on first run and used as a fallback when IndexedDB is unavailable or a write fails.
+// Every saved copy carries savedAt; on load the newer of the two copies wins.
+const IDB_NAME = 'snezhnye-noty', IDB_STORE = 'kv', IDB_KEY = 'db';
+const BACKUP_FORMAT = 'snezhnye-noty-backup', BACKUP_EVERY = 7 * 864e5;
+const freshDB = () => ({ profiles:[], current:null, device:Object.assign({}, DEF_DEV), savedAt:0, backupAt:0, remindFrom:0 });
+let db = freshDB(), storeKind = 'localStorage', persisted = false;
+function normalizeDB(d){
+  const r = freshDB();
+  if (d && typeof d === 'object'){ Object.assign(r, d); r.device = Object.assign({}, DEF_DEV, d.device); }
+  r.profiles = Array.isArray(r.profiles) ? r.profiles.filter(p => p && typeof p === 'object' && typeof p.id === 'string' && p.id) : [];
+  r.profiles.forEach(p => { p.theme = THEMES[p.theme] ? p.theme : 'pixel'; p.opts = Object.assign({}, DEF_OPTS, p.opts); p.sel = p.sel || { level:0, part:'short' }; p.best = p.best || {};
+    p.name = typeof p.name === 'string' ? p.name : ''; p.level = Math.max(0, Math.floor(+p.level) || 0); p.streak = +p.streak || 0; p.avatar = Math.max(0, Math.floor(+p.avatar) || 0); });
+  if (!r.profiles.some(p => p.id === r.current)) r.current = r.profiles[0] ? r.profiles[0].id : null;
+  return r;
+}
+function lsRead(){ try { const raw = localStorage.getItem(DB_KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; } }
+function lsWrite(d){ try { localStorage.setItem(DB_KEY, JSON.stringify(d)); return true; } catch(e){ return false; } }
+let idbP = null;
+function idbOpen(){
+  if (idbP) return idbP;
+  idbP = new Promise(res => {
+    const t = setTimeout(() => res(null), 4000);
+    const done = v => { clearTimeout(t); res(v); };
+    try {
+      if (!window.indexedDB) return done(null);
+      const rq = indexedDB.open(IDB_NAME, 1);
+      rq.onupgradeneeded = () => { try { if (!rq.result.objectStoreNames.contains(IDB_STORE)) rq.result.createObjectStore(IDB_STORE); } catch(e){} };
+      rq.onsuccess = () => { const d = rq.result; d.onversionchange = () => { try { d.close(); } catch(e){} idbP = null; }; done(d); };
+      rq.onerror = () => done(null);
+    } catch(e){ done(null); }
+  });
+  return idbP;
+}
+// Resolves to { v } on success, null on any failure. Never rejects.
+function idbDo(mode, fn){
+  return idbOpen().then(d => d && new Promise(res => {
+    try {
+      const tx = d.transaction(IDB_STORE, mode), rq = fn(tx.objectStore(IDB_STORE)); let v;
+      rq.onsuccess = () => { v = rq.result; };
+      tx.oncomplete = () => res({ v }); tx.onerror = tx.onabort = () => res(null);
+    } catch(e){ res(null); }
+  })).catch(() => null);
+}
+let saveChain = Promise.resolve();
+function save(){
+  db.savedAt = Date.now();
+  let snap; try { snap = JSON.parse(JSON.stringify(db)); } catch(e){ return saveChain; }
+  saveChain = saveChain.then(() => idbDo('readwrite', st => st.put(snap, IDB_KEY)))
+    .then(r => { if (r){ storeKind = 'IndexedDB'; } else { storeKind = 'localStorage'; lsWrite(snap); } })
+    .catch(() => { lsWrite(snap); });
+  return saveChain;
+}
+async function loadDB(){
+  const ls = lsRead();
+  let r = null; try { r = await idbDo('readonly', st => st.get(IDB_KEY)); } catch(e){}
+  const fromIdb = r && r.v && typeof r.v === 'object' ? r.v : null;
+  if (r) storeKind = 'IndexedDB';
+  let src = fromIdb;
+  if (ls && (!fromIdb || (+ls.savedAt || 0) > (+fromIdb.savedAt || 0))) src = ls;   // first run migration, or a newer fallback copy
+  try { db = normalizeDB(src); } catch(e){ db = freshDB(); }
+  let dirty = src !== fromIdb;
+  if (!db.remindFrom){ db.remindFrom = Date.now(); dirty = true; }
+  if (dirty) await save();
+}
+function askPersist(){
+  try {
+    const s = navigator.storage;
+    if (!s || !s.persist) return Promise.resolve(false);
+    return (s.persisted ? s.persisted() : Promise.resolve(false)).then(p => p || s.persist()).then(p => (persisted = !!p)).catch(() => false);
+  } catch(e){ return Promise.resolve(false); }
+}
 const P = () => db.profiles.find(p => p.id === db.current) || null;
 const opts = () => (P() || { opts: DEF_OPTS }).opts;
 const dev = () => db.device;
@@ -768,7 +846,7 @@ function goHome(){
   state = 'home'; paused = false; G = null;
   if (!db.profiles.length){ openNewProfile(); return; }
   if (!P()) db.current = db.profiles[0].id;
-  renderHome(); showOnly('#home');
+  renderHome(); showOnly('#home'); updateBackupNag();
 }
 function openProfiles(){
   state = 'profiles';
@@ -860,8 +938,79 @@ function openSettings(){
   $('#sTouch').checked = dev().touch; $('#sTouch').onchange = e => { dev().touch = e.target.checked; save(); };
   armButton('#btnReset', 'Сбросить уровни', () => { p.level = 0; p.streak = 0; p.best = {}; p.sel.level = 0; save(); });
   armButton('#btnDelete', 'Удалить игрока', () => { db.profiles = db.profiles.filter(x => x.id !== p.id); db.current = db.profiles[0] ? db.profiles[0].id : null; save(); $('#settings').hidden = true; goHome(); });
+  renderBackupInfo(); $('#restoreAsk').hidden = true;
   $('#settings').hidden = false; $('#settings').scrollTop = 0;
 }
+/* Backup: export / import JSON, weekly reminder */
+const fmtDate = t => { try { return new Date(t).toLocaleDateString('ru-RU'); } catch(e){ return ''; } };
+function renderBackupInfo(){
+  const el = $('#backupInfo'); if (!el) return;
+  el.textContent = (db.backupAt ? 'Последняя копия: ' + fmtDate(db.backupAt) + '. ' : 'Копию ещё не сохраняли. ') +
+    (persisted ? 'Браузер не будет удалять данные сам.' : 'Браузер может очистить данные при нехватке места, поэтому сохраняйте копию раз в неделю.');
+}
+const backupDue = () => db.profiles.length > 0 && Date.now() - Math.max(+db.backupAt || 0, +db.remindFrom || 0) > BACKUP_EVERY;
+function updateBackupNag(){ const b = $('#btnBackupNag'); if (b) b.hidden = !backupDue(); }
+function exportBackup(){
+  const data = { format: BACKUP_FORMAT, version: 1, exportedAt: new Date().toISOString(), profiles: db.profiles, current: db.current, device: db.device };
+  try {
+    const d = new Date(), pad = n => String(n).padStart(2, '0');
+    const name = 'snezhnye-noty-' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '.json';
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+    const a = document.createElement('a'); a.href = url; a.download = name; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => { try { URL.revokeObjectURL(url); } catch(e){} }, 30000);
+    db.backupAt = Date.now(); save(); askPersist().then(renderBackupInfo); renderBackupInfo(); updateBackupNag();
+    return true;
+  } catch(e){ $('#backupInfo').textContent = 'Не получилось сохранить файл: ' + (e && e.message || e); return false; }
+}
+// Returns { db } for a valid backup (or a raw db object), otherwise { error }.
+function parseBackup(text){
+  let d; try { d = JSON.parse(text); } catch(e){ return { error: 'Это не файл копии: не удалось прочитать JSON.' }; }
+  if (!d || typeof d !== 'object' || Array.isArray(d)) return { error: 'Это не файл копии.' };
+  if (d.format !== undefined && d.format !== BACKUP_FORMAT) return { error: 'Это файл другой программы.' };
+  if (typeof d.version === 'number' && d.version > 1) return { error: 'Файл сделан более новой версией игры.' };
+  if (!Array.isArray(d.profiles) || !d.profiles.length) return { error: 'В файле нет игроков.' };
+  if (d.profiles.length > 100) return { error: 'В файле слишком много записей.' };
+  const ids = new Set();
+  for (const p of d.profiles){
+    if (!p || typeof p !== 'object' || typeof p.id !== 'string' || !p.id || p.id.length > 64 || ids.has(p.id)) return { error: 'Файл повреждён: неверный игрок.' };
+    if (p.name !== undefined && (typeof p.name !== 'string' || p.name.length > 40)) return { error: 'Файл повреждён: неверное имя.' };
+    if (p.level !== undefined && !(Number.isFinite(+p.level) && +p.level >= 0)) return { error: 'Файл повреждён: неверный уровень.' };
+    if (p.avatar !== undefined && !(Number.isInteger(+p.avatar) && +p.avatar >= 0 && +p.avatar < AVATARS.length)) return { error: 'Файл повреждён: неверный аватар.' };
+    ids.add(p.id);
+  }
+  return { db: d };
+}
+let pendingRestore = null;
+$('#btnBackup').onclick = exportBackup;
+$('#btnRestore').onclick = () => { $('#restoreFile').value = ''; $('#restoreFile').click(); };
+$('#restoreFile').onchange = e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const ask = $('#restoreAsk'), txt = $('#restoreText');
+  const fail = m => { pendingRestore = null; txt.textContent = m; $('#btnRestoreYes').hidden = true; ask.hidden = false; };
+  if (f.size > 2e6) return fail('Файл слишком большой для копии.');
+  const rd = new FileReader();
+  rd.onerror = () => fail('Не удалось прочитать файл.');
+  rd.onload = () => {
+    const r = parseBackup(String(rd.result || ''));
+    if (r.error) return fail(r.error);
+    pendingRestore = r.db;
+    const names = r.db.profiles.map(p => p.name || 'без имени').join(', ');
+    txt.textContent = 'В файле ' + r.db.profiles.length + ' ' + (r.db.profiles.length === 1 ? 'игрок' : r.db.profiles.length < 5 ? 'игрока' : 'игроков') + ': ' + names +
+      (r.db.exportedAt ? ' (копия от ' + fmtDate(r.db.exportedAt) + ')' : '') + '. Заменить ими всех игроков на этом планшете?';
+    $('#btnRestoreYes').hidden = false; ask.hidden = false;
+  };
+  try { rd.readAsText(f); } catch(err){ fail('Не удалось прочитать файл.'); }
+};
+$('#btnRestoreNo').onclick = () => { pendingRestore = null; $('#restoreAsk').hidden = true; };
+$('#btnRestoreYes').onclick = async () => {
+  if (!pendingRestore) return;
+  const keepDevice = db.device, keepRemind = db.remindFrom;
+  db = normalizeDB({ profiles: pendingRestore.profiles, current: pendingRestore.current, device: keepDevice, backupAt: Date.now(), remindFrom: keepRemind || Date.now() });
+  pendingRestore = null; $('#restoreAsk').hidden = true;
+  await save();
+  $('#settings').hidden = true; goHome();
+};
+$('#btnBackupNag').onclick = () => { openSettings(); const r = $('#btnBackup'); if (r && r.scrollIntoView) r.scrollIntoView({ block: 'center' }); };
 function armButton(sel, label, action){
   const b = $(sel); let armed = false, t = 0; b.textContent = label;
   b.onclick = () => { if (!armed){ armed = true; b.textContent = 'Точно? Нажмите ещё раз'; t = setTimeout(() => { armed = false; b.textContent = label; }, 3000); return; }
@@ -881,11 +1030,12 @@ if (window.visualViewport) visualViewport.addEventListener('resize', onResize);
 
 layout();
 hydrateIcons();
-goHome();
+askPersist();
+loadDB().catch(() => {}).then(goHome);
 requestAnimationFrame(frame);
 if (document.fonts) document.fonts.ready.then(() => { bgCache = null; });
 
-window.__sn = { detectPitch, onPlayed: m => onPlayed(m, performance.now(), 'touch'), get game(){ return G; }, get state(){ return state; }, get db(){ return db; } };
+window.__sn = { detectPitch, onPlayed: m => onPlayed(m, performance.now(), 'touch'), get game(){ return G; }, get state(){ return state; }, get db(){ return db; }, get storeKind(){ return storeKind; }, loadDB, save };
 })();
 </script>
 </body>
