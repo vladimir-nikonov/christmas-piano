@@ -416,6 +416,25 @@ try {
   await page.click('#btnDelete');
   await visible('#newp');
   assert.equal(await sn(() => window.__sn.db.profiles.length), 0);
+
+  log('danger zone: erase all players and achievements, with a confirmation');
+  await sn(() => { const d = window.__sn.db; d.profiles.push({ id: 'w1', name: 'Ann' }, { id: 'w2', name: 'Bob' }); d.current = 'w1'; d.device.latency = 200; return window.__sn.save(); });
+  await page.reload();
+  if (await page.locator('#splash').isVisible()) await page.click('#splash');
+  await visible('#home');
+  await page.click('#btnSettings');
+  await visible('#settings');
+  await page.click('#btnWipe');
+  await visible('#wipeAsk');
+  assert.match(await page.locator('#wipeText').textContent(), /Ann, Bob/);
+  await page.click('#btnWipeNo');
+  assert.equal(await page.locator('#wipeAsk').isHidden(), true);
+  assert.equal(await sn(() => window.__sn.db.profiles.length), 2);
+  await page.click('#btnWipe');
+  await Promise.all([page.waitForEvent('load'), page.click('#btnWipeYes')]);
+  await visible('#newp');
+  assert.deepEqual(await sn(() => [window.__sn.db.profiles.length, window.__sn.db.device.latency]), [0, 80]);
+  assert.equal(await sn(() => localStorage.getItem('snezhnye-noty-v2')), null);
   await ctx.close();
 
   log('microphone denied: mic state with a hint per error kind');

@@ -113,3 +113,10 @@ export const prog = (p, song) => p.prog[song || songKey(p)];
 export const unlocked = (p, i, song) => !p.opts.lockLevels || i <= prog(p, song).level;
 // Replaces the whole in-memory database (restore from a backup).
 export function setDB(d){ db = d; }
+// Danger zone: erases every player, their progress and the device settings, in IndexedDB and the
+// localStorage fallback. Resolves once the empty database is written.
+export function wipeDB(){
+  db = freshDB(); db.remindFrom = Date.now();
+  try { localStorage.removeItem(DB_KEY); } catch(e){}
+  return save();
+}

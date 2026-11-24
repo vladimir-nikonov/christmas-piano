@@ -2,7 +2,7 @@
 
 import { LETTERS, NOTE_NATIVE } from '../../core/music.js';
 import { BACKUP_FORMAT, BACKUP_EVERY, parseBackup } from '../../data/backup.js';
-import { db, persisted, normalizeDB, save, askPersist, P, dev, setDB, freshProg } from '../../data/storage.js';
+import { db, persisted, normalizeDB, save, askPersist, P, dev, setDB, freshProg, wipeDB } from '../../data/storage.js';
 import { $ } from '../../dom.js';
 import { state } from '../../game/game.js';
 import { LANGS, LANG, tx, fmtDate } from '../../i18n/index.js';
@@ -33,7 +33,7 @@ export function openSettings(){
   $('#sTouch').checked = dev().touch; $('#sTouch').onchange = e => setScreenInput(e.target.checked);
   armButton('#btnReset', tx('sReset'), () => { p.level = 0; p.streak = 0; p.prog = freshProg(); p.best = {}; p.hist = {}; p.top = {}; p.sel.level = 0; save(); });
   armButton('#btnDelete', tx('sDelete'), () => { db.profiles = db.profiles.filter(x => x.id !== p.id); db.current = db.profiles[0] ? db.profiles[0].id : null; save(); $('#settings').hidden = true; goHome(); });
-  renderBackupInfo(); $('#restoreAsk').hidden = true;
+  renderBackupInfo(); $('#restoreAsk').hidden = true; $('#wipeAsk').hidden = true;
   $('#settings').hidden = false;
 }
 /* Backup: export / import JSON, weekly reminder */
@@ -90,6 +90,19 @@ function armButton(sel, label, action){
   b.onclick = () => { if (!armed){ armed = true; b.textContent = tx('sConfirm'); tm = setTimeout(() => { armed = false; b.textContent = label; }, 3000); return; }
     clearTimeout(tm); armed = false; action(); b.textContent = tx('sDoneMsg'); setTimeout(() => b.textContent = label, 1500); };
 }
+/* Danger zone: erase all players and achievements. Asks with the player count and names first;
+   the page reloads afterwards so language, input mode and screens start from scratch. */
+$('#btnWipe').onclick = () => {
+  const names = db.profiles.map(p => p.name || tx('noName')).join(', ');
+  $('#wipeText').textContent = tx('sWipeQ').replace('{n}', db.profiles.length).replace('{names}', names || '—');
+  $('#wipeAsk').hidden = false;
+};
+$('#btnWipeNo').onclick = () => { $('#wipeAsk').hidden = true; };
+$('#btnWipeYes').onclick = async () => {
+  $('#btnWipeYes').disabled = true;
+  await wipeDB();
+  location.reload();
+};
 $('#btnKidPage').onclick = () => { settingsOpen = false; $('#settings').hidden = true; openMe(); };
 $('#btnSettings').onclick = () => { openSettings(); $('#settings').scrollTop = 0; };
 $('#btnSetClose').onclick = () => { settingsOpen = false; $('#settings').hidden = true; if (state === 'home') goHome(); };

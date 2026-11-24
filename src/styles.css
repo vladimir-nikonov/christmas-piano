@@ -213,6 +213,8 @@ svg.off{color:var(--border)}
 .row input[type=checkbox]{width:28px;height:28px;accent-color:var(--accent)}
 .txtbtn{font-size:14px;padding:8px 14px;border-radius:min(var(--radius),12px)}
 .txtbtn.danger{background:#6d2430;border-color:#a04050}
+.sheet h3.dangerhead{color:#e06070;margin-top:28px}
+.row.dangerzone{border:2px solid #a04050;border-radius:min(calc(var(--radius) * .5),10px);padding:10px 12px}
 .minipick{display:flex;gap:6px;flex-wrap:wrap;grid-column:1/-1}
 .minipick button{padding:3px;border:3px solid transparent;background:none;border-radius:6px}
 .minipick button[aria-pressed="true"]{border-color:var(--reward)}
