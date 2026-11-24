@@ -458,11 +458,11 @@ function avatarSVG(i, size){
 // Levels per the theme pack spec: % of the original tempo (120 bpm) and timing window
 const ORIGINAL_BPM = 120;
 const LEVELS = [
-  { mat:'wood',    name:'Дерево', wait:true,  pct:50,  tol:null },
-  { mat:'stone',   name:'Камень', wait:false, pct:60,  tol:0.50 },
-  { mat:'iron',    name:'Железо', wait:false, pct:75,  tol:0.35 },
-  { mat:'gold',    name:'Золото', wait:false, pct:90,  tol:0.25 },
-  { mat:'diamond', name:'Алмаз',  wait:false, pct:100, tol:0.18 }
+  { mat:'wood',    name:'Wood',    wait:true,  pct:50,  tol:null },
+  { mat:'stone',   name:'Stone',   wait:false, pct:60,  tol:0.50 },
+  { mat:'iron',    name:'Iron',    wait:false, pct:75,  tol:0.35 },
+  { mat:'gold',    name:'Gold',    wait:false, pct:90,  tol:0.25 },
+  { mat:'diamond', name:'Diamond', wait:false, pct:100, tol:0.18 }
 ];
 function rng(seed){ return () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }; }
 function blockSVG(i){
