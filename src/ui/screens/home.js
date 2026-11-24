@@ -4,8 +4,9 @@ import { audio } from '../../audio/synth.js';
 import { LEVELS } from '../../core/levels.js';
 import { SONGS, SONG_KEYS, songKey, bestKey, PART_KEYS } from '../../core/songs.js';
 import { db, save, P, dev, prog, unlocked } from '../../data/storage.js';
-import { $, showOnly } from '../../dom.js';
-import { state, paused, G, startGame, setState, setPaused, setGame, resumeGame } from '../../game/game.js';
+import { E, S, dispatch, can, is } from '../../core/flow.js';
+import { $ } from '../../dom.js';
+import { G, startGame, setGame, resumeGame } from '../../game/game.js';
 import { tx, fmtDate } from '../../i18n/index.js';
 import { startMic, watchMicPermission, onMicLost } from '../../input/mic.js';
 import { avatarSVG, blockSVG } from '../art.js';
@@ -61,16 +62,20 @@ export function histHTML(p, key, markLast){
     '<span class="hbars" role="img" aria-label="' + tx('history') + ': ' + h.map(e => e.pct + '%').join(', ') + '">' +
     h.map((e, i) => '<i class="' + (e.pct === top ? 'top' : '') + (markLast && i === h.length - 1 ? ' now' : '') + '" style="height:' + Math.max(8, e.pct) + '%" title="' + fmtDate(e.at) + ': ' + e.pct + '%"></i>').join('') + '</span>';
 }
+// Home from anywhere that has a way home (player chosen, close, exit, end of the demo, results); otherwise ignored.
+// Without any player it opens the new player wizard instead.
 export function goHome(){
-  setState('home'); setPaused(false); setGame(null);
-  if (!db.profiles.length){ syncLang(); openNewProfile(); return; }
+  if (!db.profiles.length){ if (!can(E.NEW_PLAYER)) return false; setGame(null); syncLang(); openNewProfile(); return true; }
+  if (!can(E.HOME)) return false;
+  setGame(null);
   if (!P()) db.current = db.profiles[0].id;
   const p = P();
   if (!(homePick && homePick.id === p.id && homePick.song === songKey(p))) p.sel.level = prog(p).level;
   syncLang();
   const home = $('#home'), wasHidden = home.hidden;
-  renderHome(); showOnly('#home'); updateBackupNag();
+  renderHome(); dispatch(E.HOME); updateBackupNag();
   if (wasHidden) zoomOutHome(home);
+  return true;
 }
 
 /* ---- Entry / return transitions (Web Animations, so they run alongside the CSS reduced-motion rule) ---- */
@@ -84,12 +89,12 @@ function zoomOutHome(home){
 // Play / Listen: the selected level tile grows towards the centre while the rest of home fades out,
 // then the game starts (count-in included) and the HUD fades in. Reduced motion: a quick fade only.
 // Home ignores taps during the transition; the game clock starts only after it.
-let entering = false;
-export function enterGame(demo){
+// The caller has already moved the machine into Countdown / Preview (entering), which ignores a second Play or Listen.
+function enterGame(demo){
   const home = $('#home');
-  if (entering) return;
-  if (home.hidden || !home.animate){ startGame(demo); return; }
-  entering = true; homePick = null;
+  const go = () => { startGame(demo); dispatch(E.ENTERED); };
+  if (home.hidden || !home.animate){ go(); return; }
+  homePick = null;
   const r = reduceMotion(), dur = r ? 160 : 340, opts = { duration: dur, easing: 'ease-in', fill: 'forwards' }, list = [];
   const fade = el => list.push(anim(el, [{ opacity: 1 }, { opacity: 0 }], opts));
   home.style.pointerEvents = 'none';
@@ -104,8 +109,7 @@ export function enterGame(demo){
     list.push(anim(home, [{}, { backgroundColor: 'transparent' }], opts));
   } else fade(home);
   setTimeout(() => {
-    entering = false;
-    startGame(demo);
+    go();
     list.forEach(a => a && a.cancel()); home.style.pointerEvents = ''; if (tile) tile.style.zIndex = '';
     anim($('#hud'), [{ opacity: 0 }, { opacity: 1 }], { duration: r ? 120 : 220, easing: 'ease-out' });
   }, dur);
@@ -119,24 +123,27 @@ function showMicState(kind){
 }
 const hideMicState = () => { $('#micErr').hidden = true; };
 // Permission granted in the browser (e.g. from the site settings): clear the error, the next Play starts at once.
-watchMicPermission(st => { if (st === 'granted') hideMicState(); });
-// In-flight guard: a second tap while the microphone permission prompt is open must not start a second game.
-let starting = false;
+// The machine leaves the mic state for plain home (ignored while a request is still open).
+watchMicPermission(st => { if (st === 'granted'){ hideMicState(); dispatch(E.CANCEL); } });
+// Play: the machine goes to MicSetup while the microphone is asked, so a second tap during the permission prompt is
+// ignored; a result that arrives after the child went elsewhere (e.g. Listen) is ignored as well.
 async function playWithMic(){
-  if (starting || state !== 'home') return;
-  starting = true;
-  try {
-    audio(); hideMicState();
-    // Screen and keyboard mode never asks for the microphone: a tablet without a piano needs no permission.
-    if (!dev().touch){ const r = await startMic(); if (!r.ok){ showMicState(r.kind); return; } if (state !== 'home') return; }
-    enterGame(false);
-  } finally { starting = false; }
+  // Screen and keyboard mode never asks for the microphone: a tablet without a piano needs no permission.
+  const mic = !dev().touch;
+  if (!dispatch(E.PLAY, { mic })) return;
+  audio(); hideMicState();
+  if (mic){
+    const r = await startMic();
+    if (!r.ok){ showMicState(r.kind); dispatch(E.MIC_FAILED, { kind: r.kind }); return; }
+    if (!dispatch(E.MIC_READY)) return;
+  }
+  enterGame(false);
 }
 $('#btnPlay').onclick = playWithMic;
 $('#btnMicRetry').onclick = playWithMic;
 // Play without the microphone: count screen taps on this device (the parent setting) and start.
-$('#btnMicTouch').onclick = () => { audio(); setScreenInput(true); hideMicState(); enterGame(false); };
-$('#btnListen').onclick = () => { audio(); enterGame(true); };
+$('#btnMicTouch').onclick = () => { audio(); if (!dispatch(E.PLAY, { mic: false })) return; setScreenInput(true); hideMicState(); enterGame(false); };
+$('#btnListen').onclick = () => { audio(); if (dispatch(E.LISTEN)) enterGame(true); };
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
 const toggleFull = () => {
   const d = document.documentElement;
@@ -163,24 +170,20 @@ function syncFull(){
 document.addEventListener('fullscreenchange', syncFull);
 document.addEventListener('webkitfullscreenchange', syncFull);
 // Pause freezes the game under the dimmed #pause overlay; everything (time, notes, score, mode) stays in G.
-export function pauseGame(){
-  if (state !== 'playing' || paused || !G) return false;
-  setPaused(true); $('#pause').hidden = false; return true;
-}
-const inPause = () => state === 'playing' && paused && !$('#pause').hidden;
-$('#btnPause').onclick = () => { if (state === 'demo'){ G.finished = true; goHome(); return; } pauseGame(); };
-$('#btnResume').onclick = () => { if (!inPause()) return; $('#pause').hidden = true; resumeGame(); };
-$('#btnRestart').onclick = () => { if (inPause()) startGame(false); };
-$('#btnQuit').onclick = () => { if (inPause()) goHome(); };
+// Only a running game (count-in, playing or waiting) can pause; anything else ignores it.
+export function pauseGame(){ return !!G && dispatch(E.PAUSE); }
+$('#btnPause').onclick = () => { if (is(S.PREVIEW)){ if (!can(E.HOME)) return; G.finished = true; goHome(); return; } pauseGame(); };
+$('#btnResume').onclick = () => { resumeGame(); };
+$('#btnRestart').onclick = () => { if (dispatch(E.REPLAY)) startGame(false); };
+$('#btnQuit').onclick = () => { if (is(S.PAUSED)) goHome(); };
 $('#btnHome').onclick = goHome;
-// Replay / Next act only while the results are shown: a second tap would otherwise read the game the first tap
-// just started (Next would skip a level) or restart it.
-const onResults = () => state === 'results' && !$('#results').hidden;
-$('#btnAgain').onclick = () => { if (!onResults()) return; const p = P(); if (G){ p.sel.song = G.song; p.sel.level = G.level; p.sel.part = G.part; } startGame(false); };
-$('#btnNext').onclick = () => { if (!onResults()) return; const p = P(); if (G){ p.sel.song = G.song; p.sel.level = Math.min(LEVELS.length - 1, G.level + 1); } startGame(false); };
+// Replay / Next act only while the results are shown (the machine is in Results or LevelUp): a second tap would
+// otherwise read the game the first tap just started (Next would skip a level) or restart it.
+$('#btnAgain').onclick = () => { if (!dispatch(E.REPLAY)) return; const p = P(); if (G){ p.sel.song = G.song; p.sel.level = G.level; p.sel.part = G.part; } startGame(false); };
+$('#btnNext').onclick = () => { if (!dispatch(E.NEXT)) return; const p = P(); if (G){ p.sel.song = G.song; p.sel.level = Math.min(LEVELS.length - 1, G.level + 1); } startGame(false); };
 // Safe auto-pause: going to the background, locking the screen, losing focus or losing the microphone.
 document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
 addEventListener('pagehide', () => pauseGame());
 addEventListener('blur', () => pauseGame());
 onMicLost(() => pauseGame());
-document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && state === 'home' && document.activeElement === document.body){ e.preventDefault(); $('#btnPlay').click(); } });
+document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && is(S.HOME, S.MIC_SETUP) && document.activeElement === document.body){ e.preventDefault(); $('#btnPlay').click(); } });

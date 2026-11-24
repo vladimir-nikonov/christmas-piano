@@ -5,7 +5,8 @@ import { LEVELS } from '../core/levels.js';
 import { PC_COLOR } from '../core/music.js';
 import { SONGS, songKey, bestKey } from '../core/songs.js';
 import { HIST_MAX, save, P, opts, dev, prog } from '../data/storage.js';
-import { $, showOnly } from '../dom.js';
+import { E, S, dispatch, is, flow, view as state, paused } from '../core/flow.js';
+import { $ } from '../dom.js';
 import { micFrame } from '../input/mic.js';
 import { requestWake } from '../platform/wake.js';
 import { U, LO, HI, keys, hitY } from '../ui/canvas.js';
@@ -16,7 +17,9 @@ import { showResults } from '../ui/screens/results.js';
 import { TH } from '../ui/theme.js';
 
 /* ================= Game ================= */
-export let state = 'home', paused = false, G = null;
+// state / paused: the older app-wide state strings, derived from the navigation machine (src/core/flow.js).
+export { state, paused };
+export let G = null;
 // soft: key -> time of a wrong note on it (gentle wobble, no red); nudge: the expected key/lane pulses once more after a wrong note.
 export const fx = { parts:[], pops:[], keyFlash:{}, heardKey:{}, soft:{}, nudge:null };
 
@@ -30,8 +33,7 @@ export function startGame(demo){
   G = { demo, wait: L.wait && !demo, song: songKey(p), meter: S.meter, level: p.sel.level, part: p.sel.part, beat, tol, notes, look,
         time: -Math.max(look, S.meter * beat) - 0.4, lastTickBeat: null, end: notes[notes.length - 1].t + notes[notes.length - 1].d + 0.8,
         score:0, combo:0, bestCombo:0, hits:0, perfect:0, finished:false, waiting:false, resumeIn:0, resumeBeat:null };
-  state = demo ? 'demo' : 'playing'; paused = false;
-  showOnly('#hud'); $('#micPill').hidden = demo || !!dev().touch;
+  $('#micPill').hidden = demo || !!dev().touch;
   updateHud(); requestWake();
 }
 export const nextUnhit = () => G.notes.find(n => !n.hit && !n.missed);
@@ -103,7 +105,7 @@ function updateHud(){
 function finish(){
   if (G.finished) return; G.finished = true;
   if (G.demo){ goHome(); return; }
-  state = 'results';
+  dispatch(E.FINISH);
   const p = P(), total = G.notes.length, o = p.opts;
   const metric = G.wait ? Math.round(G.notes.filter(n => n.hit && !n.wrong).length / total * 100) : Math.round(G.hits / total * 100);
   const stars = metric >= 95 ? 3 : metric >= 80 ? 2 : metric >= 50 ? 1 : 0;
@@ -122,6 +124,7 @@ function finish(){
   if (levelUp) p.sel.level = pr.level;
   save();
   showResults({ p, pr, key, song: G.song, level: G.level, metric, stars, record, levelUp });
+  if (levelUp) dispatch(E.LEVEL_UP);
 }
 
 /* ================= Main loop ================= */
@@ -139,6 +142,10 @@ function step(ts){
     let nt = G.time + dt;
     if (G.wait){ const n = nextUnhit(); G.waiting = !!(n && nt >= n.t); if (G.waiting) nt = n.t; }
     G.time = nt;
+    if (!G.demo){
+      if (is(S.COUNTDOWN) && G.time >= 0) dispatch(E.GO);
+      if (G.waiting !== is(S.WAITING)) dispatch(G.waiting ? E.WAIT : E.NOTE_OK);
+    }
     if (G.time < 0){ const b = Math.floor(G.time / G.beat); if (b !== G.lastTickBeat && -b <= G.meter){ G.lastTickBeat = b; tick(-b === G.meter); } }
     if (G.demo){
       for (const n of G.notes) if (!n.hit && G.time >= n.t){ n.hit = true; tone(n.midi, n.d); fx.keyFlash[n.midi] = { c: PC_COLOR[n.midi % 12], at: performance.now() };
@@ -150,15 +157,15 @@ function step(ts){
   }
   draw(ts / 1000, dt);
 }
-// ES module bindings are read-only for importers: screens change the app state through these setters.
-export function setState(s){ state = s; }
-export function setPaused(v){ paused = v; }
 // Leaves the pause. A timed level that was already running counts the child back in first, so there is
 // time to put the hands back on the keys; the time, notes, score and mode stay as they were.
 // Waiting levels and a pause during the start count-in carry on directly (the start count-in just continues).
+// The navigation machine decides which (Paused -> source state or the resume count-in); returns false outside the pause.
 export const RESUME_BEATS = 3;
 export function resumeGame(){
-  paused = false;
-  if (G && state === 'playing' && !G.wait && G.time >= 0){ G.resumeIn = RESUME_BEATS * G.beat; G.resumeBeat = null; }
+  if (!G || !dispatch(E.RESUME, { timed: !G.wait })) return false;
+  const s = flow.state;
+  if (s.name === S.COUNTDOWN && s.data.kind === 'resume'){ G.resumeIn = RESUME_BEATS * G.beat; G.resumeBeat = null; }
+  return true;
 }
 export function setGame(g){ G = g; }

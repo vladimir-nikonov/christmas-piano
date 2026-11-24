@@ -2,13 +2,14 @@
 
 import { db, save, P } from '../data/storage.js';
 import { $ } from '../dom.js';
+import { S, is } from '../core/flow.js';
 import { state } from '../game/game.js';
 import { LANGS, I18N, detectLang, LANG, tx, useLang } from '../i18n/index.js';
 import { resetHeard } from '../input/mic.js';
 import { invalidateBg } from './canvas.js';
 import { renderHome } from './screens/home.js';
-import { openProfiles, pickTheme, wizAt, wizStep, renderMe } from './screens/profiles.js';
-import { settingsOpen, openSettings } from './screens/settings.js';
+import { renderProfiles, pickTheme, wizAt, wizStep, renderMe } from './screens/profiles.js';
+import { renderSettings } from './screens/settings.js';
 import { THEMES, THEME_KEYS } from './theme-data.js';
 import { updateInputMode } from './inputmode.js';
 import { applyTheme, themePreview } from './theme.js';
@@ -31,8 +32,8 @@ export function setLang(code){
   if (!I18N[code]) return;
   useLang(code); db.lang = code; const p = P(); if (p && state !== 'newp') p.lang = code; save();
   translateDom();
-  if (state === 'home') renderHome(); else if (state === 'profiles') openProfiles(); else if (state === 'newp') wizStep(wizAt); else if (state === 'me') renderMe();
-  if (settingsOpen) openSettings();
+  if (state === 'home') renderHome(); else if (state === 'profiles') renderProfiles(); else if (state === 'newp') wizStep(wizAt); else if (state === 'me') renderMe();
+  if (is(S.SETTINGS)) renderSettings();
   if (!$('#pop').hidden) renderPop();
 }
 export function updateQuick(){

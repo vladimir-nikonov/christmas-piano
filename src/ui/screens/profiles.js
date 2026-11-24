@@ -1,8 +1,8 @@
 // Player list, new player wizard and the child's own page.
 
 import { DEF_OPTS, db, save, P, freshProg } from '../../data/storage.js';
-import { $, showOnly } from '../../dom.js';
-import { setState } from '../../game/game.js';
+import { E, dispatch } from '../../core/flow.js';
+import { $ } from '../../dom.js';
 import { I18N, LANG, tx } from '../../i18n/index.js';
 import { AVATARS, avatarSVG, blockSVG } from '../art.js';
 import { px, invalidateBg } from '../canvas.js';
@@ -12,8 +12,8 @@ import { goHome } from './home.js';
 import { THEMES, THEME_KEYS } from '../theme-data.js';
 import { applyTheme, themePreview } from '../theme.js';
 
-export function openProfiles(){
-  setState('profiles');
+export function openProfiles(){ if (dispatch(E.PROFILES)) renderProfiles(); }
+export function renderProfiles(){
   const box = $('#ptiles'); box.textContent = '';
   db.profiles.forEach(p => {
     const t = THEMES[p.theme], b = document.createElement('button'); b.className = 'b ptile'; b.setAttribute('aria-label', p.name || tx('who'));
@@ -25,17 +25,15 @@ export function openProfiles(){
   });
   const add = document.createElement('button'); add.className = 'b ptile add'; add.setAttribute('aria-label', tx('newPlayer'));
   add.innerHTML = icon('plus'); add.onclick = openNewProfile; box.appendChild(add);
-  showOnly('#profiles');
 }
 export let pickAv = 0, pickTheme = 'pixel', pickName = '', wizAt = 1;
 export function openNewProfile(){
-  setState('newp');
+  if (!dispatch(E.NEW_PLAYER)) return;
   const used = new Set(db.profiles.map(p => p.avatar));
   pickAv = AVATARS.findIndex((_, i) => !used.has(i)); if (pickAv < 0) pickAv = 0;
   pickTheme = 'pixel'; applyTheme(pickTheme);
   $('#newName').value = '';
   wizStep(1);
-  showOnly('#newp');
 }
 export function wizStep(n){
   wizAt = n;
@@ -66,7 +64,7 @@ $('#btnNewBack').onclick = () => { if (wizAt === 2) wizStep(1); else { if (P()) 
 $('#btnWho').onclick = openProfiles;
 
 /* Child's own page: name, avatar, theme. Saved on every tap. */
-export function openMe(){ setState('me'); renderMe(); showOnly('#me'); updateQuick(); }
+export function openMe(){ if (!dispatch(E.ME)) return; renderMe(); updateQuick(); }
 export function renderMe(){
   const p = P(); if (!p) return;
   $('#meAv').innerHTML = avatarSVG(p.avatar, px(96), p.theme);

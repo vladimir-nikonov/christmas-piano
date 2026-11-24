@@ -1,4 +1,6 @@
 stateDiagram-v2
+    %% Implemented in src/core/flow.js; tests/unit/flow.test.js takes every edge below.
+    %% Profiles covers the player list, the new player wizard and the child's page.
     [*] --> Boot
     Boot --> Profiles: No profile
     Boot --> Home: Profile saved

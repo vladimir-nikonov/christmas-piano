@@ -4,7 +4,7 @@ import { LETTERS, NOTE_NATIVE } from '../../core/music.js';
 import { BACKUP_FORMAT, BACKUP_EVERY, parseBackup } from '../../data/backup.js';
 import { db, persisted, normalizeDB, save, askPersist, P, dev, setDB, freshProg, wipeDB } from '../../data/storage.js';
 import { $ } from '../../dom.js';
-import { state } from '../../game/game.js';
+import { E, dispatch } from '../../core/flow.js';
 import { LANGS, LANG, tx, fmtDate } from '../../i18n/index.js';
 import { resetHeard } from '../../input/mic.js';
 import { avatarSVG } from '../art.js';
@@ -13,11 +13,11 @@ import { setLang } from '../lang.js';
 import { goHome } from './home.js';
 import { openMe } from './profiles.js';
 
-/* Parent settings */
-export let settingsOpen = false;
+/* Parent settings: a panel over home (the navigation state Settings) */
 const bindRange = (id, out, get, set, fmt) => { const el = $(id); el.value = get(); $(out).textContent = fmt(+el.value); el.oninput = () => { set(+el.value); $(out).textContent = fmt(+el.value); save(); }; };
-export function openSettings(){
-  const p = P(); settingsOpen = true;
+export function openSettings(){ if (!dispatch(E.SETTINGS)) return false; renderSettings(); return true; }
+export function renderSettings(){
+  const p = P();
   $('#sWho').innerHTML = avatarSVG(p.avatar, 28, p.theme) + '<span></span>'; $('#sWho').lastChild.textContent = p.name || tx('noName');
   bindRange('#sTempo', '#oTempo', () => p.opts.tempo, v => p.opts.tempo = v, v => v + '%');
   bindRange('#sTol', '#oTol', () => p.opts.tolMs, v => p.opts.tolMs = v, v => v ? '±' + v + ' ' + tx('ms') : tx('sTolLevel'));
@@ -32,9 +32,8 @@ export function openSettings(){
   [['#sHint','hint'],['#sOct','anyOct'],['#sLock','lockLevels']].forEach(([id, k]) => { $(id).checked = !!p.opts[k]; $(id).onchange = e => { p.opts[k] = e.target.checked; save(); }; });
   $('#sTouch').checked = dev().touch; $('#sTouch').onchange = e => setScreenInput(e.target.checked);
   armButton('#btnReset', tx('sReset'), () => { p.level = 0; p.streak = 0; p.prog = freshProg(); p.best = {}; p.hist = {}; p.top = {}; p.sel.level = 0; save(); });
-  armButton('#btnDelete', tx('sDelete'), () => { db.profiles = db.profiles.filter(x => x.id !== p.id); db.current = db.profiles[0] ? db.profiles[0].id : null; save(); $('#settings').hidden = true; goHome(); });
+  armButton('#btnDelete', tx('sDelete'), () => { db.profiles = db.profiles.filter(x => x.id !== p.id); db.current = db.profiles[0] ? db.profiles[0].id : null; save(); goHome(); });
   renderBackupInfo(); $('#restoreAsk').hidden = true; $('#wipeAsk').hidden = true;
-  $('#settings').hidden = false;
 }
 /* Backup: export / import JSON, weekly reminder */
 function renderBackupInfo(){
@@ -82,9 +81,9 @@ $('#btnRestoreYes').onclick = async () => {
   setDB(normalizeDB({ profiles: pendingRestore.profiles, current: pendingRestore.current, device: keepDevice, backupAt: Date.now(), remindFrom: keepRemind || Date.now() }));
   pendingRestore = null; $('#restoreAsk').hidden = true;
   await save();
-  $('#settings').hidden = true; goHome();
+  goHome();
 };
-$('#btnBackupNag').onclick = () => { openSettings(); const r = $('#btnBackup'); if (r && r.scrollIntoView) r.scrollIntoView({ block: 'center' }); };
+$('#btnBackupNag').onclick = () => { if (!openSettings()) return; const r = $('#btnBackup'); if (r && r.scrollIntoView) r.scrollIntoView({ block: 'center' }); };
 function armButton(sel, label, action){
   const b = $(sel); let armed = false, tm = 0; b.textContent = label;
   b.onclick = () => { if (!armed){ armed = true; b.textContent = tx('sConfirm'); tm = setTimeout(() => { armed = false; b.textContent = label; }, 3000); return; }
@@ -103,6 +102,6 @@ $('#btnWipeYes').onclick = async () => {
   await wipeDB();
   location.reload();
 };
-$('#btnKidPage').onclick = () => { settingsOpen = false; $('#settings').hidden = true; openMe(); };
-$('#btnSettings').onclick = () => { openSettings(); $('#settings').scrollTop = 0; };
-$('#btnSetClose').onclick = () => { settingsOpen = false; $('#settings').hidden = true; if (state === 'home') goHome(); };
+$('#btnKidPage').onclick = openMe;
+$('#btnSettings').onclick = () => { if (openSettings()) $('#settings').scrollTop = 0; };
+$('#btnSetClose').onclick = goHome;

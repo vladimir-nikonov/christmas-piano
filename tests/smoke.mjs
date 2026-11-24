@@ -168,6 +168,7 @@ try {
   const rUp = await resultsButtons();
   assert.deepEqual(rUp.primaries, ['btnMain']);
   assert.equal(rUp.go, 'next');
+  assert.ok(['levelUp', 'results'].includes(await sn(() => window.__sn.nav)), 'a new level: LevelUp, then Results');
   assert.deepEqual([rUp.again, rUp.next, rUp.levelUp], [true, false, true]);
   assert.equal(await page.locator('#btnMain').getAttribute('aria-label'), 'Play the new level');
   assert.deepEqual(rUp.x, r3.x, 'Home, Replay and the primary keep their slots');
@@ -178,6 +179,7 @@ try {
   await page.click('#btnAgain');
   await waitAtNextNote();
   assert.equal(await sn(() => window.__sn.focus.midi === window.__sn.game.notes[0].midi), true, 'waiting focuses the expected note');
+  assert.equal(await sn(() => window.__sn.nav), 'waiting', 'the navigation machine is in Waiting');
   await sn(() => { const n = window.__sn.game.notes[0]; window.__sn.onPlayed(n.midi + 2); });
   assert.equal(await sn(() => window.__sn.game.notes[0].wrong), 1);
   assert.equal(await sn(() => window.__sn.fx.pops.some(p => p.icon === 'cross')), false, 'a wrong note shows no cross');
@@ -222,6 +224,7 @@ try {
   await page.goBack();
   await visible('#pause');
   assert.equal(await sn(() => window.__sn.paused), true);
+  assert.equal(await sn(() => window.__sn.nav), 'paused');
   assert.equal(page.url(), appUrl);
   await page.goBack();
   await visible('#home');
@@ -381,12 +384,14 @@ try {
   assert.deepEqual(await snap(), before, 'nothing moves in pause');
   await page.click('#btnResume');
   assert.ok(await sn(() => window.__sn.game.resumeIn > 0), 'count-in after resume');
+  assert.equal(await sn(() => window.__sn.nav), 'countdown', 'the resume count-in is a Countdown');
   await page.waitForTimeout(150);
   assert.deepEqual(await snap(), before, 'the clock waits for the count-in');
   await page.click('#btnPause');
   await page.click('#btnResume');
   assert.ok(await sn(() => window.__sn.game.resumeIn > 0), 'a pause during the count-in resumes into the count-in');
   await page.waitForFunction(() => window.__sn.game.resumeIn === 0, null, { timeout: 10000 });
+  await page.waitForFunction(() => window.__sn.nav === 'playing');
   await page.waitForFunction(t => window.__sn.game.time > t, before.time);
   await page.locator('#results').waitFor({ state: 'visible', timeout: 30000 });
   assert.equal(await page.locator('#resPct').textContent(), '0%');
@@ -468,6 +473,7 @@ try {
     await dp.click('#btnPlay');
     await dp.locator('#micErr').waitFor({ state: 'visible', timeout: 5000 });
     assert.equal(await dsn(() => window.__sn.state), 'home', 'the game does not start without the microphone');
+    assert.equal(await dsn(() => window.__sn.nav), 'micSetup');
     assert.equal(await dp.locator('#micHint').getAttribute('data-t'), 'micDenied');
     assert.ok(await dp.locator('#btnMicRetry').isVisible());
     assert.ok(await dp.locator('#btnMicTouch').isVisible());

@@ -2,7 +2,7 @@
 
 import { LEVELS } from '../../core/levels.js';
 import { unlocked } from '../../data/storage.js';
-import { $, showOnly } from '../../dom.js';
+import { $ } from '../../dom.js';
 import { burst, keyFor, G } from '../../game/game.js';
 import { tx } from '../../i18n/index.js';
 import { blockSVG } from '../art.js';
@@ -41,7 +41,6 @@ export function showResults({ p, pr, key, song, level, metric, stars, record, le
   main.dataset.go = act.main; main.dataset.ta = ta; main.setAttribute('aria-label', tx(ta));
   main.classList.toggle('lvl', act.main === 'next');
   main.innerHTML = act.main === 'next' ? '<span class="blk">' + blockSVG(level + 1) + '</span>' + icon('play', { fill: true }) : icon('retry');
-  showOnly('#results');
   if (stars && !calm) celebrate();
 }
 

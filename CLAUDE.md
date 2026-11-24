@@ -9,12 +9,12 @@ The app is vanilla JS in native ES modules with no build step: `index.html` hold
 ```
 index.html               markup of all screens
 src/main.js              entry point: wiring and startup
-src/core/                pure logic and data, no DOM: songs, levels, note names, pitch detection
+src/core/                pure logic and data, no DOM: songs, levels, note names, pitch detection, navigation state machine (flow.js)
 src/data/                storage (IndexedDB + localStorage fallback) and backup files
 src/game/                game session: timing, judging notes, score, main loop
 src/input/               microphone and touch input; both call onPlayed(midi, atMs, source)
 src/audio/               sound output: tones and metronome
-src/ui/                  canvas drawing, themes, icons, art, language picker
+src/ui/                  canvas drawing, themes, icons, art, language picker; nav.js maps the navigation state to screens
 src/ui/screens/          home, players, results, parent settings
 src/i18n/                UI strings, one file per language
 src/platform/            browser APIs that differ per platform (wake lock)
