@@ -132,6 +132,11 @@ try {
   log('data survives a reload (IndexedDB)');
   await page.reload();
   await visible('#home');
+  log('splash shows the theme mascots for a returning player and closes on tap');
+  await visible('#splash');
+  assert.equal(await page.locator('#splash .sp-cast svg.av').count(), 3);
+  await page.click('#splash');
+  await page.locator('#splash').waitFor({ state: 'hidden', timeout: 5000 });
   assert.equal(await sn(() => window.__sn.storeKind), 'IndexedDB');
   assert.equal(await sn(() => window.__sn.db.profiles[0].best['0:short']), 3);
   assert.equal(await page.title(), 'Снежные ноты');

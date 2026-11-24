@@ -17,7 +17,7 @@ export let settingsOpen = false;
 const bindRange = (id, out, get, set, fmt) => { const el = $(id); el.value = get(); $(out).textContent = fmt(+el.value); el.oninput = () => { set(+el.value); $(out).textContent = fmt(+el.value); save(); }; };
 export function openSettings(){
   const p = P(); settingsOpen = true;
-  $('#sWho').innerHTML = avatarSVG(p.avatar, 28) + '<span></span>'; $('#sWho').lastChild.textContent = p.name || tx('noName');
+  $('#sWho').innerHTML = avatarSVG(p.avatar, 28, p.theme) + '<span></span>'; $('#sWho').lastChild.textContent = p.name || tx('noName');
   bindRange('#sTempo', '#oTempo', () => p.opts.tempo, v => p.opts.tempo = v, v => v + '%');
   bindRange('#sTol', '#oTol', () => p.opts.tolMs, v => p.opts.tolMs = v, v => v ? '±' + v + ' ' + tx('ms') : tx('sTolLevel'));
   bindRange('#sLat', '#oLat', () => dev().latency, v => dev().latency = v, v => v + ' ' + tx('ms'));

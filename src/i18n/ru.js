@@ -94,4 +94,5 @@ export default {
   noName: 'без имени',
   restoreQ: 'Игроков в файле: {n} ({names}){date}. Заменить ими всех игроков на этом устройстве?',
   restoreDate: ' — копия от {d}',
+  tapToStart: 'Нажми, чтобы начать',
 };

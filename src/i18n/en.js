@@ -94,4 +94,5 @@ export default {
   noName: 'no name',
   restoreQ: 'Players in the file: {n} ({names}){date}. Replace all players on this device with them?',
   restoreDate: ', backup from {d}',
+  tapToStart: 'Tap to start',
 };

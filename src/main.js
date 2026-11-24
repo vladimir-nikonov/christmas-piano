@@ -9,6 +9,7 @@ import { hydrateIcons } from './ui/icons.js';
 import { translateDom } from './ui/lang.js';
 import { renderHome, goHome } from './ui/screens/home.js';
 import { openProfiles, wizAt, wizStep, renderMe } from './ui/screens/profiles.js';
+import { showSplash } from './ui/splash.js';
 // Modules that only attach event handlers when loaded:
 import './input/touch.js';
 import './ui/screens/settings.js';
@@ -23,7 +24,7 @@ layout();
 hydrateIcons();
 useLang(detectLang()); translateDom();
 askPersist();
-loadDB().catch(() => {}).then(goHome);
+loadDB().catch(() => {}).then(() => { goHome(); if (db.profiles.length) showSplash(); });
 requestAnimationFrame(frame);
 if (document.fonts) document.fonts.ready.then(() => invalidateBg());
 
