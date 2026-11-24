@@ -1,5 +1,5 @@
-# Публикует сайт на GitHub Pages при каждом пуше в main.
-# Запустить вручную: вкладка Actions → «Deploy to GitHub Pages» → Run workflow.
+# Publishes the site to GitHub Pages on every push to main.
+# Manual run: Actions tab → "Deploy to GitHub Pages" → Run workflow.
 name: Deploy to GitHub Pages
 
 on:
@@ -12,7 +12,7 @@ permissions:
   pages: write
   id-token: write
 
-# Один деплой за раз; более свежий пуш отменяет ещё не начавшийся старый.
+# One deployment at a time; a newer push replaces an older one that has not started yet.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -24,19 +24,19 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      # На сайт уходит только само приложение, без скриншотов и служебных файлов.
+      # Only the app itself goes to the site, without screenshots or repo files.
       - name: Assemble site
         run: |
           mkdir -p _site
           cp index.html _site/
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
