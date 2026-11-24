@@ -245,7 +245,7 @@ try {
   await sn(() => { const el = document.querySelector('#sTempo'); el.value = 130; el.dispatchEvent(new Event('input')); });
   assert.equal(await sn(() => window.__sn.db.profiles[0].opts.tempo), 130);
   await page.click('#btnSetClose');
-  await page.locator('#levels button').nth(1).click();
+  await page.locator('#levels button').nth(1).click({ force: true });   // the current level tile bobs, so it is never "stable"
   await page.click('#btnSettings');
   await page.click('#btnSetClose');
   assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 1, 'a level picked by hand survives closing settings');
@@ -262,7 +262,7 @@ try {
   assert.equal(r0.x.home, r3.x.home);
   await page.click('#btnHome');
   await visible('#home');
-  assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 0, 'back home after a game selects the current level');
+  assert.equal(await sn(() => { const p = window.__sn.db.profiles[0]; return p.sel.level === p.prog.jingle.level; }), true, 'back home after a game selects the current level');
 
   log('portrait layout');
   await page.setViewportSize({ width: 800, height: 1280 });
