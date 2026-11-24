@@ -19,7 +19,6 @@ import { TH } from '../ui/theme.js';
 export let state = 'home', paused = false, G = null;
 // soft: key -> time of a wrong note on it (gentle wobble, no red); nudge: the expected key/lane pulses once more after a wrong note.
 export const fx = { parts:[], pops:[], keyFlash:{}, heardKey:{}, soft:{}, nudge:null };
-export const flakes = Array.from({ length: 60 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.6 + 0.8, s: Math.random() * 0.03 + 0.01, d: Math.random() * 6 }));
 
 export function startGame(demo){
   const p = P(), o = p.opts, L = LEVELS[p.sel.level], S = SONGS[songKey(p)];
@@ -80,7 +79,15 @@ export function burst(x, y, c, n){
   // Reduced motion: one short glow that fades in place instead of flying particles.
   if (reducedMotion){ fx.parts.push({ kind:'glow', x, y, c, life:0.3, age:0, r: (n >= 20 ? 70 : 54) * U }); return; }
   const kind = TH.fx;
-  if (kind === 'ring'){ fx.parts.push({ kind:'ring', x, y, c, life:0.28, age:0, r: 10 * U }); n = Math.round(n / 2); }
+  // One theme-specific shape on top of the particles: square shockwave, soft pop, frost hexagon, magic ring with stars
+  const big = n >= 20;
+  if (kind === 'squares') fx.parts.push({ kind:'sqring', x, y, c, life:0.25, age:0, r: (big ? 14 : 10) * U });
+  else if (kind === 'bubbles') fx.parts.push({ kind:'pop', x, y, c, life:0.3, age:0, r: (big ? 40 : 30) * U });
+  else if (kind === 'snow') fx.parts.push({ kind:'frost', x, y, c, life:0.35, age:0, r: (big ? 16 : 12) * U, rot: Math.random() });
+  if (kind === 'ring'){ fx.parts.push({ kind:'ring', x, y, c, life:0.28, age:0, r: 10 * U });
+    for (let i = 0; i < (big ? 6 : 4); i++){ const a = -Math.PI * (0.15 + 0.7 * Math.random()), v = (140 + Math.random() * 160) * U;
+      fx.parts.push({ kind:'star', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, c, life: 0.45 + Math.random() * 0.2, age: 0, r: (6 + Math.random() * 4) * U }); }
+    n = Math.round(n / 2); }
   for (let i = 0; i < n; i++){
     const a = Math.random() * Math.PI - Math.PI, v = (kind === 'bubbles' ? 60 : 120) + Math.random() * (kind === 'bubbles' ? 120 : 260);
     fx.parts.push({ kind, x, y, vx: Math.cos(a) * v * U, vy: Math.sin(a) * v * U, c, life: ({ squares:.25, bubbles:.3, snow:.35, ring:.28 }[kind] || .3) + Math.random() * 0.35, age: 0, r: (3 + Math.random() * 3) * U });

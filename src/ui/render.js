@@ -3,10 +3,11 @@
 import { letterFor } from '../core/keymap.js';
 import { PC_COLOR } from '../core/music.js';
 import { opts } from '../data/storage.js';
-import { state, G, fx, flakes, nextUnhit, keyFor } from '../game/game.js';
+import { state, G, fx, nextUnhit, keyFor } from '../game/game.js';
 import { ctx, W, H, DPR, U, LO, HI, isBlack, keys, kbTop, kbH, hitY, topY, bgCache, setBgCache } from './canvas.js';
 import { ICON } from './icons.js';
 import { reducedMotion } from './motion.js';
+import { paintScene, drawAmbient, drawHitLine } from './scene.js';
 import { noteName } from './labels.js';
 import { TH, THK } from './theme.js';
 
@@ -100,7 +101,7 @@ function background(){
   const c = document.createElement('canvas'); c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
   const x = c.getContext('2d'); x.scale(DPR, DPR);
   x.fillStyle = TH.bg; x.fillRect(0, 0, W, H);
-  if (TH.decor === 'glow'){ const g = x.createRadialGradient(W / 2, -H * 0.1, 0, W / 2, -H * 0.1, Math.max(W, H) * 0.8); g.addColorStop(0, TH.border + 'aa'); g.addColorStop(1, TH.bg + '00'); x.fillStyle = g; x.fillRect(0, 0, W, H); }
+  paintScene(x, THK, TH, W, H, hitY, U);
   for (let m = LO; m <= HI; m++){ const k = keys[m]; if (!k.black){ x.fillStyle = 'rgba(255,255,255,.03)'; x.fillRect(k.x + 2, 0, k.w - 4, hitY); } }
   setBgCache({ w: W, h: H, t: TH, c }); return c;
 }
@@ -138,9 +139,7 @@ export const drawn = { flakes: 0, particles: 0, glows: 0 };
 export function draw(now, dt){
   ctx.drawImage(background(), 0, 0, W, H);
   drawn.flakes = drawn.particles = drawn.glows = 0;
-  if (TH.decor !== 'glow' && !reducedMotion){ drawn.flakes = flakes.length; ctx.fillStyle = 'rgba(255,255,255,.45)';
-    for (const f of flakes){ f.y += f.s * dt * 3; if (f.y > 1) f.y = 0; const x = (f.x + Math.sin(now * 0.4 + f.d) * 0.01) * W, y = f.y * kbTop, r = f.r * U * 1.4;
-      if (TH.decor === 'dots') ctx.fillRect(Math.round(x), Math.round(y), Math.round(r * 2), Math.round(r * 2)); else { ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); } } }
+  if (!reducedMotion) drawn.flakes = drawAmbient(ctx, THK, TH, now, dt, W, hitY, U);
   const o = opts(), pps = G ? (hitY - topY) / G.look : 1, rad = Math.min(TH.radius, 16) * U;
   ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hitY + 2); ctx.clip();
   updateFocus();
@@ -177,7 +176,7 @@ export function draw(now, dt){
     }
   }
   ctx.restore();
-  ctx.fillStyle = TH.reward; ctx.shadowColor = TH.reward; ctx.shadowBlur = 12; ctx.fillRect(0, hitY - 3 * U, W, 6 * U); ctx.shadowBlur = 0;
+  drawHitLine(ctx, THK, TH, reducedMotion ? 0 : now, W, hitY, U);
   drawKeyboard(now);
   for (let i = fx.parts.length - 1; i >= 0; i--){ const p = fx.parts[i]; p.age += dt; if (p.age > p.life){ fx.parts.splice(i, 1); continue; }
     ctx.globalAlpha = 1 - p.age / p.life;
@@ -185,10 +184,22 @@ export function draw(now, dt){
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); continue; }
     drawn.particles++;
     if (p.kind === 'ring'){ ctx.strokeStyle = p.c; ctx.lineWidth = 4 * U; ctx.beginPath(); ctx.arc(p.x, p.y, p.r + (p.age / p.life) * 70 * U, 0, 7); ctx.stroke(); continue; }
+    const t = p.age / p.life;
+    if (p.kind === 'sqring'){ const r = Math.round(p.r + t * 60 * U), lw = Math.max(2, Math.round(5 * U)); ctx.fillStyle = p.c;
+      ctx.fillRect(Math.round(p.x - r), Math.round(p.y - r), r * 2, lw); ctx.fillRect(Math.round(p.x - r), Math.round(p.y + r - lw), r * 2, lw);
+      ctx.fillRect(Math.round(p.x - r), Math.round(p.y - r), lw, r * 2); ctx.fillRect(Math.round(p.x + r - lw), Math.round(p.y - r), lw, r * 2); continue; }
+    if (p.kind === 'pop'){ const r = p.r * (0.4 + 0.9 * t); ctx.globalAlpha = (1 - t) * 0.45; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7); ctx.fill();
+      ctx.globalAlpha = 1 - t; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3 * U; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7); ctx.stroke(); continue; }
+    if (p.kind === 'frost'){ const r = p.r + t * 56 * U, a0 = p.rot + t * 0.8; ctx.strokeStyle = '#e6fbff'; ctx.lineWidth = 2.5 * U; ctx.beginPath();
+      for (let j = 0; j <= 6; j++){ const a = a0 + j * Math.PI / 3; if (j) ctx.lineTo(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r); else ctx.moveTo(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r); }
+      for (let j = 0; j < 6; j++){ const a = a0 + j * Math.PI / 3; ctx.moveTo(p.x + Math.cos(a) * r * 0.55, p.y + Math.sin(a) * r * 0.55); ctx.lineTo(p.x + Math.cos(a) * r * 0.85, p.y + Math.sin(a) * r * 0.85); }
+      ctx.stroke(); continue; }
+    if (p.kind === 'star'){ p.vy += 260 * dt * U; p.x += p.vx * dt; p.y += p.vy * dt; sparkle(p.x, p.y, p.r * (1 - t * 0.5), Math.floor(p.age * 12) % 2 ? '#fff' : TH.reward); continue; }
     if (p.kind === 'bubbles') p.vy -= 200 * dt * U; else p.vy += 420 * dt * U;
     p.x += p.vx * dt; p.y += p.vy * dt;
     if (p.kind === 'squares'){ ctx.fillStyle = p.c; ctx.fillRect(Math.round(p.x), Math.round(p.y), Math.round(p.r), Math.round(p.r)); }
-    else if (p.kind === 'bubbles'){ ctx.strokeStyle = p.c; ctx.lineWidth = 2 * U; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 1.4, 0, 7); ctx.stroke(); }
+    else if (p.kind === 'bubbles'){ ctx.strokeStyle = p.c; ctx.lineWidth = 2 * U; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 1.4, 0, 7); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.arc(p.x - p.r * 0.5, p.y - p.r * 0.5, p.r * 0.35, 0, 7); ctx.fill(); }
     else if (p.kind === 'snow'){ ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.6 * U; const r = p.r; ctx.beginPath(); for (let j = 0; j < 3; j++){ const an = j * Math.PI / 3; ctx.moveTo(p.x - Math.cos(an) * r, p.y - Math.sin(an) * r); ctx.lineTo(p.x + Math.cos(an) * r, p.y + Math.sin(an) * r); } ctx.stroke(); }
     else { ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 0.7, 0, 7); ctx.fill(); }
   }
