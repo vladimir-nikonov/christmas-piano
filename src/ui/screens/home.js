@@ -24,7 +24,7 @@ let homePick = null;
 const starRow = on => [0,1,2].map(i => icon('star', { fill: i < on, cls: i < on ? '' : 'off' })).join('');
 export function renderHome(){
   const p = P(); applyTheme(p.theme); updateQuick();
-  $('#btnWho').innerHTML = avatarSVG(p.avatar, px(50)) + '<span class="nm"></span>'; $('#btnWho .nm').textContent = p.name || '';
+  $('#btnWho').innerHTML = avatarSVG(p.avatar, px(50), p.theme) + '<span class="nm"></span>'; $('#btnWho .nm').textContent = p.name || '';
   if (!unlocked(p, p.sel.level)) p.sel.level = prog(p).level;
   const songs = $('#songs'); songs.textContent = '';
   SONG_KEYS.forEach(k => {

@@ -45,7 +45,7 @@ export function wizStep(n){
   if (n === 1){
     const box = $('#avpick'); box.textContent = '';
     AVATARS.forEach((_, i) => { const b = document.createElement('button'); b.className = 'b' + (i === pickAv ? ' on' : ''); b.setAttribute('aria-pressed', i === pickAv); b.setAttribute('aria-label', tx('avatar') + ' ' + (i + 1));
-      b.innerHTML = avatarSVG(i, px(84));
+      b.innerHTML = avatarSVG(i, px(84), pickTheme);
       b.onclick = () => { pickAv = i; box.querySelectorAll('button').forEach((x, j) => { x.setAttribute('aria-pressed', j === i); x.classList.toggle('on', j === i); }); }; box.appendChild(b); });
   } else {
     const box = $('#themePick'); box.textContent = '';
@@ -69,12 +69,12 @@ $('#btnWho').onclick = openProfiles;
 export function openMe(){ setState('me'); renderMe(); showOnly('#me'); updateQuick(); }
 export function renderMe(){
   const p = P(); if (!p) return;
-  $('#meAv').innerHTML = avatarSVG(p.avatar, px(96));
+  $('#meAv').innerHTML = avatarSVG(p.avatar, px(96), p.theme);
   const nm = $('#meName'); if (document.activeElement !== nm) nm.value = p.name || '';
   nm.oninput = () => { p.name = nm.value.trim(); save(); };
   const av = $('#meAvPick'); av.textContent = '';
   AVATARS.forEach((_, i) => { const b = document.createElement('button'); b.className = 'b' + (i === p.avatar ? ' on' : ''); b.setAttribute('aria-pressed', i === p.avatar); b.setAttribute('aria-label', tx('avatar') + ' ' + (i + 1));
-    b.innerHTML = avatarSVG(i, px(72)); b.onclick = () => { p.avatar = i; save(); renderMe(); }; av.appendChild(b); });
+    b.innerHTML = avatarSVG(i, px(72), p.theme); b.onclick = () => { p.avatar = i; save(); renderMe(); }; av.appendChild(b); });
   const box = $('#meThemes'); box.textContent = '';
   THEME_KEYS.forEach(k => { const t = THEMES[k], b = document.createElement('button'); b.className = 'b tcard'; b.setAttribute('aria-pressed', k === p.theme); b.setAttribute('aria-label', tx('theme') + ' ' + t.name);
     b.style.background = t.panel; b.style.borderColor = t.border; b.style.color = t.text; b.style.borderRadius = t.radius + 'px'; b.style.fontFamily = t.font + ', system-ui, sans-serif'; b.style.boxShadow = '0 ' + px(5) + 'px 0 ' + t.accentDark;

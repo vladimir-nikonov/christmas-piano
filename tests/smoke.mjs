@@ -355,6 +355,8 @@ try {
   await page.locator('#popThemes button').nth(2).click();
   assert.equal(await sn(() => document.documentElement.dataset.theme), await sn(() => window.__sn.db.profiles[0].theme));
   assert.notEqual(await sn(() => window.__sn.db.profiles[0].theme), 'pixel');
+  const avTheme = sel => sn(s => [...document.querySelectorAll(s + ' svg.av')].map(e => e.getAttribute('class')).join(), sel);
+  assert.equal(await avTheme('#btnWho'), 'av av-' + await sn(() => window.__sn.db.profiles[0].theme), 'the player button shows the avatar in the new theme');
   await page.click('#btnPopClose');
 
   log('timed level: unplayed notes are missed and the result is kept in the history');
