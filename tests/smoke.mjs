@@ -58,7 +58,7 @@ try {
   assert.ok(await page.locator('#songs button').count() >= 2);
 
   log('home: one primary button, the current level is marked and selected');
-  assert.equal(await page.locator('#home .b.primary').count(), 1);
+  assert.equal(await page.locator('#home .b.primary:visible').count(), 1);   // the hidden mic state has its own Try again
   assert.equal(await page.locator('#levels .tile.cur').count(), 1);
   assert.equal(await page.locator('#levels .tile').nth(0).getAttribute('data-current'), '1');
   assert.equal(await page.locator('#levels .tile').nth(0).getAttribute('aria-pressed'), 'true');
