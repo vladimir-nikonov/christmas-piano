@@ -68,6 +68,10 @@ Several sessions often work on the same files at the same time. To keep them fro
 
 A feature is done only once it is committed and merged into `main`. Uncommitted changes in the main folder, or a branch not merged into `main`, are unfinished work.
 
+## UX spec
+
+The target UX, the acceptance checklist and the audit brief are in `docs/ux/` (start with `docs/ux/README.md`). UX changes are tracked as GitHub issues labelled `ux`; check a change against `docs/ux/UX-SPEC.md` and `docs/ux/ACCEPTANCE.md`.
+
 ## What must not break
 
 - The kids' data is stored in IndexedDB (`snezhnye-noty`, key `db`), with localStorage `snezhnye-noty-v2` as a fallback. When changing the data format, keep compatibility with old records and with backup files (`format: "snezhnye-noty-backup"`).

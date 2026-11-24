@@ -1,0 +1,29 @@
+stateDiagram-v2
+    [*] --> Boot
+    Boot --> Profiles: No profile
+    Boot --> Home: Profile saved
+    Profiles --> Home: Player chosen
+    Home --> Profiles: Avatar
+    Home --> Settings: Settings
+    Settings --> Home: Close
+    Home --> Preview: Listen
+    Preview --> Home: End or stop
+    Home --> MicSetup: Play, microphone not ready
+    MicSetup --> Home: Cancel
+    MicSetup --> Countdown: Microphone ready
+    Home --> Countdown: Play, microphone ready
+    Countdown --> Playing
+    Playing --> Waiting: Note needed
+    Waiting --> Playing: Right note
+    Playing --> Paused
+    Waiting --> Paused
+    Countdown --> Paused
+    Paused --> Playing: Back to the game
+    Paused --> Waiting: Back to waiting
+    Paused --> Countdown: Replay or back to the countdown
+    Paused --> Home: Exit
+    Playing --> Results: Song finished
+    Results --> LevelUp: Level opened
+    LevelUp --> Results: Reward shown
+    Results --> Countdown: Continue or replay
+    Results --> Home
