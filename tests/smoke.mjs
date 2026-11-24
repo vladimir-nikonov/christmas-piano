@@ -196,6 +196,7 @@ try {
     else { const p = await sn(mm => window.__sn.keyPoint(mm), m); await page.mouse.click(p.x, p.y); }
     await page.waitForFunction(k => window.__sn.game.notes[k].hit, i, { timeout: 2000 });
   }
+  assert.equal(await page.locator('#hud .qfull svg').count(), 1, 'full-screen button in the game HUD');
   await page.keyboard.press('Escape');
   await visible('#pause');
   log('switch to the microphone from the pause menu and back');
@@ -206,9 +207,9 @@ try {
   await page.click('#btnResume');
   await page.click('#btnPause');
   await visible('#pause');
-  assert.ok(await page.locator('#pause .qfull svg').count() === 1, 'full-screen button in the pause menu');
+  assert.equal(await page.locator('#pause .qfull').count(), 0, 'full screen lives in the HUD, not the pause menu');
   assert.equal(await page.locator('#pause .qlang, #pause .qtheme').count(), 0, 'no language/theme buttons in the pause menu');
-  assert.equal(await page.locator('#pause button:visible').count(), 5, 'pause: resume, replay, home, input mode and full screen only');
+  assert.equal(await page.locator('#pause button:visible').count(), 4, 'pause: resume, replay, home and input mode only');
   log('pause menu and HUD fit every tablet viewport');
   await checkLayout('#pause', '#hud');
   await page.click('#btnQuit');

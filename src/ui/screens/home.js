@@ -147,7 +147,7 @@ const toggleFull = () => {
     if (pr && pr.catch) pr.catch(() => {});
   } catch(e){}
 };
-// The full-screen buttons (home and pause menu) double as exit buttons while the app is in full screen
+// The full-screen buttons (home corner and game HUD) double as exit buttons while the app is in full screen
 document.querySelectorAll('.qfull').forEach(b => b.onclick = toggleFull);
 let wasFull = false;
 function syncFull(){
