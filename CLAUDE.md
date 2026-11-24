@@ -1,40 +1,42 @@
-# Разработка «Снежных нот»
+# Developing Snezhnye Noty
 
-Всё приложение — один файл `index.html` (vanilla JS, без сборки). Сайт публикуется на GitHub Pages workflow-ом `.github/workflows/pages.yml`: каждый пуш в `main` автоматически деплоит `index.html`, поэтому всё, что попало в `main` и запушено, через минуту уходит детям на планшет. Статус деплоя — вкладка Actions; повторить деплой вручную — `gh workflow run pages.yml`.
+The repository's working language is English: documentation, instructions, commit messages and code comments are written in English. Only the app's user-facing UI text stays in Russian.
 
-## Каждая фича — в своём worktree
+The whole app is a single `index.html` file (vanilla JS, no build step). The site is published to GitHub Pages by the `.github/workflows/pages.yml` workflow: every push to `main` deploys `index.html` automatically, so anything merged into `main` and pushed reaches the kids' tablet within a minute. Deployment status is in the Actions tab; to redeploy manually, run `gh workflow run pages.yml`.
 
-Над одним `index.html` часто работают несколько сессий одновременно. Чтобы они не затирали правки друг друга, в основной папке (`main`) напрямую не разрабатываем.
+## One worktree per feature
 
-1. Создать ветку и worktree от свежего `main`:
+Several sessions often work on the same `index.html` at the same time. To keep them from overwriting each other's changes, never develop directly in the main folder (`main`).
+
+1. Create a branch and a worktree from a fresh `main`:
    ```bash
    git switch main && git pull
-   git worktree add ../christmas_piano-<фича> -b feature/<фича> main
+   git worktree add ../christmas_piano-<feature> -b feature/<feature> main
    ```
-   Дальше вся работа идёт только в `../christmas_piano-<фича>`.
-2. Сделать фичу и проверить её в браузере, например в headless Chrome через playwright-core. Открывать `index.html` из папки worktree.
-3. Закоммитить в ветку фичи. Коммит должен содержать только файлы этой фичи.
-4. Подтянуть свежий `main` и разрешить конфликты в ветке фичи, а не в `main`:
+   From then on, all work happens only in `../christmas_piano-<feature>`.
+2. Build the feature and check it in a browser, for example in headless Chrome via playwright-core. Open `index.html` from the worktree folder.
+3. Commit to the feature branch. The commit must contain only this feature's files.
+4. Pull the latest `main` and resolve conflicts in the feature branch, not in `main`:
    ```bash
    git fetch origin && git rebase origin/main
    ```
-   После rebase ещё раз быстро проверить, что страница открывается без ошибок.
-5. Влить в `main` и запушить (из основной папки):
+   After the rebase, quickly check again that the page opens without errors.
+5. Merge into `main` and push (from the main folder):
    ```bash
    git switch main && git pull
-   git merge --ff-only feature/<фича>
+   git merge --ff-only feature/<feature>
    git push origin main
    ```
-   Если `--ff-only` не проходит, значит `main` ушёл вперёд: вернуться к шагу 4.
-6. Убрать worktree и ветку:
+   If `--ff-only` fails, `main` has moved ahead: go back to step 4.
+6. Remove the worktree and the branch:
    ```bash
-   git worktree remove ../christmas_piano-<фича>
-   git branch -d feature/<фича>
+   git worktree remove ../christmas_piano-<feature>
+   git branch -d feature/<feature>
    ```
 
-Фича считается готовой только после коммита и мерджа в `main`. Незакоммиченные правки в основной папке или ветка, не влитая в `main`, — это незаконченная работа.
+A feature is done only once it is committed and merged into `main`. Uncommitted changes in the main folder, or a branch not merged into `main`, are unfinished work.
 
-## Что важно не сломать
+## What must not break
 
-- Данные детей хранятся в IndexedDB (`snezhnye-noty`, ключ `db`), запасной вариант — localStorage `snezhnye-noty-v2`. Меняя формат данных, сохраняйте совместимость со старыми записями и с файлами резервной копии (`format: "snezhnye-noty-backup"`).
-- Целевое устройство: Huawei MatePad 11, Chrome или Huawei Browser, сервисов Google может не быть.
+- The kids' data is stored in IndexedDB (`snezhnye-noty`, key `db`), with localStorage `snezhnye-noty-v2` as a fallback. When changing the data format, keep compatibility with old records and with backup files (`format: "snezhnye-noty-backup"`).
+- Target device: Huawei MatePad 11, Chrome or Huawei Browser; Google services may be unavailable.

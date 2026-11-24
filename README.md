@@ -1,9 +1,13 @@
-# Снежные ноты
+# Snezhnye Noty (Snowy Notes)
 
-Тренажёр для синтезатора: ноты падают на клавиши, микрофон слушает и засчитывает попадания. Мелодия Jingle Bells, 5 уровней (от «нота ждёт» до оригинального темпа), профили детей, прогресс хранится в браузере.
+A keyboard/synthesizer trainer: notes fall onto the keys, the microphone listens and counts the hits. The melody is Jingle Bells, with 5 levels (from "the note waits for you" to the original tempo), per-child profiles, and progress saved in the browser.
 
-Открыть: https://vladimir-nikonov.github.io/christmas-piano/
+Open: https://vladimir-nikonov.github.io/christmas-piano/
 
-Всё приложение — один файл `index.html`, сборка не нужна.
+The whole app is a single `index.html` file, no build step required. The app's user interface is in Russian.
 
-Как вести разработку (worktree на каждую фичу, коммит и мердж в `main`): [CLAUDE.md](CLAUDE.md).
+Development workflow (one worktree per feature, commit and merge into `main`): [CLAUDE.md](CLAUDE.md).
+
+## License
+
+Free for personal and other non-commercial use. Any commercial use of the code or the ideas requires the author's written permission. See [LICENSE](LICENSE).
