@@ -76,6 +76,9 @@ svg.off{color:var(--border)}
 .tile[aria-pressed="true"]{outline:calc(4*var(--u)) solid var(--text);outline-offset:calc(3*var(--u));animation:bob 1.2s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(calc(-5*var(--u)))}}
 
+.songs{display:flex;gap:calc(14*var(--u));flex-wrap:wrap;justify-content:center}
+.song{height:calc(68*var(--u));padding:0 calc(22*var(--u));font-size:calc(30*var(--u));font-weight:900;color:var(--reward)}
+.song[aria-pressed="true"]{background:var(--border);outline:calc(4*var(--u)) solid var(--text);outline-offset:calc(3*var(--u))}
 .parts{display:flex;gap:calc(14*var(--u))}
 .part{min-width:calc(110*var(--u));height:calc(72*var(--u));padding:0 calc(14*var(--u));display:flex;gap:calc(2*var(--u));justify-content:center;align-items:center;color:var(--reward)}
 .part svg{width:calc(30*var(--u));height:calc(30*var(--u))}
@@ -219,7 +222,7 @@ svg.off{color:var(--border)}
     <button class="b ico" id="btnFull" data-ta="full" data-icon="fullscreen"></button>
     <button class="b ico" id="btnSettings" data-ta="settings" data-icon="gear"></button>
   </div>
-  <h1 class="title">Jingle Bells</h1>
+  <div class="songs" id="songs"></div>
   <div class="levels" id="levels"></div>
   <div class="parts" id="parts"></div>
   <div class="playrow">
@@ -333,32 +336,32 @@ const $ = s => document.querySelector(s);
 /* ================= Languages ================= */
 const LANGS = [ { id:'en', code:'EN', name:'English' }, { id:'pl', code:'PL', name:'Polski' }, { id:'uk', code:'UA', name:'Українська' }, { id:'ru', code:'RU', name:'Русский' }, { id:'es', code:'ES', name:'Español' } ];
 const I18N = {
-  en: { myPage:'My page', sKidHint:'The child changes name, avatar and theme on their own page (pencil button next to the player).', sKidOpen:'Open child’s page', title:'Snow Notes', pause:'Pause', progress:'Progress', mic:'Microphone', who:'Switch player', full:'Full screen', settings:'Parent settings', listen:'Listen to the tune', play:'Play', back:'Back', next:'Next', done:'Done', home:'Home', again:'Play again', nextLevel:'Next level', restart:'Restart', resume:'Resume', close:'Close', newPlayer:'New player', avatar:'Avatar', theme:'Theme', language:'Language', level:'Level', name:'Name',
-    levels:['Wood','Stone','Iron','Gold','Diamond'], parts:['Start, 4 bars','Half, 8 bars','Whole chorus, 16 bars'], micErr:'Allow the microphone: tap the icon left of the address bar.',
+  en: { songBirthday:'Happy Birthday', myPage:'My page', sKidHint:'The child changes name, avatar and theme on their own page (pencil button next to the player).', sKidOpen:'Open child’s page', title:'Snow Notes', pause:'Pause', progress:'Progress', mic:'Microphone', who:'Switch player', full:'Full screen', settings:'Parent settings', listen:'Listen to the tune', play:'Play', back:'Back', next:'Next', done:'Done', home:'Home', again:'Play again', nextLevel:'Next level', restart:'Restart', resume:'Resume', close:'Close', newPlayer:'New player', avatar:'Avatar', theme:'Theme', language:'Language', level:'Level', name:'Name',
+    levels:['Wood','Stone','Iron','Gold','Diamond'], parts:['Start','Half','Whole song'], micErr:'Allow the microphone: tap the icon left of the address bar.',
     sHead:'Parent settings', sPlayer:'PLAYER', sName:'Name', sTheme:'Theme', sLang:'Language', sTempo:'Tempo', sTempoHelp:'Percent of the level tempo. The level goes up on its own only at 100% or more.', sTol:'Timing window', sTolHelp:'0 means "as the level sets". Otherwise how early or late a note may be.', sTolLevel:'as the level sets', ms:'ms',
     sLabels:'Note names', lLetters:'Letters', lNone:'Colours only', sHint:'Highlight the next key', sOct:'Any octave', sOctHelp:'Count a note played in any octave of the keyboard.', sUnlock:'Unlock all levels', sUnlockHelp:'Otherwise the next block opens after two games in a row at 85% or more.',
     sProgress:'Player progress', sReset:'Reset levels', sDelete:'Delete player', sConfirm:'Sure? Tap again', sDoneMsg:'Done', sDevice:'THIS DEVICE', sLat:'Microphone delay', sLatHelp:'If notes count as late, raise it. Usually 60–100 ms.', sSens:'Microphone sensitivity', sSensHelp:'Higher hears quiet notes but reacts more to noise.', sSensFmt:'{n} of 10',
     sTouch:'Screen taps', sTouchHelp:'Count taps on the drawn keys, to test without a keyboard.', sNote:'Everything is saved only in this browser on this device.' },
-  pl: { myPage:'Moja strona', sKidHint:'Imię, awatar i motyw dziecko zmienia na swojej stronie (przycisk z ołówkiem obok gracza).', sKidOpen:'Otwórz stronę dziecka', title:'Śnieżne nuty', pause:'Pauza', progress:'Postęp', mic:'Mikrofon', who:'Zmień gracza', full:'Pełny ekran', settings:'Ustawienia rodzica', listen:'Posłuchaj melodii', play:'Graj', back:'Wstecz', next:'Dalej', done:'Gotowe', home:'Start', again:'Jeszcze raz', nextLevel:'Następny poziom', restart:'Od początku', resume:'Wznów', close:'Zamknij', newPlayer:'Nowy gracz', avatar:'Awatar', theme:'Motyw', language:'Język', level:'Poziom', name:'Imię',
-    levels:['Drewno','Kamień','Żelazo','Złoto','Diament'], parts:['Początek, 4 takty','Połowa, 8 taktów','Cały refren, 16 taktów'], micErr:'Zezwól na mikrofon: ikona po lewej stronie paska adresu.',
+  pl: { songBirthday:'Happy Birthday', myPage:'Moja strona', sKidHint:'Imię, awatar i motyw dziecko zmienia na swojej stronie (przycisk z ołówkiem obok gracza).', sKidOpen:'Otwórz stronę dziecka', title:'Śnieżne nuty', pause:'Pauza', progress:'Postęp', mic:'Mikrofon', who:'Zmień gracza', full:'Pełny ekran', settings:'Ustawienia rodzica', listen:'Posłuchaj melodii', play:'Graj', back:'Wstecz', next:'Dalej', done:'Gotowe', home:'Start', again:'Jeszcze raz', nextLevel:'Następny poziom', restart:'Od początku', resume:'Wznów', close:'Zamknij', newPlayer:'Nowy gracz', avatar:'Awatar', theme:'Motyw', language:'Język', level:'Poziom', name:'Imię',
+    levels:['Drewno','Kamień','Żelazo','Złoto','Diament'], parts:['Początek','Połowa','Cała piosenka'], micErr:'Zezwól na mikrofon: ikona po lewej stronie paska adresu.',
     sHead:'Ustawienia rodzica', sPlayer:'GRACZ', sName:'Imię', sTheme:'Motyw', sLang:'Język', sTempo:'Tempo', sTempoHelp:'Procent tempa poziomu. Poziom rośnie sam tylko przy 100% lub więcej.', sTol:'Tolerancja czasu', sTolHelp:'0 oznacza „jak na poziomie”. W innym razie: o ile wcześniej lub później można zagrać.', sTolLevel:'jak na poziomie', ms:'ms',
     sLabels:'Nazwy dźwięków', lLetters:'Litery', lNone:'Tylko kolory', sHint:'Podświetlaj następny klawisz', sOct:'Dowolna oktawa', sOctHelp:'Zaliczaj dźwięk zagrany w dowolnej oktawie.', sUnlock:'Odblokuj wszystkie poziomy', sUnlockHelp:'W przeciwnym razie następny blok otwiera się po dwóch grach z rzędu na 85% lub więcej.',
     sProgress:'Postęp gracza', sReset:'Resetuj poziomy', sDelete:'Usuń gracza', sConfirm:'Na pewno? Naciśnij jeszcze raz', sDoneMsg:'Gotowe', sDevice:'TO URZĄDZENIE', sLat:'Opóźnienie mikrofonu', sLatHelp:'Jeśli nuty są zaliczane jako spóźnione, zwiększ. Zwykle 60–100 ms.', sSens:'Czułość mikrofonu', sSensHelp:'Wyżej słyszy ciche dźwięki, ale bardziej reaguje na hałas.', sSensFmt:'{n} z 10',
     sTouch:'Dotyk ekranu', sTouchHelp:'Zaliczaj dotknięcia narysowanych klawiszy, aby sprawdzić bez instrumentu.', sNote:'Wszystko zapisuje się tylko w tej przeglądarce na tym urządzeniu.' },
-  uk: { myPage:'Моя сторінка', sKidHint:'Ім’я, аватар і тему дитина змінює на своїй сторінці (кнопка з олівцем біля гравця).', sKidOpen:'Відкрити сторінку дитини', title:'Сніжні ноти', pause:'Пауза', progress:'Прогрес', mic:'Мікрофон', who:'Змінити гравця', full:'На весь екран', settings:'Налаштування для батьків', listen:'Послухати мелодію', play:'Грати', back:'Назад', next:'Далі', done:'Готово', home:'Додому', again:'Ще раз', nextLevel:'Наступний рівень', restart:'Спочатку', resume:'Продовжити', close:'Закрити', newPlayer:'Новий гравець', avatar:'Аватар', theme:'Тема', language:'Мова', level:'Рівень', name:'Ім’я',
-    levels:['Дерево','Камінь','Залізо','Золото','Алмаз'], parts:['Початок, 4 такти','Половина, 8 тактів','Весь приспів, 16 тактів'], micErr:'Дозвольте мікрофон: значок ліворуч від адреси в браузері.',
+  uk: { songBirthday:'З днем народження', myPage:'Моя сторінка', sKidHint:'Ім’я, аватар і тему дитина змінює на своїй сторінці (кнопка з олівцем біля гравця).', sKidOpen:'Відкрити сторінку дитини', title:'Сніжні ноти', pause:'Пауза', progress:'Прогрес', mic:'Мікрофон', who:'Змінити гравця', full:'На весь екран', settings:'Налаштування для батьків', listen:'Послухати мелодію', play:'Грати', back:'Назад', next:'Далі', done:'Готово', home:'Додому', again:'Ще раз', nextLevel:'Наступний рівень', restart:'Спочатку', resume:'Продовжити', close:'Закрити', newPlayer:'Новий гравець', avatar:'Аватар', theme:'Тема', language:'Мова', level:'Рівень', name:'Ім’я',
+    levels:['Дерево','Камінь','Залізо','Золото','Алмаз'], parts:['Початок','Половина','Уся пісня'], micErr:'Дозвольте мікрофон: значок ліворуч від адреси в браузері.',
     sHead:'Налаштування для батьків', sPlayer:'ГРАВЕЦЬ', sName:'Ім’я', sTheme:'Тема', sLang:'Мова', sTempo:'Темп', sTempoHelp:'Відсоток від темпу рівня. Рівень підвищується сам лише при 100% і вище.', sTol:'Допуск за часом', sTolHelp:'0 означає «як на рівні». Інакше наскільки можна помилитися раніше чи пізніше.', sTolLevel:'як на рівні', ms:'мс',
     sLabels:'Назви нот', lLetters:'Літери', lNone:'Лише кольори', sHint:'Підсвічувати наступну клавішу', sOct:'Будь-яка октава', sOctHelp:'Зараховувати ноту в будь-якій октаві синтезатора.', sUnlock:'Відкрити всі рівні', sUnlockHelp:'Інакше наступний блок відкривається після двох ігор поспіль на 85% і більше.',
     sProgress:'Прогрес гравця', sReset:'Скинути рівні', sDelete:'Видалити гравця', sConfirm:'Точно? Натисніть ще раз', sDoneMsg:'Готово', sDevice:'ЦЕЙ ПРИСТРІЙ', sLat:'Затримка мікрофона', sLatHelp:'Якщо ноти зараховуються пізно, збільште. Зазвичай 60–100 мс.', sSens:'Чутливість мікрофона', sSensHelp:'Вище означає, що чує тихі ноти, але більше реагує на шум.', sSensFmt:'{n} з 10',
     sTouch:'Натискання на екран', sTouchHelp:'Зараховувати дотики до намальованих клавіш, щоб перевірити без синтезатора.', sNote:'Усе зберігається лише в цьому браузері на цьому пристрої.' },
-  ru: { myPage:'Моя страница', sKidHint:'Имя, аватар и тему ребёнок меняет на своей странице (кнопка с карандашом рядом с игроком).', sKidOpen:'Открыть страницу ребёнка', title:'Снежные ноты', pause:'Пауза', progress:'Прогресс', mic:'Микрофон', who:'Сменить игрока', full:'Во весь экран', settings:'Настройки для родителя', listen:'Послушать мелодию', play:'Играть', back:'Назад', next:'Дальше', done:'Готово', home:'Домой', again:'Ещё раз', nextLevel:'Следующий уровень', restart:'Сначала', resume:'Продолжить', close:'Закрыть', newPlayer:'Новый игрок', avatar:'Аватар', theme:'Тема', language:'Язык', level:'Уровень', name:'Имя',
-    levels:['Дерево','Камень','Железо','Золото','Алмаз'], parts:['Начало, 4 такта','Половина, 8 тактов','Весь припев, 16 тактов'], micErr:'Разрешите микрофон: значок слева от адреса в браузере.',
+  ru: { songBirthday:'С днём рождения', myPage:'Моя страница', sKidHint:'Имя, аватар и тему ребёнок меняет на своей странице (кнопка с карандашом рядом с игроком).', sKidOpen:'Открыть страницу ребёнка', title:'Снежные ноты', pause:'Пауза', progress:'Прогресс', mic:'Микрофон', who:'Сменить игрока', full:'Во весь экран', settings:'Настройки для родителя', listen:'Послушать мелодию', play:'Играть', back:'Назад', next:'Дальше', done:'Готово', home:'Домой', again:'Ещё раз', nextLevel:'Следующий уровень', restart:'Сначала', resume:'Продолжить', close:'Закрыть', newPlayer:'Новый игрок', avatar:'Аватар', theme:'Тема', language:'Язык', level:'Уровень', name:'Имя',
+    levels:['Дерево','Камень','Железо','Золото','Алмаз'], parts:['Начало','Половина','Вся песня'], micErr:'Разрешите микрофон: значок слева от адреса в браузере.',
     sHead:'Настройки для родителя', sPlayer:'ИГРОК', sName:'Имя', sTheme:'Тема', sLang:'Язык', sTempo:'Темп', sTempoHelp:'Процент от темпа уровня. Уровень повышается сам только при 100% и выше.', sTol:'Допуск по времени', sTolHelp:'0 означает «как на уровне». Иначе насколько можно ошибиться раньше или позже.', sTolLevel:'как на уровне', ms:'мс',
     sLabels:'Подписи нот', lLetters:'Буквы', lNone:'Только цвет', sHint:'Подсвечивать следующую клавишу', sOct:'Любая октава', sOctHelp:'Засчитывать ноту в любой октаве синтезатора.', sUnlock:'Открыть все уровни', sUnlockHelp:'Иначе следующий блок открывается после двух игр подряд на 85% и больше.',
     sProgress:'Прогресс игрока', sReset:'Сбросить уровни', sDelete:'Удалить игрока', sConfirm:'Точно? Нажмите ещё раз', sDoneMsg:'Готово', sDevice:'ЭТО УСТРОЙСТВО', sLat:'Задержка микрофона', sLatHelp:'Если ноты засчитываются поздно, увеличьте. Обычно 60–100 мс.', sSens:'Чувствительность микрофона', sSensHelp:'Выше означает, что слышит тихие ноты, но больше реагирует на шум.', sSensFmt:'{n} из 10',
     sTouch:'Нажатия по экрану', sTouchHelp:'Засчитывать касания нарисованных клавиш, чтобы проверить без синтезатора.', sNote:'Всё сохраняется только в этом браузере на этом устройстве.' },
-  es: { myPage:'Mi página', sKidHint:'El niño cambia el nombre, el avatar y el tema en su propia página (botón del lápiz junto al jugador).', sKidOpen:'Abrir la página del niño', title:'Notas de nieve', pause:'Pausa', progress:'Progreso', mic:'Micrófono', who:'Cambiar jugador', full:'Pantalla completa', settings:'Ajustes para padres', listen:'Escuchar la melodía', play:'Jugar', back:'Atrás', next:'Siguiente', done:'Listo', home:'Inicio', again:'Otra vez', nextLevel:'Siguiente nivel', restart:'Desde el principio', resume:'Continuar', close:'Cerrar', newPlayer:'Nuevo jugador', avatar:'Avatar', theme:'Tema', language:'Idioma', level:'Nivel', name:'Nombre',
-    levels:['Madera','Piedra','Hierro','Oro','Diamante'], parts:['Inicio, 4 compases','Mitad, 8 compases','Estribillo completo, 16 compases'], micErr:'Permite el micrófono: toca el icono a la izquierda de la dirección.',
+  es: { songBirthday:'Cumpleaños feliz', myPage:'Mi página', sKidHint:'El niño cambia el nombre, el avatar y el tema en su propia página (botón del lápiz junto al jugador).', sKidOpen:'Abrir la página del niño', title:'Notas de nieve', pause:'Pausa', progress:'Progreso', mic:'Micrófono', who:'Cambiar jugador', full:'Pantalla completa', settings:'Ajustes para padres', listen:'Escuchar la melodía', play:'Jugar', back:'Atrás', next:'Siguiente', done:'Listo', home:'Inicio', again:'Otra vez', nextLevel:'Siguiente nivel', restart:'Desde el principio', resume:'Continuar', close:'Cerrar', newPlayer:'Nuevo jugador', avatar:'Avatar', theme:'Tema', language:'Idioma', level:'Nivel', name:'Nombre',
+    levels:['Madera','Piedra','Hierro','Oro','Diamante'], parts:['Inicio','Mitad','Canción completa'], micErr:'Permite el micrófono: toca el icono a la izquierda de la dirección.',
     sHead:'Ajustes para padres', sPlayer:'JUGADOR', sName:'Nombre', sTheme:'Tema', sLang:'Idioma', sTempo:'Tempo', sTempoHelp:'Porcentaje del tempo del nivel. El nivel sube solo con 100% o más.', sTol:'Margen de tiempo', sTolHelp:'0 significa «según el nivel». Si no, cuánto antes o después se puede tocar.', sTolLevel:'según el nivel', ms:'ms',
     sLabels:'Nombres de notas', lLetters:'Letras', lNone:'Solo colores', sHint:'Resaltar la siguiente tecla', sOct:'Cualquier octava', sOctHelp:'Contar la nota en cualquier octava del teclado.', sUnlock:'Desbloquear todos los niveles', sUnlockHelp:'Si no, el siguiente bloque se abre tras dos partidas seguidas con 85% o más.',
     sProgress:'Progreso del jugador', sReset:'Reiniciar niveles', sDelete:'Eliminar jugador', sConfirm:'¿Seguro? Toca otra vez', sDoneMsg:'Listo', sDevice:'ESTE DISPOSITIVO', sLat:'Retraso del micrófono', sLatHelp:'Si las notas cuentan como tarde, súbelo. Normalmente 60–100 ms.', sSens:'Sensibilidad del micrófono', sSensHelp:'Más alto oye notas suaves, pero reacciona más al ruido.', sSensFmt:'{n} de 10',
@@ -471,8 +474,7 @@ function avatarSVG(i, size){
     r += '<rect x="' + x + '" y="' + y + '" width="' + (x2 - x) + '" height="1" fill="' + (a.c[ch] || '#000') + '"/>'; x = x2; } });
   return '<svg class="av" viewBox="0 0 8 8" width="' + size + '" height="' + size + '" shape-rendering="crispEdges" aria-hidden="true"><rect width="8" height="8" fill="rgba(0,0,0,.25)"/>' + r + '</svg>';
 }
-// Levels per the theme pack spec: % of the original tempo (120 bpm) and timing window
-const ORIGINAL_BPM = 120;
+// Levels per the theme pack spec: % of the song's original tempo and timing window
 const LEVELS = [
   { mat:'wood',    name:'Wood',    wait:true,  pct:50,  tol:null },
   { mat:'stone',   name:'Stone',   wait:false, pct:60,  tol:0.50 },
@@ -586,11 +588,24 @@ const NOTE_NATIVE = { ru:['До','До♯','Ре','Ре♯','Ми','Фа','Фа�
   es:['Do','Do♯','Re','Re♯','Mi','Fa','Fa♯','Sol','Sol♯','La','La♯','Si'], pl: LETTERS_PL, en: LETTERS };
 const NOTE_COLORS = ['#FF575D','#FF963F','#FFDA44','#55D66B','#45CDEB','#507EF4','#AC70F1']; // C D E F G A B (theme pack)
 const PC_COLOR = (() => { const out = []; [0,2,4,5,7,9,11].forEach((pc, i) => out[pc] = NOTE_COLORS[i]); [1,3,6,8,10].forEach(pc => out[pc] = out[pc - 1]); return out; })();
-const C4=60, D4=62, E4=64, F4=65, G4=67;
+const C4=60, D4=62, E4=64, F4=65, G4=67, A4=69, Bb4=70, C5=72;
 const PART_A = [[E4,1],[E4,1],[E4,2],[E4,1],[E4,1],[E4,2],[E4,1],[G4,1],[C4,1.5],[D4,.5],[E4,4]];
 const PART_B = [[F4,1],[F4,1],[F4,1.5],[F4,.5],[F4,1],[E4,1],[E4,1],[E4,.5],[E4,.5],[E4,1],[D4,1],[D4,1],[E4,1],[D4,2],[G4,2]];
 const PART_C = [[F4,1],[F4,1],[F4,1.5],[F4,.5],[F4,1],[E4,1],[E4,1],[E4,.5],[E4,.5],[G4,1],[G4,1],[F4,1],[D4,1],[C4,4]];
-const PARTS = { short: PART_A, half: PART_A.concat(PART_B), full: PART_A.concat(PART_B, PART_A, PART_C) };
+// Happy Birthday in F major so it fits the C4..C5 keyboard; the "hap-py" pickup is two even eighths (easier to hear on the mic)
+const HB_1 = [[C4,.5],[C4,.5],[D4,1],[C4,1],[F4,1],[E4,2]];
+const HB_2 = [[C4,.5],[C4,.5],[D4,1],[C4,1],[G4,1],[F4,2]];
+const HB_3 = [[C4,.5],[C4,.5],[C5,1],[A4,1],[F4,1],[E4,1],[D4,2]];
+const HB_4 = [[Bb4,.5],[Bb4,.5],[A4,1],[F4,1],[G4,1],[F4,3]];
+// Songs: bpm is the original tempo (level % applies to it), meter is the count-in length.
+// Jingle Bells keeps the old best-score keys ("level:part"); other songs prefix them with "song:".
+const SONGS = {
+  jingle:   { title:() => 'Jingle Bells', bpm:120, meter:4, parts:{ short: PART_A, half: PART_A.concat(PART_B), full: PART_A.concat(PART_B, PART_A, PART_C) } },
+  birthday: { title:() => tx('songBirthday'), bpm:100, meter:3, parts:{ short: HB_1, half: HB_1.concat(HB_2), full: HB_1.concat(HB_2, HB_3, HB_4) } }
+};
+const SONG_KEYS = ['jingle','birthday'];
+const songKey = p => SONGS[p.sel.song] ? p.sel.song : 'jingle';
+const bestKey = (song, level, part) => (song === 'jingle' ? '' : song + ':') + level + ':' + part;
 const PART_KEYS = ['short','half','full'];
 const noteName = m => (opts().labels === 'letters' ? (LANG === 'pl' ? LETTERS_PL : LETTERS) : (NOTE_NATIVE[LANG] || LETTERS))[m % 12];
 
@@ -709,14 +724,14 @@ const flakes = Array.from({ length: 60 }, () => ({ x: Math.random(), y: Math.ran
 function showOnly(id){ ['#home','#profiles','#newp','#results','#pause','#settings','#hud','#pop','#me'].forEach(s => $(s).hidden = s !== id); }
 
 function startGame(demo){
-  const p = P(), o = p.opts, L = LEVELS[p.sel.level];
-  const bpm = demo ? ORIGINAL_BPM : ORIGINAL_BPM * L.pct / 100 * o.tempo / 100, beat = 60 / bpm;
+  const p = P(), o = p.opts, L = LEVELS[p.sel.level], S = SONGS[songKey(p)];
+  const bpm = demo ? S.bpm : S.bpm * L.pct / 100 * o.tempo / 100, beat = 60 / bpm;
   const tol = o.tolMs ? o.tolMs / 1000 : (L.tol || 0.5);
-  const notes = PARTS[p.sel.part].reduce((acc, [m, d]) => { const b = acc.length ? acc[acc.length - 1].beat + acc[acc.length - 1].dur : 0; acc.push({ midi:m, beat:b, dur:d }); return acc; }, [])
+  const notes = S.parts[p.sel.part].reduce((acc, [m, d]) => { const b = acc.length ? acc[acc.length - 1].beat + acc[acc.length - 1].dur : 0; acc.push({ midi:m, beat:b, dur:d }); return acc; }, [])
     .map(n => ({ ...n, t: n.beat * beat, d: n.dur * beat, hit:false, missed:false, wrong:0, grade:null }));
   const look = Math.max(2.2, 4 * beat);
-  G = { demo, wait: L.wait && !demo, level: p.sel.level, part: p.sel.part, beat, tol, notes, look,
-        time: -Math.max(look, 4 * beat) - 0.4, lastTickBeat: null, end: notes[notes.length - 1].t + notes[notes.length - 1].d + 0.8,
+  G = { demo, wait: L.wait && !demo, song: songKey(p), meter: S.meter, level: p.sel.level, part: p.sel.part, beat, tol, notes, look,
+        time: -Math.max(look, S.meter * beat) - 0.4, lastTickBeat: null, end: notes[notes.length - 1].t + notes[notes.length - 1].d + 0.8,
         score:0, combo:0, bestCombo:0, hits:0, perfect:0, finished:false, waiting:false };
   state = demo ? 'demo' : 'playing'; paused = false;
   showOnly('#hud'); $('#micPill').hidden = demo;
@@ -783,7 +798,7 @@ function finish(){
   const p = P(), total = G.notes.length, o = p.opts;
   const metric = G.wait ? Math.round(G.notes.filter(n => n.hit && !n.wrong).length / total * 100) : Math.round(G.hits / total * 100);
   const stars = metric >= 95 ? 3 : metric >= 80 ? 2 : metric >= 50 ? 1 : 0;
-  const key = G.level + ':' + G.part; p.best[key] = Math.max(p.best[key] || 0, stars);
+  const key = bestKey(G.song, G.level, G.part); p.best[key] = Math.max(p.best[key] || 0, stars);
   let levelUp = false;
   if (G.level === p.level && !o.tolMs && o.tempo >= 100){
     if (metric >= 85){ p.streak = (p.streak || 0) + 1; if (p.streak >= 2 && p.level < LEVELS.length - 1){ p.level++; p.streak = 0; levelUp = true; } }
@@ -812,7 +827,7 @@ function step(ts){
     let nt = G.time + dt;
     if (G.wait){ const n = nextUnhit(); G.waiting = !!(n && nt >= n.t); if (G.waiting) nt = n.t; }
     G.time = nt;
-    if (G.time < 0){ const b = Math.floor(G.time / G.beat); if (b !== G.lastTickBeat && -b <= 4){ G.lastTickBeat = b; tick(-b === 4); } }
+    if (G.time < 0){ const b = Math.floor(G.time / G.beat); if (b !== G.lastTickBeat && -b <= G.meter){ G.lastTickBeat = b; tick(-b === G.meter); } }
     if (G.demo){
       for (const n of G.notes) if (!n.hit && G.time >= n.t){ n.hit = true; tone(n.midi, n.d); fx.keyFlash[n.midi] = { c: PC_COLOR[n.midi % 12], at: performance.now() };
         burst(keys[n.midi].x + keys[n.midi].w / 2, hitY, PC_COLOR[n.midi % 12], 8); updateHud(); }
@@ -951,11 +966,17 @@ const px = n => Math.round(n * U);
 function renderHome(){
   const p = P(); applyTheme(p.theme); updateQuick();
   $('#btnWho').innerHTML = avatarSVG(p.avatar, px(50)) + '<span class="nm"></span>'; $('#btnWho .nm').textContent = p.name || '';
+  const songs = $('#songs'); songs.textContent = '';
+  SONG_KEYS.forEach(k => {
+    const b = document.createElement('button'); b.className = 'b song'; b.setAttribute('aria-pressed', songKey(p) === k);
+    b.textContent = SONGS[k].title(); b.onclick = () => { p.sel.song = k; save(); renderHome(); };
+    songs.appendChild(b);
+  });
   const box = $('#levels'); box.textContent = '';
   LEVELS.forEach((L, i) => {
     const open = unlocked(p, i), b = document.createElement('button');
     b.className = 'b tile' + (open ? '' : ' locked'); b.setAttribute('aria-pressed', i === p.sel.level); b.setAttribute('aria-label', tx('level') + ' ' + (i + 1) + ': ' + tx('levels')[i]);
-    const stars = Math.max(0, ...PART_KEYS.map(k => p.best[i + ':' + k] || 0));
+    const stars = Math.max(0, ...PART_KEYS.map(k => p.best[bestKey(songKey(p), i, k)] || 0));
     b.innerHTML = '<span class="blk">' + blockSVG(i) + '</span>' + (open ? '' : '<span class="lock">' + icon('lock') + '</span>') +
       '<span class="stars">' + (open ? starRow(stars) : '') + '</span>' +
       (i === p.level && !p.opts.unlockAll && i < LEVELS.length - 1 ? '<span class="pips"><i class="' + (p.streak > 0 ? 'on' : '') + '"></i><i></i></span>' : '');
