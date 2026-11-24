@@ -5,9 +5,9 @@ import { LEVELS } from '../../core/levels.js';
 import { SONGS, SONG_KEYS, songKey, bestKey, PART_KEYS } from '../../core/songs.js';
 import { db, save, P, dev, prog, unlocked } from '../../data/storage.js';
 import { $, showOnly } from '../../dom.js';
-import { state, G, startGame, setState, setPaused, setGame } from '../../game/game.js';
+import { state, paused, G, startGame, setState, setPaused, setGame, resumeGame } from '../../game/game.js';
 import { tx, fmtDate } from '../../i18n/index.js';
-import { startMic, watchMicPermission } from '../../input/mic.js';
+import { startMic, watchMicPermission, onMicLost } from '../../input/mic.js';
 import { avatarSVG, blockSVG } from '../art.js';
 import { px } from '../canvas.js';
 import { icon } from '../icons.js';
@@ -120,11 +120,17 @@ function showMicState(kind){
 const hideMicState = () => { $('#micErr').hidden = true; };
 // Permission granted in the browser (e.g. from the site settings): clear the error, the next Play starts at once.
 watchMicPermission(st => { if (st === 'granted') hideMicState(); });
+// In-flight guard: a second tap while the microphone permission prompt is open must not start a second game.
+let starting = false;
 async function playWithMic(){
-  audio(); hideMicState();
-  // Screen and keyboard mode never asks for the microphone: a tablet without a piano needs no permission.
-  if (!dev().touch){ const r = await startMic(); if (!r.ok){ showMicState(r.kind); return; } }
-  enterGame(false);
+  if (starting || state !== 'home') return;
+  starting = true;
+  try {
+    audio(); hideMicState();
+    // Screen and keyboard mode never asks for the microphone: a tablet without a piano needs no permission.
+    if (!dev().touch){ const r = await startMic(); if (!r.ok){ showMicState(r.kind); return; } if (state !== 'home') return; }
+    enterGame(false);
+  } finally { starting = false; }
 }
 $('#btnPlay').onclick = playWithMic;
 $('#btnMicRetry').onclick = playWithMic;
@@ -143,8 +149,11 @@ const toggleFull = () => {
 };
 // The full-screen buttons (home and pause menu) double as exit buttons while the app is in full screen
 document.querySelectorAll('.qfull').forEach(b => b.onclick = toggleFull);
+let wasFull = false;
 function syncFull(){
   const on = !!fsEl();
+  if (wasFull && !on) pauseGame(); // leaving full screen (often the system Back) pauses a running game
+  wasFull = on;
   document.querySelectorAll('.qfull').forEach(b => {
     b.dataset.ta = on ? 'fullExit' : 'full';
     b.setAttribute('aria-label', tx(b.dataset.ta));
@@ -153,12 +162,22 @@ function syncFull(){
 }
 document.addEventListener('fullscreenchange', syncFull);
 document.addEventListener('webkitfullscreenchange', syncFull);
-$('#btnPause').onclick = () => { if (state === 'demo'){ G.finished = true; goHome(); return; } setPaused(true); $('#pause').hidden = false; };
-$('#btnResume').onclick = () => { setPaused(false); $('#pause').hidden = true; };
-$('#btnRestart').onclick = () => startGame(false);
-$('#btnQuit').onclick = goHome;
+// Pause freezes the game under the dimmed #pause overlay; everything (time, notes, score, mode) stays in G.
+export function pauseGame(){
+  if (state !== 'playing' || paused || !G) return false;
+  setPaused(true); $('#pause').hidden = false; return true;
+}
+const inPause = () => state === 'playing' && paused && !$('#pause').hidden;
+$('#btnPause').onclick = () => { if (state === 'demo'){ G.finished = true; goHome(); return; } pauseGame(); };
+$('#btnResume').onclick = () => { if (!inPause()) return; $('#pause').hidden = true; resumeGame(); };
+$('#btnRestart').onclick = () => { if (inPause()) startGame(false); };
+$('#btnQuit').onclick = () => { if (inPause()) goHome(); };
 $('#btnHome').onclick = goHome;
 $('#btnAgain').onclick = () => { const p = P(); if (G){ p.sel.song = G.song; p.sel.level = G.level; p.sel.part = G.part; } startGame(false); };
 $('#btnNext').onclick = () => { const p = P(); if (G){ p.sel.song = G.song; p.sel.level = Math.min(LEVELS.length - 1, G.level + 1); } startGame(false); };
-document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'playing'){ setPaused(true); $('#pause').hidden = false; } });
+// Safe auto-pause: going to the background, locking the screen, losing focus or losing the microphone.
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+addEventListener('pagehide', () => pauseGame());
+addEventListener('blur', () => pauseGame());
+onMicLost(() => pauseGame());
 document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && state === 'home' && document.activeElement === document.body){ e.preventDefault(); $('#btnPlay').click(); } });

@@ -2,6 +2,7 @@
 //   npm run test:smoke
 // Uses the installed Google Chrome (channel "chrome"); set CHROME_PATH to use another binary.
 // Set SMOKE_URL to test an already running server instead of starting one.
+/* global history, AudioContext -- used inside page.evaluate() callbacks, which run in the browser */
 import { chromium } from 'playwright-core';
 import { readFile, writeFile, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -206,10 +207,76 @@ try {
   await page.click('#btnPause');
   await visible('#pause');
   assert.ok(await page.locator('#pause .qfull svg').count() === 1, 'full-screen button in the pause menu');
+  assert.equal(await page.locator('#pause .qlang, #pause .qtheme').count(), 0, 'no language/theme buttons in the pause menu');
+  assert.equal(await page.locator('#pause button:visible').count(), 5, 'pause: resume, replay, home, input mode and full screen only');
   log('pause menu and HUD fit every tablet viewport');
   await checkLayout('#pause', '#hud');
   await page.click('#btnQuit');
   await visible('#home');
+
+  log('system Back: during a game it pauses, in pause it goes home, overlays close');
+  const appUrl = page.url();
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => window.__sn.state === 'playing');
+  await page.goBack();
+  await visible('#pause');
+  assert.equal(await sn(() => window.__sn.paused), true);
+  assert.equal(page.url(), appUrl);
+  await page.goBack();
+  await visible('#home');
+  assert.equal(page.url(), appUrl);
+  await page.click('#btnSettings');
+  await visible('#settings');
+  await page.goBack();
+  await page.locator('#settings').waitFor({ state: 'hidden' });
+  await visible('#home');
+  await page.click('#btnWho');
+  await visible('#profiles');
+  await page.goBack();
+  await visible('#home');
+  // Going home through the app's own buttons consumes the history entry, so entries never pile up.
+  const histLen = await sn(() => history.length);
+  for (let i = 0; i < 3; i++){
+    await page.click('#btnPlay');
+    await page.waitForFunction(() => window.__sn.state === 'playing');
+    await page.click('#btnPause');
+    await page.click('#btnQuit');
+    await visible('#home');
+  }
+  await page.waitForTimeout(100);
+  assert.ok(await sn(() => history.length) <= histLen + 1, 'history entries do not accumulate');
+  assert.equal(await sn(() => !!(history.state && history.state.sn)), false, 'no trap entry left on the home screen');
+
+  log('double-tapping Play while the microphone is asked starts one game; blur and mic loss pause');
+  await page.click('#btnSettings');
+  await page.uncheck('#sTouch');
+  await page.click('#btnSetClose');
+  await sn(() => {
+    window.__gum = 0;
+    navigator.mediaDevices.getUserMedia = () => {
+      window.__gum++;
+      const ac = new AudioContext(), stream = ac.createMediaStreamDestination().stream;
+      window.__track = stream.getAudioTracks()[0];
+      return new Promise(r => setTimeout(() => r(stream), 300));
+    };
+    const b = document.querySelector('#btnPlay'); b.click(); b.click();
+  });
+  await page.waitForFunction(() => window.__sn.state === 'playing');
+  await sn(() => { window.__g1 = window.__sn.game; });
+  await page.waitForTimeout(400);
+  assert.equal(await sn(() => window.__gum), 1, 'one microphone request');
+  assert.equal(await sn(() => window.__sn.game === window.__g1), true, 'one game');
+  await sn(() => window.dispatchEvent(new Event('blur')));
+  await visible('#pause');
+  await page.click('#btnResume');
+  assert.equal(await sn(() => window.__sn.paused), false);
+  await sn(() => window.__track.dispatchEvent(new Event('ended')));
+  await visible('#pause');
+  await page.click('#btnQuit');
+  await visible('#home');
+  await page.click('#btnSettings');
+  await page.check('#sTouch');
+  await page.click('#btnSetClose');
 
   log('switch language from the quick picker');
   await page.locator('#home .qlang').click();
@@ -296,6 +363,24 @@ try {
   assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 1, 'a level picked by hand survives closing settings');
   await page.click('#btnPlay');
   await page.waitForFunction(() => window.__sn.state === 'playing' && !window.__sn.game.wait);
+
+  log('resume on a timed level counts in again and keeps the game');
+  await page.waitForFunction(() => window.__sn.game.time > 0.3);
+  await page.click('#btnPause');
+  await visible('#pause');
+  const snap = () => sn(() => { const g = window.__sn.game; return { time: g.time, score: g.score, missed: g.notes.filter(n => n.missed).length }; });
+  const before = await snap();
+  await page.waitForTimeout(300);
+  assert.deepEqual(await snap(), before, 'nothing moves in pause');
+  await page.click('#btnResume');
+  assert.ok(await sn(() => window.__sn.game.resumeIn > 0), 'count-in after resume');
+  await page.waitForTimeout(150);
+  assert.deepEqual(await snap(), before, 'the clock waits for the count-in');
+  await page.click('#btnPause');
+  await page.click('#btnResume');
+  assert.ok(await sn(() => window.__sn.game.resumeIn > 0), 'a pause during the count-in resumes into the count-in');
+  await page.waitForFunction(() => window.__sn.game.resumeIn === 0, null, { timeout: 10000 });
+  await page.waitForFunction(t => window.__sn.game.time > t, before.time);
   await page.locator('#results').waitFor({ state: 'visible', timeout: 30000 });
   assert.equal(await page.locator('#resPct').textContent(), '0%');
   assert.equal(await sn(() => window.__sn.game.notes.every(n => n.missed)), true);

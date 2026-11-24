@@ -2,7 +2,7 @@
 
 import { detectPitch } from './core/pitch.js';
 import { db, storeKind, save, loadDB, askPersist } from './data/storage.js';
-import { state, G, fx, onPlayed, frame } from './game/game.js';
+import { state, paused, G, fx, onPlayed, frame } from './game/game.js';
 import { detectLang, LANG, useLang } from './i18n/index.js';
 import { layout, invalidateBg, keys, kbTop, kbH, isBlack } from './ui/canvas.js';
 import { reducedMotion } from './ui/motion.js';
@@ -16,6 +16,7 @@ import { showSplash } from './ui/splash.js';
 import './input/touch.js';
 import './input/keyboard.js';
 import './ui/screens/settings.js';
+import './ui/back.js';
 
 // Resize / rotation: recompute canvas and re-render screens whose pixel sizes depend on U
 let rsT = 0;
@@ -31,7 +32,7 @@ loadDB().catch(() => {}).then(() => { goHome(); if (db.profiles.length) showSpla
 requestAnimationFrame(frame);
 if (document.fonts) document.fonts.ready.then(() => invalidateBg());
 
-window.__sn = { detectPitch, onPlayed: m => onPlayed(m, performance.now(), 'touch'), get game(){ return G; }, get fx(){ return fx; }, get focus(){ return focus; }, get state(){ return state; }, get db(){ return db; }, get lang(){ return LANG; }, get storeKind(){ return storeKind; }, loadDB, save,
+window.__sn = { detectPitch, onPlayed: m => onPlayed(m, performance.now(), 'touch'), get game(){ return G; }, get fx(){ return fx; }, get focus(){ return focus; }, get state(){ return state; }, get paused(){ return paused; }, get db(){ return db; }, get lang(){ return LANG; }, get storeKind(){ return storeKind; }, loadDB, save,
   keyPoint: m => ({ x: keys[m].x + keys[m].w / 2, y: kbTop + kbH * (isBlack(m) ? 0.3 : 0.85) }) };
 // Motion state for the smoke test (read-only).
 Object.defineProperties(window.__sn, { reducedMotion: { get: () => reducedMotion }, drawn: { get: () => ({ ...drawn }) } });

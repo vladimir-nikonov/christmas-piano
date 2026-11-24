@@ -7,7 +7,9 @@ import { $ } from '../dom.js';
 import { noteName } from '../ui/labels.js';
 
 /* ================= Microphone: McLeod pitch + onset tracking ================= */
-let mic = null, noiseFloor = 0.004, micPending = null;
+let mic = null, noiseFloor = 0.004, micPending = null, onLost = null;
+// Called when the microphone stops delivering sound (track ended or muted), so the game can pause safely.
+export function onMicLost(cb){ onLost = cb; }
 // Why the microphone could not start: 'denied' (permission), 'missing' (no device), 'busy' (used by another app) or 'other'.
 function micErrorKind(e){
   const n = e && e.name;
@@ -27,6 +29,12 @@ export function startMic(){
       const a = audio(), src = a.createMediaStreamSource(stream), analyser = a.createAnalyser();
       analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0; src.connect(analyser);
       mic = { analyser, buf: new Float32Array(2048), sr: a.sampleRate, calib: [], calibUntil: performance.now() + 700 };
+      // An ended track never comes back: forget it so the next Play asks for the microphone again.
+      const cur = mic;
+      stream.getAudioTracks().forEach(t => {
+        t.addEventListener('ended', () => { if (mic === cur) mic = null; if (onLost) onLost('ended'); });
+        t.addEventListener('mute', () => { if (onLost) onLost('mute'); });
+      });
       return { ok:true };
     } catch(e){ return { ok:false, kind: micErrorKind(e) }; }
   })();

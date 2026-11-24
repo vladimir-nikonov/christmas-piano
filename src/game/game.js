@@ -30,7 +30,7 @@ export function startGame(demo){
   const look = Math.max(2.2, 4 * beat);
   G = { demo, wait: L.wait && !demo, song: songKey(p), meter: S.meter, level: p.sel.level, part: p.sel.part, beat, tol, notes, look,
         time: -Math.max(look, S.meter * beat) - 0.4, lastTickBeat: null, end: notes[notes.length - 1].t + notes[notes.length - 1].d + 0.8,
-        score:0, combo:0, bestCombo:0, hits:0, perfect:0, finished:false, waiting:false };
+        score:0, combo:0, bestCombo:0, hits:0, perfect:0, finished:false, waiting:false, resumeIn:0, resumeBeat:null };
   state = demo ? 'demo' : 'playing'; paused = false;
   showOnly('#hud'); $('#micPill').hidden = demo || !!dev().touch;
   updateHud(); requestWake();
@@ -41,7 +41,7 @@ export const keyFor = m => (m >= LO && m <= HI) ? m : LO + ((m % 12) + 12) % 12;
 
 export function onPlayed(midi, atMs, source){
   fx.heardKey[keyFor(midi)] = performance.now();
-  if (state !== 'playing' || paused || !G || G.time < -0.6) return;
+  if (state !== 'playing' || paused || !G || G.time < -0.6 || G.resumeIn > 0) return;
   const tPlayed = G.time - (performance.now() - atMs) / 1000 - (source === 'mic' ? dev().latency / 1000 : 0);
   if (G.wait){
     const n = nextUnhit(); if (!n || n.t - G.time > 1.0) return;
@@ -123,7 +123,12 @@ export function frame(ts){ requestAnimationFrame(frame); try { step(ts); } catch
 function step(ts){
   const dt = Math.min(0.05, (ts - lastTs) / 1000); lastTs = ts;
   if (state !== 'demo') micFrame(ts, onPlayed);
-  if ((state === 'playing' || state === 'demo') && !paused && G){
+  if ((state === 'playing' || state === 'demo') && !paused && G && G.resumeIn > 0){
+    // Resume count-in: the clock stays put while the metronome counts the child back in.
+    G.resumeIn = Math.max(0, G.resumeIn - dt);
+    const c = Math.ceil(G.resumeIn / G.beat);
+    if (c > 0 && c !== G.resumeBeat){ G.resumeBeat = c; tick(c === RESUME_BEATS); }
+  } else if ((state === 'playing' || state === 'demo') && !paused && G){
     let nt = G.time + dt;
     if (G.wait){ const n = nextUnhit(); G.waiting = !!(n && nt >= n.t); if (G.waiting) nt = n.t; }
     G.time = nt;
@@ -141,4 +146,12 @@ function step(ts){
 // ES module bindings are read-only for importers: screens change the app state through these setters.
 export function setState(s){ state = s; }
 export function setPaused(v){ paused = v; }
+// Leaves the pause. A timed level that was already running counts the child back in first, so there is
+// time to put the hands back on the keys; the time, notes, score and mode stay as they were.
+// Waiting levels and a pause during the start count-in carry on directly (the start count-in just continues).
+export const RESUME_BEATS = 3;
+export function resumeGame(){
+  paused = false;
+  if (G && state === 'playing' && !G.wait && G.time >= 0){ G.resumeIn = RESUME_BEATS * G.beat; G.resumeBeat = null; }
+}
 export function setGame(g){ G = g; }

@@ -197,8 +197,8 @@ export function draw(now, dt){
     const sc = reducedMotion ? 1 : p.age < 0.12 ? p.age / 0.12 * 1.2 : 1; ctx.globalAlpha = 1 - Math.max(0, p.age - 0.4) / 0.4;
     drawIcon(p.icon, p.c, p.x, p.y - (reducedMotion ? 0 : p.age * 40 * U), p.size * sc, p.fill); }
   ctx.globalAlpha = 1;
-  if (G && (state === 'playing' || state === 'demo') && G.time < 0){
-    const c = Math.ceil(-G.time / G.beat);
+  if (G && (state === 'playing' || state === 'demo') && (G.time < 0 || G.resumeIn > 0)){
+    const c = G.resumeIn > 0 ? Math.ceil(G.resumeIn / G.beat) : Math.ceil(-G.time / G.beat);
     if (c <= 4){ const fs = Math.round(Math.min(170 * U, H * 0.22)); ctx.font = '900 ' + fs + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = TH.accentDark; ctx.fillText(c, W / 2, hitY * 0.5 + 6 * U); ctx.fillStyle = TH.text; ctx.fillText(c, W / 2, hitY * 0.5); }
   }
