@@ -39,6 +39,23 @@ try {
   page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
   const sn = (fn, arg) => page.evaluate(fn, arg);
   const visible = sel => page.locator(sel).waitFor({ state: 'visible', timeout: 10000 });
+  // Results: exactly one primary button, which action it runs, which secondary icons are shown, and the slot positions.
+  const resultsButtons = () => sn(() => {
+    const vis = el => !el.hidden && window.getComputedStyle(el).visibility !== 'hidden';
+    const btns = [...document.querySelectorAll('#results button')], x = id => Math.round(document.getElementById(id).getBoundingClientRect().left);
+    return { primaries: btns.filter(b => vis(b) && b.classList.contains('primary')).map(b => b.id), go: document.querySelector('#btnMain').dataset.go,
+      again: vis(document.querySelector('#btnAgain')), next: vis(document.querySelector('#btnNext')), levelUp: !document.querySelector('#resLevelUp').hidden,
+      x: { home: x('btnHome'), again: x('btnAgain'), main: x('btnMain') } };
+  });
+  const playLevel1Perfectly = async () => {
+    await page.waitForFunction(() => window.__sn.state === 'playing');
+    const n = await sn(() => window.__sn.game.notes.length);
+    for (let i = 0; i < n; i++){
+      await waitAtNextNote();
+      await sn(() => { const n = window.__sn.game.notes.find(n => !n.hit && !n.missed); window.__sn.onPlayed(n.midi); });
+    }
+    await visible('#results');
+  };
   // Level 1 stops the clock at each note until it is played: wait until the clock stands at the next unplayed note.
   const waitAtNextNote = () => page.waitForFunction(() => { const g = window.__sn.game, n = g && g.notes.find(n => !n.hit && !n.missed);
     return !!(n && g.waiting && g.time >= n.t); }, null, { timeout: 15000 });
@@ -89,16 +106,28 @@ try {
   assert.ok(await sn(() => document.querySelector('#levels .tile[aria-pressed="true"]').getAnimations().some(a => a.playState === 'running' && !a.animationName)), 'entry zoom on the selected tile');
   await page.waitForFunction(() => window.__sn.state === 'playing');
   assert.equal(await page.locator('#home').isHidden(), true);
-  const total = await sn(() => window.__sn.game.notes.length);
-  for (let i = 0; i < total; i++){
-    await waitAtNextNote();
-    await sn(() => { const n = window.__sn.game.notes.find(n => !n.hit && !n.missed); window.__sn.onPlayed(n.midi); });
-  }
-  await visible('#results');
+  await playLevel1Perfectly();
   assert.equal(await page.locator('#resPct').textContent(), '100%');
   assert.equal(await sn(() => window.__sn.db.profiles[0].best['0:short']), 3);
   assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.jingle), { level: 0, streak: 1 });
   assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.birthday), { level: 0, streak: 0 });
+
+  log('results with 3 stars and no new level: replay is the one primary action, next level is a small icon');
+  const r3 = await resultsButtons();
+  assert.deepEqual(r3.primaries, ['btnMain']);
+  assert.equal(r3.go, 'again');
+  assert.deepEqual([r3.again, r3.next, r3.levelUp], [false, true, false]);
+
+  log('Enter on the results replays; a second clean game opens the next level');
+  await page.keyboard.press('Enter');
+  await playLevel1Perfectly();
+  const rUp = await resultsButtons();
+  assert.deepEqual(rUp.primaries, ['btnMain']);
+  assert.equal(rUp.go, 'next');
+  assert.deepEqual([rUp.again, rUp.next, rUp.levelUp], [true, false, true]);
+  assert.equal(await page.locator('#btnMain').getAttribute('aria-label'), 'Play the new level');
+  assert.deepEqual(rUp.x, r3.x, 'Home, Replay and the primary keep their slots');
+  assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.jingle), { level: 1, streak: 0 });
 
   log('a wrong note in level 1 is counted against the note, with soft feedback only (key hint off)');
   await sn(() => { window.__sn.db.profiles[0].opts.hint = false; });
@@ -226,6 +255,11 @@ try {
   assert.equal(await page.locator('#resPct').textContent(), '0%');
   assert.equal(await sn(() => window.__sn.game.notes.every(n => n.missed)), true);
   assert.equal(await sn(() => window.__sn.db.profiles[0].hist['1:short'].length), 1);
+  const r0 = await resultsButtons();
+  assert.deepEqual(r0.primaries, ['btnMain'], '0 stars: one primary');
+  assert.equal(r0.go, 'again');
+  assert.deepEqual([r0.again, r0.next, r0.levelUp], [false, false, false]);
+  assert.equal(r0.x.home, r3.x.home);
   await page.click('#btnHome');
   await visible('#home');
   assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 0, 'back home after a game selects the current level');

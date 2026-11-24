@@ -20,6 +20,7 @@ export default {
   home: 'Додому',
   again: 'Ще раз',
   nextLevel: 'Наступний рівень',
+  playNew: 'Грати новий рівень',
   restart: 'Спочатку',
   resume: 'Продовжити',
   close: 'Закрити',

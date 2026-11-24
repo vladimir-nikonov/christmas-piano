@@ -20,6 +20,7 @@ export default {
   home: 'Inicio',
   again: 'Otra vez',
   nextLevel: 'Siguiente nivel',
+  playNew: 'Jugar el nuevo nivel',
   restart: 'Desde el principio',
   resume: 'Continuar',
   close: 'Cerrar',

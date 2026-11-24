@@ -20,6 +20,7 @@ export default {
   home: 'Домой',
   again: 'Ещё раз',
   nextLevel: 'Следующий уровень',
+  playNew: 'Играть новый уровень',
   restart: 'Сначала',
   resume: 'Продолжить',
   close: 'Закрыть',

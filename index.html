@@ -84,10 +84,12 @@
     <div class="levelup" id="resLevelUp" hidden></div>
     <div class="hist" id="resHist"></div>
     <div class="xprow" id="resXp"></div>
-    <div class="btnrow">
+    <!-- Fixed slots: secondary icons on the left (Home, Replay, Next), the one primary action always on the right. -->
+    <div class="btnrow resbtns">
       <button class="b ico" id="btnHome" data-ta="home" data-icon="home"></button>
-      <button class="b primary wide" id="btnAgain" data-ta="again" data-icon="retry"></button>
-      <button class="b reward wide" id="btnNext" data-ta="nextLevel" data-icon="play" data-fill="1" hidden></button>
+      <button class="b ico" id="btnAgain" data-ta="again" data-icon="retry" hidden></button>
+      <button class="b ico" id="btnNext" data-ta="nextLevel" data-icon="next" hidden></button>
+      <button class="b primary wide" id="btnMain" data-ta="again"></button>
     </div>
   </div>
 </div>
