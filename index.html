@@ -474,12 +474,13 @@ function avatarSVG(i, size){
     r += '<rect x="' + x + '" y="' + y + '" width="' + (x2 - x) + '" height="1" fill="' + (a.c[ch] || '#000') + '"/>'; x = x2; } });
   return '<svg class="av" viewBox="0 0 8 8" width="' + size + '" height="' + size + '" shape-rendering="crispEdges" aria-hidden="true"><rect width="8" height="8" fill="rgba(0,0,0,.25)"/>' + r + '</svg>';
 }
-// Levels per the theme pack spec: % of the song's original tempo and timing window
+// Levels: % of the song's original tempo and timing window (seconds).
+// Even the first level stays at 70% or more so the tune is still recognisable.
 const LEVELS = [
-  { mat:'wood',    name:'Wood',    wait:true,  pct:50,  tol:null },
-  { mat:'stone',   name:'Stone',   wait:false, pct:60,  tol:0.50 },
-  { mat:'iron',    name:'Iron',    wait:false, pct:75,  tol:0.35 },
-  { mat:'gold',    name:'Gold',    wait:false, pct:90,  tol:0.25 },
+  { mat:'wood',    name:'Wood',    wait:true,  pct:70,  tol:null },
+  { mat:'stone',   name:'Stone',   wait:false, pct:78,  tol:0.50 },
+  { mat:'iron',    name:'Iron',    wait:false, pct:86,  tol:0.35 },
+  { mat:'gold',    name:'Gold',    wait:false, pct:93,  tol:0.25 },
   { mat:'diamond', name:'Diamond', wait:false, pct:100, tol:0.18 }
 ];
 function rng(seed){ return () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }; }
