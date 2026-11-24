@@ -10,6 +10,7 @@ import { renderHome } from './screens/home.js';
 import { openProfiles, pickTheme, wizAt, wizStep, renderMe } from './screens/profiles.js';
 import { settingsOpen, openSettings } from './screens/settings.js';
 import { THEMES, THEME_KEYS } from './theme-data.js';
+import { updateInputMode } from './inputmode.js';
 import { applyTheme, themePreview } from './theme.js';
 
 /* Language: browser default -> profile choice */
@@ -38,6 +39,7 @@ export function updateQuick(){
   document.querySelectorAll('.qlang').forEach(b => { b.innerHTML = '<span class="code"></span>'; b.firstChild.textContent = L.code; });
   const p = P(), th = state === 'newp' ? pickTheme : (p ? p.theme : 'pixel');
   document.querySelectorAll('.qtheme').forEach(b => b.innerHTML = themePreview(th));
+  updateInputMode();
 }
 function renderPop(){
   const box = $('#popLangs'); box.textContent = '';

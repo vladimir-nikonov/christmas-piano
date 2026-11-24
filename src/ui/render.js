@@ -1,5 +1,6 @@
 // Canvas drawing: falling notes, keyboard, effects, count-in.
 
+import { letterFor } from '../core/keymap.js';
 import { PC_COLOR } from '../core/music.js';
 import { opts } from '../data/storage.js';
 import { state, G, fx, flakes, nextUnhit, keyFor } from '../game/game.js';
@@ -151,6 +152,9 @@ function drawKeyboard(now){
     ctx.restore();
     if (m === fk){ const lw = (4 + 1.5 * pulse(now, 6) * fp + 3 * focus.nudge) * U; rrect(x + lw / 2, kbTop + 2 + lw / 2, w - lw, h - lw, kr); ctx.strokeStyle = FOCUS_EDGE; ctx.lineWidth = lw; ctx.stroke(); }
     if (sd){ ctx.globalAlpha = sd; rrect(x + 1.5 * U, kbTop + 2 + 1.5 * U, w - 3 * U, h - 3 * U, kr); ctx.strokeStyle = NEUTRAL; ctx.lineWidth = 3 * U; ctx.stroke(); ctx.globalAlpha = 1; }
+    // Once the computer keyboard is used, show which letter plays each key.
+    const kl = fx.kbLetters && letterFor(m);
+    if (kl){ ctx.fillStyle = k.black ? 'rgba(255,255,255,.8)' : 'rgba(24,35,53,.55)'; ctx.font = '700 ' + Math.round(Math.min(18 * U, w * 0.36)) + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(kl, x + w / 2, kbTop + 2 + (k.black ? h - 24 * U : 8 * U)); }
     if (!k.black){
       const cx = x + w / 2, sh = Math.round(Math.min(30 * U, h * 0.16)), sw = Math.round(w * 0.86), cy = kbTop + h - sh - 6 * U;
       rrect(cx - sw / 2, cy, sw, sh, Math.min(kr, sh / 2)); ctx.fillStyle = PC_COLOR[m % 12]; ctx.fill();

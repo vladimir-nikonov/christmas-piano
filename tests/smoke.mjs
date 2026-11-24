@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
 import { startServer } from '../scripts/serve.mjs';
+import { KEY_CODES } from '../src/core/keymap.js';
 
 const started = process.env.SMOKE_URL ? null : await startServer();
 const url = process.env.SMOKE_URL || started.url;
@@ -111,6 +112,25 @@ try {
   assert.equal(await sn(() => window.__sn.fx.nudge.midi === window.__sn.game.notes[0].midi), true, 'a wrong note nudges the expected key');
   await sn(() => window.__sn.onPlayed(window.__sn.game.notes[0].midi));
   assert.equal(await sn(() => window.__sn.game.notes[0].grade), 'good');
+
+  log('play notes with the computer keyboard and with screen taps');
+  assert.ok(await page.locator('#micPill').isHidden(), 'no microphone status in screen mode');
+  const codeFor = m => Object.keys(KEY_CODES).find(c => KEY_CODES[c] === m);
+  for (let i = 1; i <= 4; i++){
+    await waitAtNextNote();
+    const m = await sn(() => window.__sn.game.notes.find(n => !n.hit && !n.missed).midi);
+    if (i % 2){ await page.keyboard.press(codeFor(m)); }
+    else { const p = await sn(mm => window.__sn.keyPoint(mm), m); await page.mouse.click(p.x, p.y); }
+    await page.waitForFunction(k => window.__sn.game.notes[k].hit, i, { timeout: 2000 });
+  }
+  await page.keyboard.press('Escape');
+  await visible('#pause');
+  log('switch to the microphone from the pause menu and back');
+  await page.locator('#pause .qinput').click();
+  assert.equal(await sn(() => window.__sn.db.device.touch), false);
+  await page.locator('#pause .qinput').click();
+  assert.equal(await sn(() => window.__sn.db.device.touch), true);
+  await page.click('#btnResume');
   await page.click('#btnPause');
   await visible('#pause');
   assert.ok(await page.locator('#pause .qfull svg').count() === 1, 'full-screen button in the pause menu');

@@ -8,6 +8,7 @@ import { state } from '../../game/game.js';
 import { LANGS, LANG, tx, fmtDate } from '../../i18n/index.js';
 import { resetHeard } from '../../input/mic.js';
 import { avatarSVG } from '../art.js';
+import { setScreenInput } from '../inputmode.js';
 import { setLang } from '../lang.js';
 import { goHome } from './home.js';
 import { openMe } from './profiles.js';
@@ -29,7 +30,7 @@ export function openSettings(){
   lg.value = LANG; lg.onchange = e => setLang(e.target.value);
   $('#sLabels').value = p.opts.labels; $('#sLabels').onchange = e => { p.opts.labels = e.target.value; resetHeard(); save(); };
   [['#sHint','hint'],['#sOct','anyOct'],['#sLock','lockLevels']].forEach(([id, k]) => { $(id).checked = !!p.opts[k]; $(id).onchange = e => { p.opts[k] = e.target.checked; save(); }; });
-  $('#sTouch').checked = dev().touch; $('#sTouch').onchange = e => { dev().touch = e.target.checked; save(); };
+  $('#sTouch').checked = dev().touch; $('#sTouch').onchange = e => setScreenInput(e.target.checked);
   armButton('#btnReset', tx('sReset'), () => { p.level = 0; p.streak = 0; p.prog = freshProg(); p.best = {}; p.hist = {}; p.top = {}; p.sel.level = 0; save(); });
   armButton('#btnDelete', tx('sDelete'), () => { db.profiles = db.profiles.filter(x => x.id !== p.id); db.current = db.profiles[0] ? db.profiles[0].id : null; save(); $('#settings').hidden = true; goHome(); });
   renderBackupInfo(); $('#restoreAsk').hidden = true;

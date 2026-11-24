@@ -4,7 +4,7 @@ import { detectPitch } from './core/pitch.js';
 import { db, storeKind, save, loadDB, askPersist } from './data/storage.js';
 import { state, G, fx, onPlayed, frame } from './game/game.js';
 import { detectLang, LANG, useLang } from './i18n/index.js';
-import { layout, invalidateBg } from './ui/canvas.js';
+import { layout, invalidateBg, keys, kbTop, kbH, isBlack } from './ui/canvas.js';
 import { hydrateIcons } from './ui/icons.js';
 import { focus } from './ui/render.js';
 import { translateDom } from './ui/lang.js';
@@ -13,6 +13,7 @@ import { openProfiles, wizAt, wizStep, renderMe } from './ui/screens/profiles.js
 import { showSplash } from './ui/splash.js';
 // Modules that only attach event handlers when loaded:
 import './input/touch.js';
+import './input/keyboard.js';
 import './ui/screens/settings.js';
 
 // Resize / rotation: recompute canvas and re-render screens whose pixel sizes depend on U
@@ -29,4 +30,5 @@ loadDB().catch(() => {}).then(() => { goHome(); if (db.profiles.length) showSpla
 requestAnimationFrame(frame);
 if (document.fonts) document.fonts.ready.then(() => invalidateBg());
 
-window.__sn = { detectPitch, onPlayed: m => onPlayed(m, performance.now(), 'touch'), get game(){ return G; }, get fx(){ return fx; }, get focus(){ return focus; }, get state(){ return state; }, get db(){ return db; }, get lang(){ return LANG; }, get storeKind(){ return storeKind; }, loadDB, save };
+window.__sn = { detectPitch, onPlayed: m => onPlayed(m, performance.now(), 'touch'), get game(){ return G; }, get fx(){ return fx; }, get focus(){ return focus; }, get state(){ return state; }, get db(){ return db; }, get lang(){ return LANG; }, get storeKind(){ return storeKind; }, loadDB, save,
+  keyPoint: m => ({ x: keys[m].x + keys[m].w / 2, y: kbTop + kbH * (isBlack(m) ? 0.3 : 0.85) }) };

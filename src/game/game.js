@@ -31,7 +31,7 @@ export function startGame(demo){
         time: -Math.max(look, S.meter * beat) - 0.4, lastTickBeat: null, end: notes[notes.length - 1].t + notes[notes.length - 1].d + 0.8,
         score:0, combo:0, bestCombo:0, hits:0, perfect:0, finished:false, waiting:false };
   state = demo ? 'demo' : 'playing'; paused = false;
-  showOnly('#hud'); $('#micPill').hidden = demo;
+  showOnly('#hud'); $('#micPill').hidden = demo || !!dev().touch;
   updateHud(); requestWake();
 }
 export const nextUnhit = () => G.notes.find(n => !n.hit && !n.missed);

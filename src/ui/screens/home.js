@@ -14,6 +14,7 @@ import { icon } from '../icons.js';
 import { syncLang, updateQuick } from '../lang.js';
 import { openNewProfile } from './profiles.js';
 import { updateBackupNag } from './settings.js';
+import { setScreenInput } from '../inputmode.js';
 import { applyTheme } from '../theme.js';
 
 /* ================= Screens ================= */
@@ -121,13 +122,14 @@ const hideMicState = () => { $('#micErr').hidden = true; };
 watchMicPermission(st => { if (st === 'granted') hideMicState(); });
 async function playWithMic(){
   audio(); hideMicState();
-  if (!dev().touch){ const r = await startMic(); if (!r.ok){ showMicState(r.kind); return; } } else startMic();
+  // Screen and keyboard mode never asks for the microphone: a tablet without a piano needs no permission.
+  if (!dev().touch){ const r = await startMic(); if (!r.ok){ showMicState(r.kind); return; } }
   enterGame(false);
 }
 $('#btnPlay').onclick = playWithMic;
 $('#btnMicRetry').onclick = playWithMic;
 // Play without the microphone: count screen taps on this device (the parent setting) and start.
-$('#btnMicTouch').onclick = () => { audio(); dev().touch = true; save(); hideMicState(); enterGame(false); };
+$('#btnMicTouch').onclick = () => { audio(); setScreenInput(true); hideMicState(); enterGame(false); };
 $('#btnListen').onclick = () => { audio(); enterGame(true); };
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
 const toggleFull = () => {
