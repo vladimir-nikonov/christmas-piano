@@ -1,5 +1,5 @@
-# Publishes the site to GitHub Pages on every push to main.
-# Manual run: Actions tab → "Deploy to GitHub Pages" → Run workflow.
+# Tests the app and publishes it to GitHub Pages on every push to main.
+# Run manually: Actions tab → "Deploy to GitHub Pages" → Run workflow (or `gh workflow run pages.yml`).
 name: Deploy to GitHub Pages
 
 on:
@@ -12,25 +12,42 @@ permissions:
   pages: write
   id-token: write
 
-# One deployment at a time; a newer push replaces an older one that has not started yet.
+# One deployment at a time; a newer push does not cancel one that has already started.
 concurrency:
   group: pages
   cancel-in-progress: false
 
+# Jobs run test → build → deploy; nothing is published if a test fails.
 # Build and deploy are separate jobs: deploy-pages sometimes failed to see an
 # artifact uploaded seconds earlier in the same job ("No artifacts named
 # github-pages"). Starting a new job gives the artifact time to register.
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:unit
+      # Headless run of the real app in the runner's preinstalled Google Chrome.
+      - run: npm run test:smoke
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
-      # Only the app itself goes to the site, without screenshots or repo files.
+      # Only the app goes to the site: the page and its modules, no screenshots, tests or tooling.
       - name: Assemble site
         run: |
           mkdir -p _site
           cp index.html _site/
+          cp -r src _site/
 
       - uses: actions/configure-pages@v6
 

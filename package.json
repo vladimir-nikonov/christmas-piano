@@ -5,11 +5,14 @@
   "description": "Keyboard trainer: falling notes, microphone pitch detection. No build step; this file only holds dev tooling.",
   "scripts": {
     "serve": "node scripts/serve.mjs",
-    "test": "npm run test:unit && npm run test:smoke",
-    "test:unit": "node --test tests/unit/",
+    "lint": "eslint .",
+    "test": "npm run lint && npm run test:unit && npm run test:smoke",
+    "test:unit": "node --test \"tests/unit/*.test.js\"",
     "test:smoke": "node tests/smoke.mjs"
   },
   "devDependencies": {
+    "eslint": "^9.39.5",
+    "globals": "^17.14.0",
     "playwright-core": "^1.65.0"
   }
 }

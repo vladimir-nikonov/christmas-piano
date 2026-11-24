@@ -3,7 +3,7 @@
 // Uses the installed Google Chrome (channel "chrome"); set CHROME_PATH to use another binary.
 // Set SMOKE_URL to test an already running server instead of starting one.
 import { chromium } from 'playwright-core';
-import { readFile, mkdtemp } from 'node:fs/promises';
+import { readFile, writeFile, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
@@ -11,8 +11,21 @@ import { startServer } from '../scripts/serve.mjs';
 
 const started = process.env.SMOKE_URL ? null : await startServer();
 const url = process.env.SMOKE_URL || started.url;
-const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : { channel: 'chrome' });
+const launchOpts = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : { channel: 'chrome' };
+const browser = await chromium.launch(launchOpts);
 const errors = [];
+// Fake microphone input: 1.5 s of silence (noise calibration), then the note in short bursts with gaps,
+// so every burst is a new attack. Chrome loops the file.
+function toneWav(freq, sr = 48000){
+  const secs = 12, n = sr * secs, data = Buffer.alloc(n * 2);
+  for (let i = 0; i < n; i++){ const t = i / sr, ph = (t - 1.5) % 0.7;
+    const on = t > 1.5 && ph < 0.45, env = on ? Math.min(1, ph / 0.01) * Math.min(1, (0.45 - ph) / 0.02) : 0;
+    data.writeInt16LE(Math.round(Math.sin(2 * Math.PI * freq * t) * env * 0.5 * 32767), i * 2); }
+  const h = Buffer.alloc(44);
+  h.write('RIFF', 0); h.writeUInt32LE(36 + data.length, 4); h.write('WAVEfmt ', 8); h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(1, 22);
+  h.writeUInt32LE(sr, 24); h.writeUInt32LE(sr * 2, 28); h.writeUInt16LE(2, 32); h.writeUInt16LE(16, 34); h.write('data', 36); h.writeUInt32LE(data.length, 40);
+  return Buffer.concat([h, data]);
+}
 let step = 'start';
 const log = s => { step = s; console.log('  · ' + s); };
 
@@ -62,7 +75,8 @@ try {
   await visible('#results');
   assert.equal(await page.locator('#resPct').textContent(), '100%');
   assert.equal(await sn(() => window.__sn.db.profiles[0].best['0:short']), 3);
-  assert.equal(await sn(() => window.__sn.db.profiles[0].streak), 1);
+  assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.jingle), { level: 0, streak: 1 });
+  assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.birthday), { level: 0, streak: 0 });
 
   log('a wrong note in level 1 is counted against the note');
   await page.click('#btnAgain');
@@ -73,6 +87,7 @@ try {
   assert.equal(await sn(() => window.__sn.game.notes[0].grade), 'good');
   await page.click('#btnPause');
   await visible('#pause');
+  assert.ok(await page.locator('#pause .qfull svg').count() === 1, 'full-screen button in the pause menu');
   await page.click('#btnQuit');
   await visible('#home');
 
@@ -134,10 +149,60 @@ try {
   await visible('#home');
   assert.equal(await sn(() => window.__sn.db.profiles[0].name), 'Kid');
 
+  log('theme from the quick picker');
+  await page.locator('#home .qtheme').click();
+  await visible('#popThemes');
+  await page.locator('#popThemes button').nth(2).click();
+  assert.equal(await sn(() => document.documentElement.dataset.theme), await sn(() => window.__sn.db.profiles[0].theme));
+  assert.notEqual(await sn(() => window.__sn.db.profiles[0].theme), 'pixel');
+  await page.click('#btnPopClose');
+
+  log('timed level: unplayed notes are missed and the result is kept in the history');
+  await page.click('#btnSettings');
+  await sn(() => { const el = document.querySelector('#sTempo'); el.value = 130; el.dispatchEvent(new Event('input')); });
+  assert.equal(await sn(() => window.__sn.db.profiles[0].opts.tempo), 130);
+  await page.click('#btnSetClose');
+  await page.locator('#levels button').nth(1).click();
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => window.__sn.state === 'playing' && !window.__sn.game.wait);
+  await page.locator('#results').waitFor({ state: 'visible', timeout: 30000 });
+  assert.equal(await page.locator('#resPct').textContent(), '0%');
+  assert.equal(await sn(() => window.__sn.game.notes.every(n => n.missed)), true);
+  assert.equal(await sn(() => window.__sn.db.profiles[0].hist['1:short'].length), 1);
+  await page.click('#btnHome');
+  await visible('#home');
+
   log('portrait layout');
   await page.setViewportSize({ width: 800, height: 1280 });
   await page.waitForTimeout(300);
   await visible('#home');
+
+  log('delete the player from parent settings');
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.click('#btnSettings');
+  await page.click('#btnDelete');
+  await page.click('#btnDelete');
+  await visible('#newp');
+  assert.equal(await sn(() => window.__sn.db.profiles.length), 0);
+  await ctx.close();
+
+  log('microphone: a played E4 is heard and counted');
+  const wav = join(await mkdtemp(join(tmpdir(), 'sn-mic-')), 'e4.wav');
+  await writeFile(wav, toneWav(329.63));
+  const micBrowser = await chromium.launch({ ...launchOpts, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--use-file-for-fake-audio-capture=' + wav, '--autoplay-policy=no-user-gesture-required'] });
+  try {
+    const mp = await micBrowser.newPage();
+    mp.on('pageerror', e => errors.push('pageerror: ' + e.message));
+    await mp.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+    await mp.goto(url);
+    await mp.fill('#newName', 'Mic');
+    await mp.click('#btnStep2');
+    await mp.click('#btnNewOk');
+    await mp.click('#btnPlay');
+    await mp.waitForFunction(() => window.__sn.state === 'playing');
+    await mp.waitForFunction(() => window.__sn.game.notes[0].hit, null, { timeout: 20000 });
+    assert.equal(await mp.locator('#heard').textContent(), 'E');
+  } finally { await micBrowser.close(); }
 
   assert.deepEqual(errors, []);
   console.log('smoke: OK');

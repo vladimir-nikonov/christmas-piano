@@ -4,7 +4,7 @@ A keyboard/synthesizer trainer: notes fall onto the keys, the microphone listens
 
 Open: https://vladimir-nikonov.github.io/christmas-piano/
 
-The whole app is a single `index.html` file, no build step required. The app's user interface is in Russian.
+Plain JavaScript in native ES modules (`index.html` + `src/`), no build step. The interface is available in English, Polish, Ukrainian, Russian and Spanish. To run locally: `npm install`, `npm run serve`, open http://localhost:8080; `npm test` runs lint, unit tests and a headless browser smoke test.
 
 Development workflow (one worktree per feature, commit and merge into `main`): [CLAUDE.md](CLAUDE.md).
 
