@@ -5,3 +5,5 @@
 Открыть: https://vladimir-nikonov.github.io/christmas-piano/
 
 Всё приложение — один файл `index.html`, сборка не нужна.
+
+Как вести разработку (worktree на каждую фичу, коммит и мердж в `main`): [CLAUDE.md](CLAUDE.md).
