@@ -176,6 +176,14 @@ svg.off{color:var(--border)}
 .minipick.th button{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;color:var(--text);font-size:14px}
 .minipick.th svg{width:64px;height:40px;border-radius:4px}
 
+/* Child's own page: name, avatar, theme (icons, big targets) */
+#me{justify-content:flex-start;padding-top:calc(96*var(--u) + env(safe-area-inset-top,0px))}
+.mehead{display:flex;align-items:center;gap:calc(18*var(--u));flex-wrap:wrap;justify-content:center}
+.mehead .av{display:block}
+#me .avpick button{padding:calc(6*var(--u))}
+.sheet .whoami{display:inline-flex;align-items:center;gap:8px;vertical-align:middle;margin-left:8px;color:var(--text);letter-spacing:0}
+.sheet .whoami svg{width:28px;height:28px;border-radius:4px}
+
 /* Quick language / theme switch */
 .qlang .code{font-size:calc(21*var(--u));font-weight:900;letter-spacing:.04em}
 .qtheme svg.pv{width:calc(40*var(--u));height:calc(25*var(--u));border-radius:calc(4*var(--u))}
@@ -203,7 +211,7 @@ svg.off{color:var(--border)}
 </div>
 
 <div class="screen" id="home" hidden>
-  <div class="corner l"><button class="b who" id="btnWho" data-ta="who"></button></div>
+  <div class="corner l"><button class="b who" id="btnWho" data-ta="who"></button><button class="b ico" id="btnMe" data-ta="myPage" data-icon="pencil"></button></div>
   <div class="corner r">
     <button class="b ico qlang" data-ta="language"></button>
     <button class="b ico qtheme" data-ta="theme"></button>
@@ -238,6 +246,16 @@ svg.off{color:var(--border)}
   </div>
 </div>
 
+<!-- Child's own page: change name, avatar and theme -->
+<div class="screen" id="me" hidden>
+  <div class="corner l"><button class="b ico" id="btnMeBack" data-ta="home" data-icon="home"></button></div>
+  <div class="corner r"><button class="b ico qlang" data-ta="language"></button></div>
+  <div class="mehead"><span id="meAv"></span><input class="name-in" id="meName" type="text" maxlength="14" data-tp="name" data-ta="name" autocomplete="off"></div>
+  <div class="avpick" id="meAvPick"></div>
+  <div class="themes" id="meThemes"></div>
+  <button class="b primary go" id="btnMeOk" data-ta="done" data-icon="check"></button>
+</div>
+
 <div class="screen" id="results" hidden>
   <div class="panel">
     <div class="stars-big" id="resStars"></div>
@@ -265,11 +283,9 @@ svg.off{color:var(--border)}
   <div class="sheet">
     <button class="b x" id="btnSetClose" data-ta="close" data-icon="cross"></button>
     <h2 data-t="sHead"></h2>
-    <h3 data-t="sPlayer"></h3>
-    <div class="row"><label for="sName" data-t="sName"></label><input type="text" id="sName" maxlength="14">
-      <div class="minipick" id="sAvatar"></div></div>
+    <h3><span data-t="sPlayer"></span><span class="whoami" id="sWho"></span></h3>
+    <div class="row"><label data-t="myPage"></label><button class="b txtbtn" id="btnKidPage" data-t="sKidOpen"></button><small data-t="sKidHint"></small></div>
     <div class="row"><label for="sLang" data-t="sLang"></label><select id="sLang"></select></div>
-    <div class="row"><label data-t="sTheme"></label><span></span><div class="minipick th" id="sTheme"></div></div>
     <div class="row"><label for="sTempo" data-t="sTempo"></label><output id="oTempo"></output>
       <input type="range" id="sTempo" min="50" max="130" step="5"><small data-t="sTempoHelp"></small></div>
     <div class="row"><label for="sTol" data-t="sTol"></label><output id="oTol"></output>
@@ -317,31 +333,31 @@ const $ = s => document.querySelector(s);
 /* ================= Languages ================= */
 const LANGS = [ { id:'en', code:'EN', name:'English' }, { id:'pl', code:'PL', name:'Polski' }, { id:'uk', code:'UA', name:'Українська' }, { id:'ru', code:'RU', name:'Русский' }, { id:'es', code:'ES', name:'Español' } ];
 const I18N = {
-  en: { title:'Snow Notes', pause:'Pause', progress:'Progress', mic:'Microphone', who:'Switch player', full:'Full screen', settings:'Parent settings', listen:'Listen to the tune', play:'Play', back:'Back', next:'Next', done:'Done', home:'Home', again:'Play again', nextLevel:'Next level', restart:'Restart', resume:'Resume', close:'Close', newPlayer:'New player', avatar:'Avatar', theme:'Theme', language:'Language', level:'Level', name:'Name',
+  en: { myPage:'My page', sKidHint:'The child changes name, avatar and theme on their own page (pencil button next to the player).', sKidOpen:'Open child’s page', title:'Snow Notes', pause:'Pause', progress:'Progress', mic:'Microphone', who:'Switch player', full:'Full screen', settings:'Parent settings', listen:'Listen to the tune', play:'Play', back:'Back', next:'Next', done:'Done', home:'Home', again:'Play again', nextLevel:'Next level', restart:'Restart', resume:'Resume', close:'Close', newPlayer:'New player', avatar:'Avatar', theme:'Theme', language:'Language', level:'Level', name:'Name',
     levels:['Wood','Stone','Iron','Gold','Diamond'], parts:['Start, 4 bars','Half, 8 bars','Whole chorus, 16 bars'], micErr:'Allow the microphone: tap the icon left of the address bar.',
     sHead:'Parent settings', sPlayer:'PLAYER', sName:'Name', sTheme:'Theme', sLang:'Language', sTempo:'Tempo', sTempoHelp:'Percent of the level tempo. The level goes up on its own only at 100% or more.', sTol:'Timing window', sTolHelp:'0 means "as the level sets". Otherwise how early or late a note may be.', sTolLevel:'as the level sets', ms:'ms',
     sLabels:'Note names', lLetters:'Letters', lNone:'Colours only', sHint:'Highlight the next key', sOct:'Any octave', sOctHelp:'Count a note played in any octave of the keyboard.', sUnlock:'Unlock all levels', sUnlockHelp:'Otherwise the next block opens after two games in a row at 85% or more.',
     sProgress:'Player progress', sReset:'Reset levels', sDelete:'Delete player', sConfirm:'Sure? Tap again', sDoneMsg:'Done', sDevice:'THIS DEVICE', sLat:'Microphone delay', sLatHelp:'If notes count as late, raise it. Usually 60–100 ms.', sSens:'Microphone sensitivity', sSensHelp:'Higher hears quiet notes but reacts more to noise.', sSensFmt:'{n} of 10',
     sTouch:'Screen taps', sTouchHelp:'Count taps on the drawn keys, to test without a keyboard.', sNote:'Everything is saved only in this browser on this device.' },
-  pl: { title:'Śnieżne nuty', pause:'Pauza', progress:'Postęp', mic:'Mikrofon', who:'Zmień gracza', full:'Pełny ekran', settings:'Ustawienia rodzica', listen:'Posłuchaj melodii', play:'Graj', back:'Wstecz', next:'Dalej', done:'Gotowe', home:'Start', again:'Jeszcze raz', nextLevel:'Następny poziom', restart:'Od początku', resume:'Wznów', close:'Zamknij', newPlayer:'Nowy gracz', avatar:'Awatar', theme:'Motyw', language:'Język', level:'Poziom', name:'Imię',
+  pl: { myPage:'Moja strona', sKidHint:'Imię, awatar i motyw dziecko zmienia na swojej stronie (przycisk z ołówkiem obok gracza).', sKidOpen:'Otwórz stronę dziecka', title:'Śnieżne nuty', pause:'Pauza', progress:'Postęp', mic:'Mikrofon', who:'Zmień gracza', full:'Pełny ekran', settings:'Ustawienia rodzica', listen:'Posłuchaj melodii', play:'Graj', back:'Wstecz', next:'Dalej', done:'Gotowe', home:'Start', again:'Jeszcze raz', nextLevel:'Następny poziom', restart:'Od początku', resume:'Wznów', close:'Zamknij', newPlayer:'Nowy gracz', avatar:'Awatar', theme:'Motyw', language:'Język', level:'Poziom', name:'Imię',
     levels:['Drewno','Kamień','Żelazo','Złoto','Diament'], parts:['Początek, 4 takty','Połowa, 8 taktów','Cały refren, 16 taktów'], micErr:'Zezwól na mikrofon: ikona po lewej stronie paska adresu.',
     sHead:'Ustawienia rodzica', sPlayer:'GRACZ', sName:'Imię', sTheme:'Motyw', sLang:'Język', sTempo:'Tempo', sTempoHelp:'Procent tempa poziomu. Poziom rośnie sam tylko przy 100% lub więcej.', sTol:'Tolerancja czasu', sTolHelp:'0 oznacza „jak na poziomie”. W innym razie: o ile wcześniej lub później można zagrać.', sTolLevel:'jak na poziomie', ms:'ms',
     sLabels:'Nazwy dźwięków', lLetters:'Litery', lNone:'Tylko kolory', sHint:'Podświetlaj następny klawisz', sOct:'Dowolna oktawa', sOctHelp:'Zaliczaj dźwięk zagrany w dowolnej oktawie.', sUnlock:'Odblokuj wszystkie poziomy', sUnlockHelp:'W przeciwnym razie następny blok otwiera się po dwóch grach z rzędu na 85% lub więcej.',
     sProgress:'Postęp gracza', sReset:'Resetuj poziomy', sDelete:'Usuń gracza', sConfirm:'Na pewno? Naciśnij jeszcze raz', sDoneMsg:'Gotowe', sDevice:'TO URZĄDZENIE', sLat:'Opóźnienie mikrofonu', sLatHelp:'Jeśli nuty są zaliczane jako spóźnione, zwiększ. Zwykle 60–100 ms.', sSens:'Czułość mikrofonu', sSensHelp:'Wyżej słyszy ciche dźwięki, ale bardziej reaguje na hałas.', sSensFmt:'{n} z 10',
     sTouch:'Dotyk ekranu', sTouchHelp:'Zaliczaj dotknięcia narysowanych klawiszy, aby sprawdzić bez instrumentu.', sNote:'Wszystko zapisuje się tylko w tej przeglądarce na tym urządzeniu.' },
-  uk: { title:'Сніжні ноти', pause:'Пауза', progress:'Прогрес', mic:'Мікрофон', who:'Змінити гравця', full:'На весь екран', settings:'Налаштування для батьків', listen:'Послухати мелодію', play:'Грати', back:'Назад', next:'Далі', done:'Готово', home:'Додому', again:'Ще раз', nextLevel:'Наступний рівень', restart:'Спочатку', resume:'Продовжити', close:'Закрити', newPlayer:'Новий гравець', avatar:'Аватар', theme:'Тема', language:'Мова', level:'Рівень', name:'Ім’я',
+  uk: { myPage:'Моя сторінка', sKidHint:'Ім’я, аватар і тему дитина змінює на своїй сторінці (кнопка з олівцем біля гравця).', sKidOpen:'Відкрити сторінку дитини', title:'Сніжні ноти', pause:'Пауза', progress:'Прогрес', mic:'Мікрофон', who:'Змінити гравця', full:'На весь екран', settings:'Налаштування для батьків', listen:'Послухати мелодію', play:'Грати', back:'Назад', next:'Далі', done:'Готово', home:'Додому', again:'Ще раз', nextLevel:'Наступний рівень', restart:'Спочатку', resume:'Продовжити', close:'Закрити', newPlayer:'Новий гравець', avatar:'Аватар', theme:'Тема', language:'Мова', level:'Рівень', name:'Ім’я',
     levels:['Дерево','Камінь','Залізо','Золото','Алмаз'], parts:['Початок, 4 такти','Половина, 8 тактів','Весь приспів, 16 тактів'], micErr:'Дозвольте мікрофон: значок ліворуч від адреси в браузері.',
     sHead:'Налаштування для батьків', sPlayer:'ГРАВЕЦЬ', sName:'Ім’я', sTheme:'Тема', sLang:'Мова', sTempo:'Темп', sTempoHelp:'Відсоток від темпу рівня. Рівень підвищується сам лише при 100% і вище.', sTol:'Допуск за часом', sTolHelp:'0 означає «як на рівні». Інакше наскільки можна помилитися раніше чи пізніше.', sTolLevel:'як на рівні', ms:'мс',
     sLabels:'Назви нот', lLetters:'Літери', lNone:'Лише кольори', sHint:'Підсвічувати наступну клавішу', sOct:'Будь-яка октава', sOctHelp:'Зараховувати ноту в будь-якій октаві синтезатора.', sUnlock:'Відкрити всі рівні', sUnlockHelp:'Інакше наступний блок відкривається після двох ігор поспіль на 85% і більше.',
     sProgress:'Прогрес гравця', sReset:'Скинути рівні', sDelete:'Видалити гравця', sConfirm:'Точно? Натисніть ще раз', sDoneMsg:'Готово', sDevice:'ЦЕЙ ПРИСТРІЙ', sLat:'Затримка мікрофона', sLatHelp:'Якщо ноти зараховуються пізно, збільште. Зазвичай 60–100 мс.', sSens:'Чутливість мікрофона', sSensHelp:'Вище означає, що чує тихі ноти, але більше реагує на шум.', sSensFmt:'{n} з 10',
     sTouch:'Натискання на екран', sTouchHelp:'Зараховувати дотики до намальованих клавіш, щоб перевірити без синтезатора.', sNote:'Усе зберігається лише в цьому браузері на цьому пристрої.' },
-  ru: { title:'Снежные ноты', pause:'Пауза', progress:'Прогресс', mic:'Микрофон', who:'Сменить игрока', full:'Во весь экран', settings:'Настройки для родителя', listen:'Послушать мелодию', play:'Играть', back:'Назад', next:'Дальше', done:'Готово', home:'Домой', again:'Ещё раз', nextLevel:'Следующий уровень', restart:'Сначала', resume:'Продолжить', close:'Закрыть', newPlayer:'Новый игрок', avatar:'Аватар', theme:'Тема', language:'Язык', level:'Уровень', name:'Имя',
+  ru: { myPage:'Моя страница', sKidHint:'Имя, аватар и тему ребёнок меняет на своей странице (кнопка с карандашом рядом с игроком).', sKidOpen:'Открыть страницу ребёнка', title:'Снежные ноты', pause:'Пауза', progress:'Прогресс', mic:'Микрофон', who:'Сменить игрока', full:'Во весь экран', settings:'Настройки для родителя', listen:'Послушать мелодию', play:'Играть', back:'Назад', next:'Дальше', done:'Готово', home:'Домой', again:'Ещё раз', nextLevel:'Следующий уровень', restart:'Сначала', resume:'Продолжить', close:'Закрыть', newPlayer:'Новый игрок', avatar:'Аватар', theme:'Тема', language:'Язык', level:'Уровень', name:'Имя',
     levels:['Дерево','Камень','Железо','Золото','Алмаз'], parts:['Начало, 4 такта','Половина, 8 тактов','Весь припев, 16 тактов'], micErr:'Разрешите микрофон: значок слева от адреса в браузере.',
     sHead:'Настройки для родителя', sPlayer:'ИГРОК', sName:'Имя', sTheme:'Тема', sLang:'Язык', sTempo:'Темп', sTempoHelp:'Процент от темпа уровня. Уровень повышается сам только при 100% и выше.', sTol:'Допуск по времени', sTolHelp:'0 означает «как на уровне». Иначе насколько можно ошибиться раньше или позже.', sTolLevel:'как на уровне', ms:'мс',
     sLabels:'Подписи нот', lLetters:'Буквы', lNone:'Только цвет', sHint:'Подсвечивать следующую клавишу', sOct:'Любая октава', sOctHelp:'Засчитывать ноту в любой октаве синтезатора.', sUnlock:'Открыть все уровни', sUnlockHelp:'Иначе следующий блок открывается после двух игр подряд на 85% и больше.',
     sProgress:'Прогресс игрока', sReset:'Сбросить уровни', sDelete:'Удалить игрока', sConfirm:'Точно? Нажмите ещё раз', sDoneMsg:'Готово', sDevice:'ЭТО УСТРОЙСТВО', sLat:'Задержка микрофона', sLatHelp:'Если ноты засчитываются поздно, увеличьте. Обычно 60–100 мс.', sSens:'Чувствительность микрофона', sSensHelp:'Выше означает, что слышит тихие ноты, но больше реагирует на шум.', sSensFmt:'{n} из 10',
     sTouch:'Нажатия по экрану', sTouchHelp:'Засчитывать касания нарисованных клавиш, чтобы проверить без синтезатора.', sNote:'Всё сохраняется только в этом браузере на этом устройстве.' },
-  es: { title:'Notas de nieve', pause:'Pausa', progress:'Progreso', mic:'Micrófono', who:'Cambiar jugador', full:'Pantalla completa', settings:'Ajustes para padres', listen:'Escuchar la melodía', play:'Jugar', back:'Atrás', next:'Siguiente', done:'Listo', home:'Inicio', again:'Otra vez', nextLevel:'Siguiente nivel', restart:'Desde el principio', resume:'Continuar', close:'Cerrar', newPlayer:'Nuevo jugador', avatar:'Avatar', theme:'Tema', language:'Idioma', level:'Nivel', name:'Nombre',
+  es: { myPage:'Mi página', sKidHint:'El niño cambia el nombre, el avatar y el tema en su propia página (botón del lápiz junto al jugador).', sKidOpen:'Abrir la página del niño', title:'Notas de nieve', pause:'Pausa', progress:'Progreso', mic:'Micrófono', who:'Cambiar jugador', full:'Pantalla completa', settings:'Ajustes para padres', listen:'Escuchar la melodía', play:'Jugar', back:'Atrás', next:'Siguiente', done:'Listo', home:'Inicio', again:'Otra vez', nextLevel:'Siguiente nivel', restart:'Desde el principio', resume:'Continuar', close:'Cerrar', newPlayer:'Nuevo jugador', avatar:'Avatar', theme:'Tema', language:'Idioma', level:'Nivel', name:'Nombre',
     levels:['Madera','Piedra','Hierro','Oro','Diamante'], parts:['Inicio, 4 compases','Mitad, 8 compases','Estribillo completo, 16 compases'], micErr:'Permite el micrófono: toca el icono a la izquierda de la dirección.',
     sHead:'Ajustes para padres', sPlayer:'JUGADOR', sName:'Nombre', sTheme:'Tema', sLang:'Idioma', sTempo:'Tempo', sTempoHelp:'Porcentaje del tempo del nivel. El nivel sube solo con 100% o más.', sTol:'Margen de tiempo', sTolHelp:'0 significa «según el nivel». Si no, cuánto antes o después se puede tocar.', sTolLevel:'según el nivel', ms:'ms',
     sLabels:'Nombres de notas', lLetters:'Letras', lNone:'Solo colores', sHint:'Resaltar la siguiente tecla', sOct:'Cualquier octava', sOctHelp:'Contar la nota en cualquier octava del teclado.', sUnlock:'Desbloquear todos los niveles', sUnlockHelp:'Si no, el siguiente bloque se abre tras dos partidas seguidas con 85% o más.',
@@ -407,7 +423,7 @@ const ICON = {
   home:'M3 11L12 3L21 11V21H15V14H9V21H3Z', lock:'M6 10V7A6 6 0 0 1 18 7V10M4 10H20V22H4Z',
   mic:'M9 4Q12 1 15 4V12Q12 16 9 12ZM5 11Q5 19 12 19Q19 19 19 11M12 19V23',
   music:'M10 18V4L21 2V16M10 18A4 3 0 1 1 2 18A4 3 0 1 1 10 18M21 16A4 3 0 1 1 13 16A4 3 0 1 1 21 16',
-  pause:'M8 4V20M16 4V20', play:'M8 4L21 12L8 20Z', plus:'M12 3V21M3 12H21', retry:'M4 9A9 9 0 1 1 5 18M4 3V9H10',
+  pause:'M8 4V20M16 4V20', pencil:'M4 20L5 15L16 4L20 8L9 19ZM5 15L9 19M13 7L17 11', play:'M8 4L21 12L8 20Z', plus:'M12 3V21M3 12H21', retry:'M4 9A9 9 0 1 1 5 18M4 3V9H10',
   speaker:'M3 9H7L12 4V20L7 15H3ZM16 8Q22 12 16 16', star:'M12 2L15 9L22 9L17 14L19 22L12 17L5 22L7 14L2 9L9 9Z'
 };
 const ROT = { back:['arrow-down', 90], next:['arrow-down', -90] };
@@ -690,7 +706,7 @@ function showHeard(m){ if (m === heardShown) return; heardShown = m; $('#heard')
 let state = 'home', paused = false, G = null;
 const fx = { parts:[], pops:[], keyFlash:{}, heardKey:{} };
 const flakes = Array.from({ length: 60 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.6 + 0.8, s: Math.random() * 0.03 + 0.01, d: Math.random() * 6 }));
-function showOnly(id){ ['#home','#profiles','#newp','#results','#pause','#settings','#hud','#pop'].forEach(s => $(s).hidden = s !== id); }
+function showOnly(id){ ['#home','#profiles','#newp','#results','#pause','#settings','#hud','#pop','#me'].forEach(s => $(s).hidden = s !== id); }
 
 function startGame(demo){
   const p = P(), o = p.opts, L = LEVELS[p.sel.level];
@@ -1014,6 +1030,27 @@ $('#btnNewOk').onclick = () => {
 $('#btnNewBack').onclick = () => { if (wizAt === 2) wizStep(1); else { if (P()) applyTheme(P().theme); openProfiles(); } };
 $('#btnWho').onclick = openProfiles;
 
+/* Child's own page: name, avatar, theme. Saved on every tap. */
+function openMe(){ state = 'me'; renderMe(); showOnly('#me'); updateQuick(); }
+function renderMe(){
+  const p = P(); if (!p) return;
+  $('#meAv').innerHTML = avatarSVG(p.avatar, px(96));
+  const nm = $('#meName'); if (document.activeElement !== nm) nm.value = p.name || '';
+  nm.oninput = () => { p.name = nm.value.trim(); save(); };
+  const av = $('#meAvPick'); av.textContent = '';
+  AVATARS.forEach((_, i) => { const b = document.createElement('button'); b.className = 'b' + (i === p.avatar ? ' on' : ''); b.setAttribute('aria-pressed', i === p.avatar); b.setAttribute('aria-label', tx('avatar') + ' ' + (i + 1));
+    b.innerHTML = avatarSVG(i, px(72)); b.onclick = () => { p.avatar = i; save(); renderMe(); }; av.appendChild(b); });
+  const box = $('#meThemes'); box.textContent = '';
+  THEME_KEYS.forEach(k => { const t = THEMES[k], b = document.createElement('button'); b.className = 'b tcard'; b.setAttribute('aria-pressed', k === p.theme); b.setAttribute('aria-label', tx('theme') + ' ' + t.name);
+    b.style.background = t.panel; b.style.borderColor = t.border; b.style.color = t.text; b.style.borderRadius = t.radius + 'px'; b.style.fontFamily = t.font + ', system-ui, sans-serif'; b.style.boxShadow = '0 ' + px(5) + 'px 0 ' + t.accentDark;
+    b.innerHTML = themePreview(k) + '<span class="nm"></span>'; b.querySelector('.nm').textContent = t.name;
+    b.onclick = () => { p.theme = k; save(); applyTheme(k); bgCache = null; updateQuick(); renderMe(); }; box.appendChild(b); });
+}
+$('#btnMe').onclick = openMe;
+$('#btnMeBack').onclick = goHome;
+$('#btnMeOk').onclick = goHome;
+$('#meName').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+
 $('#btnPlay').onclick = async () => {
   audio(); $('#micErr').hidden = true;
   if (!dev().touch){ if (!(await startMic())) return; } else startMic();
@@ -1049,7 +1086,7 @@ function setLang(code){
   if (!I18N[code]) return;
   LANG = code; db.lang = code; const p = P(); if (p && state !== 'newp') p.lang = code; save();
   translateDom();
-  if (state === 'home') renderHome(); else if (state === 'profiles') openProfiles(); else if (state === 'newp') wizStep(wizAt);
+  if (state === 'home') renderHome(); else if (state === 'profiles') openProfiles(); else if (state === 'newp') wizStep(wizAt); else if (state === 'me') renderMe();
   if (settingsOpen) openSettings();
   if (!$('#pop').hidden) renderPop();
 }
@@ -1069,7 +1106,7 @@ function renderPop(){
   if (!tb.hidden) THEME_KEYS.forEach(k => { const th = THEMES[k], b = document.createElement('button'); b.className = 'b tcard'; b.setAttribute('aria-pressed', k === p.theme); b.setAttribute('aria-label', tx('theme') + ' ' + th.name);
     b.style.background = th.panel; b.style.borderColor = th.border; b.style.color = th.text; b.style.borderRadius = Math.min(th.radius, 20) + 'px'; b.style.fontFamily = th.font + ', system-ui, sans-serif';
     b.innerHTML = themePreview(k) + '<span class="nm"></span>'; b.querySelector('.nm').textContent = th.name;
-    b.onclick = () => { p.theme = k; save(); applyTheme(k); bgCache = null; updateQuick(); renderPop(); if (state === 'home') renderHome(); };
+    b.onclick = () => { p.theme = k; save(); applyTheme(k); bgCache = null; updateQuick(); renderPop(); if (state === 'home') renderHome(); else if (state === 'me') renderMe(); };
     tb.appendChild(b); });
 }
 function openPop(){ renderPop(); $('#pop').hidden = false; }
@@ -1081,13 +1118,7 @@ $('#pop').addEventListener('click', e => { if (e.target.id === 'pop') $('#pop').
 const bindRange = (id, out, get, set, fmt) => { const el = $(id); el.value = get(); $(out).textContent = fmt(+el.value); el.oninput = () => { set(+el.value); $(out).textContent = fmt(+el.value); save(); }; };
 function openSettings(){
   const p = P(); settingsOpen = true;
-  $('#sName').value = p.name || ''; $('#sName').oninput = e => { p.name = e.target.value.trim(); save(); };
-  const av = $('#sAvatar'); av.textContent = '';
-  AVATARS.forEach((_, i) => { const b = document.createElement('button'); b.setAttribute('aria-pressed', i === p.avatar); b.setAttribute('aria-label', tx('avatar') + ' ' + (i + 1)); b.innerHTML = avatarSVG(i, 36);
-    b.onclick = () => { p.avatar = i; save(); av.querySelectorAll('button').forEach((x, j) => x.setAttribute('aria-pressed', j === i)); }; av.appendChild(b); });
-  const th = $('#sTheme'); th.textContent = '';
-  THEME_KEYS.forEach(k => { const b = document.createElement('button'); b.setAttribute('aria-pressed', k === p.theme); b.innerHTML = themePreview(k) + '<span></span>'; b.querySelector('span').textContent = THEMES[k].name;
-    b.onclick = () => { p.theme = k; save(); applyTheme(k); th.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); }; th.appendChild(b); });
+  $('#sWho').innerHTML = avatarSVG(p.avatar, 28) + '<span></span>'; $('#sWho').lastChild.textContent = p.name || tx('noName');
   bindRange('#sTempo', '#oTempo', () => p.opts.tempo, v => p.opts.tempo = v, v => v + '%');
   bindRange('#sTol', '#oTol', () => p.opts.tolMs, v => p.opts.tolMs = v, v => v ? '±' + v + ' ' + tx('ms') : tx('sTolLevel'));
   bindRange('#sLat', '#oLat', () => dev().latency, v => dev().latency = v, v => v + ' ' + tx('ms'));
@@ -1178,6 +1209,7 @@ function armButton(sel, label, action){
   b.onclick = () => { if (!armed){ armed = true; b.textContent = tx('sConfirm'); tm = setTimeout(() => { armed = false; b.textContent = label; }, 3000); return; }
     clearTimeout(tm); armed = false; action(); b.textContent = tx('sDoneMsg'); setTimeout(() => b.textContent = label, 1500); };
 }
+$('#btnKidPage').onclick = () => { settingsOpen = false; $('#settings').hidden = true; openMe(); };
 $('#btnSettings').onclick = () => { openSettings(); $('#settings').scrollTop = 0; };
 $('#btnSetClose').onclick = () => { settingsOpen = false; $('#settings').hidden = true; if (state === 'home') goHome(); };
 
@@ -1186,7 +1218,7 @@ async function requestWake(){ try { if ('wakeLock' in navigator && !wake){ wake 
 
 // Resize / rotation: recompute canvas and re-render screens whose pixel sizes depend on U
 let rsT = 0;
-function onResize(){ layout(); clearTimeout(rsT); rsT = setTimeout(() => { if (state === 'home') renderHome(); else if (state === 'profiles') openProfiles(); else if (state === 'newp') wizStep(wizAt); }, 120); }
+function onResize(){ layout(); clearTimeout(rsT); rsT = setTimeout(() => { if (state === 'home') renderHome(); else if (state === 'profiles') openProfiles(); else if (state === 'newp') wizStep(wizAt); else if (state === 'me') renderMe(); }, 120); }
 addEventListener('resize', onResize);
 if (window.visualViewport) visualViewport.addEventListener('resize', onResize);
 
