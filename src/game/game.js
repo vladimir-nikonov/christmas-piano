@@ -16,7 +16,8 @@ import { TH } from '../ui/theme.js';
 
 /* ================= Game ================= */
 export let state = 'home', paused = false, G = null;
-export const fx = { parts:[], pops:[], keyFlash:{}, heardKey:{} };
+// soft: key -> time of a wrong note on it (gentle wobble, no red); nudge: the expected key/lane pulses once more after a wrong note.
+export const fx = { parts:[], pops:[], keyFlash:{}, heardKey:{}, soft:{}, nudge:null };
 export const flakes = Array.from({ length: 60 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.6 + 0.8, s: Math.random() * 0.03 + 0.01, d: Math.random() * 6 }));
 
 export function startGame(demo){
@@ -43,14 +44,14 @@ export function onPlayed(midi, atMs, source){
   const tPlayed = G.time - (performance.now() - atMs) / 1000 - (source === 'mic' ? dev().latency / 1000 : 0);
   if (G.wait){
     const n = nextUnhit(); if (!n || n.t - G.time > 1.0) return;
-    if (same(midi, n.midi)) registerHit(n, n.wrong ? 'good' : 'perfect'); else { n.wrong++; wrongFx(midi); }
+    if (same(midi, n.midi)) registerHit(n, n.wrong ? 'good' : 'perfect'); else { n.wrong++; wrongFx(midi, n); }
     return;
   }
-  let best = null, bd = Infinity, anyNear = false;
-  for (const n of G.notes){ if (n.hit || n.missed) continue; const dt = tPlayed - n.t;
-    if (Math.abs(dt) <= G.tol){ anyNear = true; if (same(midi, n.midi) && Math.abs(dt) < bd){ bd = Math.abs(dt); best = n; } } }
+  let best = null, bd = Infinity, near = null, nd = Infinity;
+  for (const n of G.notes){ if (n.hit || n.missed) continue; const dt = Math.abs(tPlayed - n.t);
+    if (dt <= G.tol){ if (dt < nd){ nd = dt; near = n; } if (same(midi, n.midi) && dt < bd){ bd = dt; best = n; } } }
   if (best) registerHit(best, bd <= G.tol * 0.35 ? 'perfect' : bd <= G.tol * 0.7 ? 'good' : 'ok');
-  else if (anyNear) wrongFx(midi);
+  else if (near) wrongFx(midi, near);
 }
 const GRADE = { perfect:{ pts:100, icon:'star', size:60, fill:true }, good:{ pts:70, icon:'check', size:50 }, ok:{ pts:40, icon:'check', size:40 } };
 function registerHit(n, grade){
@@ -64,11 +65,14 @@ function registerHit(n, grade){
   fx.pops.push({ icon: gr.icon, fill: gr.fill, c: grade === 'perfect' ? TH.reward : grade === 'good' ? TH.accent : TH.text, x: k.x + k.w / 2, y: hitY - 100 * U, size: gr.size * U, age: 0 });
   updateHud();
 }
-function wrongFx(midi){
-  const km = keyFor(midi), k = keys[km]; if (!k) return;
-  fx.keyFlash[km] = { c: TH.error, at: performance.now() };
+// A wrong note is never punished on screen: no cross, no red, no sound. The played key wobbles softly
+// and the expected key and lane pulse once more to show where to go. Timed levels still reset the combo (scoring rule).
+function wrongFx(midi, expected){
+  const km = keyFor(midi); if (!keys[km]) return;
+  const at = performance.now();
+  fx.soft[km] = at;
+  if (expected) fx.nudge = { key: keyFor(expected.midi), midi: expected.midi, at };
   if (!G.wait) G.combo = 0;
-  fx.pops.push({ icon:'cross', c: TH.error, x: k.x + k.w / 2, y: hitY - 70 * U, size: 34 * U, age: 0 });
   updateHud();
 }
 export function burst(x, y, c, n){

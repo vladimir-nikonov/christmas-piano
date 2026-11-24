@@ -99,11 +99,16 @@ try {
   assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.jingle), { level: 0, streak: 1 });
   assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.birthday), { level: 0, streak: 0 });
 
-  log('a wrong note in level 1 is counted against the note');
+  log('a wrong note in level 1 is counted against the note, with soft feedback only (key hint off)');
+  await sn(() => { window.__sn.db.profiles[0].opts.hint = false; });
   await page.click('#btnAgain');
   await waitAtNextNote();
+  assert.equal(await sn(() => window.__sn.focus.midi === window.__sn.game.notes[0].midi), true, 'waiting focuses the expected note');
   await sn(() => { const n = window.__sn.game.notes[0]; window.__sn.onPlayed(n.midi + 2); });
   assert.equal(await sn(() => window.__sn.game.notes[0].wrong), 1);
+  assert.equal(await sn(() => window.__sn.fx.pops.some(p => p.icon === 'cross')), false, 'a wrong note shows no cross');
+  assert.equal(await sn(() => Object.keys(window.__sn.fx.soft).length), 1, 'a wrong note gets a soft wobble on the played key');
+  assert.equal(await sn(() => window.__sn.fx.nudge.midi === window.__sn.game.notes[0].midi), true, 'a wrong note nudges the expected key');
   await sn(() => window.__sn.onPlayed(window.__sn.game.notes[0].midi));
   assert.equal(await sn(() => window.__sn.game.notes[0].grade), 'good');
   await page.click('#btnPause');

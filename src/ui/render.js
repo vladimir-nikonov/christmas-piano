@@ -40,6 +40,34 @@ function background(){
   setBgCache({ w: W, h: H, t: TH, c }); return c;
 }
 const LBL = () => TH.font + ', system-ui, sans-serif';
+
+/* ===== Waiting focus and soft wrong-note cues =====
+   All motion amplitudes of these cues are kept here, so a reduced-motion mode can damp them in one place. */
+const NUDGE_MS = 650, SOFT_MS = 420, NEUTRAL = 'rgba(150,160,190,.85)', FOCUS_EDGE = 'rgba(24,35,53,.8)'; // note colours (yellow E) never hide the key outline
+const pulse = (now, speed) => Math.sin(now * speed);                                   // -1..1 steady pulse
+const decay = (at, ms) => at ? Math.max(0, 1 - (performance.now() - at) / ms) : 0;      // 1 → 0 after an event
+const wobble = d => d ? Math.sin((1 - d) * 16) * 4 * U * d : 0;                        // small sideways shake, fading out
+// What the cues point at this frame: the expected note while waiting, or briefly after a wrong note (nudge). Read by the smoke test.
+export const focus = { key: null, midi: null, waiting: false, nudge: 0 };
+function updateFocus(){
+  const n = G && state === 'playing' && G.wait && G.waiting ? nextUnhit() : null;
+  const nd = G && state === 'playing' && fx.nudge ? decay(fx.nudge.at, NUDGE_MS) : 0;
+  focus.waiting = !!n; focus.nudge = nd;
+  focus.midi = n ? n.midi : nd ? fx.nudge.midi : null;
+  focus.key = focus.midi === null ? null : keyFor(focus.midi);
+}
+// Soft column glow over the expected note's lane, from the top down to the hit line, with outlined edges (shape, not only colour).
+function laneGlow(now){
+  if (focus.key === null) return;
+  const k = keys[focus.key], col = PC_COLOR[focus.midi % 12];
+  const a = Math.min(1, (focus.waiting ? 0.3 + 0.06 * pulse(now, 4) : 0) + 0.35 * focus.nudge);
+  if (a <= 0) return;
+  const g = ctx.createLinearGradient(0, 0, 0, hitY); g.addColorStop(0, col + '00'); g.addColorStop(1, col);
+  ctx.globalAlpha = a; ctx.fillStyle = g; ctx.fillRect(k.x, 0, k.w, hitY);
+  ctx.globalAlpha = a * 0.9; ctx.fillStyle = col; const lw = Math.max(2, 3 * U);
+  ctx.fillRect(k.x, hitY * 0.35, lw, hitY * 0.65); ctx.fillRect(k.x + k.w - lw, hitY * 0.35, lw, hitY * 0.65);
+  ctx.globalAlpha = 1;
+}
 export function draw(now, dt){
   ctx.drawImage(background(), 0, 0, W, H);
   if (TH.decor !== 'glow'){ ctx.fillStyle = 'rgba(255,255,255,.45)';
@@ -47,8 +75,10 @@ export function draw(now, dt){
       if (TH.decor === 'dots') ctx.fillRect(Math.round(x), Math.round(y), Math.round(r * 2), Math.round(r * 2)); else { ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); } } }
   const o = opts(), pps = G ? (hitY - topY) / G.look : 1, rad = Math.min(TH.radius, 16) * U;
   ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hitY + 2); ctx.clip();
+  updateFocus();
   if (G && (state === 'playing' || state === 'demo' || state === 'results')){
     const nu = G.wait ? nextUnhit() : null;
+    laneGlow(now);
     for (const n of G.notes){
       const k = keys[keyFor(n.midi)];
       let yb = hitY - (n.t - G.time) * pps; const yt = hitY - (n.t + n.d * 0.88 - G.time) * pps;
@@ -63,6 +93,10 @@ export function draw(now, dt){
       if (n.hit || n === nu){ ctx.shadowColor = col; ctx.shadowBlur = n.hit ? 24 : 16 + Math.sin(now * 8) * 10; }
       noteBlock(x, yb - headH, w, headH, col, rad);
       ctx.shadowBlur = 0;
+      if (n === nu && focus.midi !== null && !n.hit){ // pulsing outline around the expected note
+        const gp = (4 + 2 * pulse(now, 6) + 6 * focus.nudge) * U;
+        rrect(x - gp, yb - headH - gp, w + gp * 2, headH + gp * 2, rad + gp); ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 3 * U; ctx.stroke();
+      }
       if (o.labels !== 'none' && headH > 26 * U && !n.hit){
         ctx.fillStyle = 'rgba(18,24,46,.92)'; ctx.font = '800 ' + Math.round(Math.min(30 * U, w * 0.3)) + 'px ' + LBL();
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(noteName(n.midi), x + w / 2, yb - headH / 2 + 1);
@@ -101,18 +135,22 @@ export function draw(now, dt){
 function drawKeyboard(now){
   const nowMs = performance.now(), o = opts(), kr = Math.min(TH.radius, 12) * U;
   ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, kbTop, W, kbH);
-  let hint = null;
+  let hint = null; const fk = focus.key, fp = focus.waiting ? 1 : 0;
   if (o.hint && G && state === 'playing'){ const n = nextUnhit(); if (n && n.t - G.time < G.beat * 1.2) hint = keyFor(n.midi); }
   const drawKey = m => {
-    const k = keys[m], h = k.black ? Math.round(kbH * 0.58) : kbH - 8 * U, x = Math.round(k.x + (k.black ? 0 : 2)), w = Math.round(k.w - (k.black ? 0 : 4));
+    const sd = decay(fx.soft[m], SOFT_MS);
+    const k = keys[m], h = k.black ? Math.round(kbH * 0.58) : kbH - 8 * U, x = Math.round(k.x + (k.black ? 0 : 2) + wobble(sd)), w = Math.round(k.w - (k.black ? 0 : 4));
     const fl = fx.keyFlash[m], fa = fl ? Math.max(0, 1 - (nowMs - fl.at) / 450) : 0;
     rrect(x, kbTop + 2, w, h, kr); ctx.fillStyle = k.black ? '#202435' : '#F5F5FA'; ctx.fill();
     ctx.save(); rrect(x, kbTop + 2, w, h, kr); ctx.clip();
     if (TH.radius <= 3){ ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(x, kbTop + h - 6 * U, w, 6 * U); }
-    if (m === hint){ ctx.globalAlpha = 0.45 + 0.2 * Math.sin(now * 7); ctx.fillStyle = PC_COLOR[m % 12]; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
+    if (m === fk){ ctx.globalAlpha = Math.min(1, fp * (0.5 + 0.15 * pulse(now, 6)) + 0.4 * focus.nudge); ctx.fillStyle = PC_COLOR[focus.midi % 12]; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
+    else if (m === hint){ ctx.globalAlpha = 0.45 + 0.2 * Math.sin(now * 7); ctx.fillStyle = PC_COLOR[m % 12]; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
     if (fx.heardKey[m] && nowMs - fx.heardKey[m] < 160 && !fa){ ctx.fillStyle = 'rgba(120,140,220,.4)'; ctx.fillRect(x, kbTop, w, h + 2); }
     if (fa){ ctx.globalAlpha = fa; ctx.fillStyle = fl.c; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
     ctx.restore();
+    if (m === fk){ const lw = (4 + 1.5 * pulse(now, 6) * fp + 3 * focus.nudge) * U; rrect(x + lw / 2, kbTop + 2 + lw / 2, w - lw, h - lw, kr); ctx.strokeStyle = FOCUS_EDGE; ctx.lineWidth = lw; ctx.stroke(); }
+    if (sd){ ctx.globalAlpha = sd; rrect(x + 1.5 * U, kbTop + 2 + 1.5 * U, w - 3 * U, h - 3 * U, kr); ctx.strokeStyle = NEUTRAL; ctx.lineWidth = 3 * U; ctx.stroke(); ctx.globalAlpha = 1; }
     if (!k.black){
       const cx = x + w / 2, sh = Math.round(Math.min(30 * U, h * 0.16)), sw = Math.round(w * 0.86), cy = kbTop + h - sh - 6 * U;
       rrect(cx - sw / 2, cy, sw, sh, Math.min(kr, sh / 2)); ctx.fillStyle = PC_COLOR[m % 12]; ctx.fill();
