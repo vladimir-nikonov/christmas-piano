@@ -1,4 +1,4 @@
-// Language selection and the quick language/theme picker.
+// Language selection and the quick pickers: the language button opens only languages, the theme button only themes.
 
 import { db, save, P } from '../data/storage.js';
 import { $ } from '../dom.js';
@@ -12,6 +12,7 @@ import { settingsOpen, openSettings } from './screens/settings.js';
 import { THEMES, THEME_KEYS } from './theme-data.js';
 import { updateInputMode } from './inputmode.js';
 import { applyTheme, themePreview } from './theme.js';
+import { flagSVG } from './flags.js';
 
 /* Language: browser default -> profile choice */
 // A child's own choice wins; otherwise the browser language. Before any player exists, the last choice on this device.
@@ -36,25 +37,28 @@ export function setLang(code){
 }
 export function updateQuick(){
   const L = LANGS.find(x => x.id === LANG) || LANGS[0];
-  document.querySelectorAll('.qlang').forEach(b => { b.innerHTML = '<span class="code"></span>'; b.firstChild.textContent = L.code; });
+  document.querySelectorAll('.qlang').forEach(b => { b.innerHTML = flagSVG(L.id); });
   const p = P(), th = state === 'newp' ? pickTheme : (p ? p.theme : 'pixel');
   document.querySelectorAll('.qtheme').forEach(b => b.innerHTML = themePreview(th));
   updateInputMode();
 }
+let popMode = 'lang';
 function renderPop(){
-  const box = $('#popLangs'); box.textContent = '';
-  LANGS.forEach(L => { const b = document.createElement('button'); b.className = 'b chip'; b.setAttribute('aria-pressed', L.id === LANG); b.setAttribute('lang', L.id);
-    b.innerHTML = '<span class="code"></span><span class="nm"></span>'; b.querySelector('.code').textContent = L.code; b.querySelector('.nm').textContent = L.name;
+  const isLang = popMode === 'lang', p = P();
+  $('#popTitle').textContent = tx(isLang ? 'language' : 'theme');
+  const box = $('#popLangs'), tb = $('#popThemes');
+  box.textContent = ''; tb.textContent = '';
+  box.hidden = !isLang; tb.hidden = isLang;
+  if (isLang) LANGS.forEach(L => { const b = document.createElement('button'); b.className = 'b chip'; b.setAttribute('aria-pressed', L.id === LANG); b.setAttribute('lang', L.id);
+    b.innerHTML = flagSVG(L.id) + '<span class="nm"></span>'; b.querySelector('.nm').textContent = L.name;
     b.onclick = () => setLang(L.id); box.appendChild(b); });
-  const tb = $('#popThemes'); tb.textContent = ''; const p = P();
-  tb.hidden = state === 'newp' || !p;
-  if (!tb.hidden) THEME_KEYS.forEach(k => { const th = THEMES[k], b = document.createElement('button'); b.className = 'b tcard'; b.setAttribute('aria-pressed', k === p.theme); b.setAttribute('aria-label', tx('theme') + ' ' + th.name);
+  else if (p) THEME_KEYS.forEach(k => { const th = THEMES[k], b = document.createElement('button'); b.className = 'b tcard'; b.setAttribute('aria-pressed', k === p.theme); b.setAttribute('aria-label', tx('theme') + ' ' + th.name);
     b.style.background = th.panel; b.style.borderColor = th.border; b.style.color = th.text; b.style.borderRadius = Math.min(th.radius, 20) + 'px'; b.style.fontFamily = th.font + ', system-ui, sans-serif';
     b.innerHTML = themePreview(k) + '<span class="nm"></span>'; b.querySelector('.nm').textContent = th.name;
     b.onclick = () => { p.theme = k; save(); applyTheme(k); invalidateBg(); updateQuick(); renderPop(); if (state === 'home') renderHome(); else if (state === 'me') renderMe(); };
     tb.appendChild(b); });
 }
-function openPop(){ renderPop(); $('#pop').hidden = false; }
-document.addEventListener('click', e => { const q = e.target.closest('.qlang, .qtheme'); if (q) openPop(); });
+function openPop(mode){ popMode = mode; renderPop(); $('#pop').hidden = false; }
+document.addEventListener('click', e => { const q = e.target.closest('.qlang, .qtheme'); if (q) openPop(q.classList.contains('qlang') ? 'lang' : 'theme'); });
 $('#btnPopClose').onclick = () => { $('#pop').hidden = true; };
 $('#pop').addEventListener('click', e => { if (e.target.id === 'pop') $('#pop').hidden = true; });

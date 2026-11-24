@@ -228,14 +228,15 @@ svg.off{color:var(--border)}
 .sheet .whoami svg{width:28px;height:28px;border-radius:4px}
 
 /* Quick language / theme switch */
-.qlang .code{font-size:calc(21*var(--u));font-weight:900;letter-spacing:.04em}
+.qlang svg.flag{width:calc(40*var(--u));height:calc(27*var(--u));border-radius:calc(4*var(--u));box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .qtheme svg.pv{width:calc(40*var(--u));height:calc(25*var(--u));border-radius:calc(4*var(--u))}
 #pause .panel{gap:calc(22*var(--u))}
 .popp{width:min(calc(960*var(--u)),100%);position:relative;padding-top:calc(30*var(--u))}
 .popp .x{position:absolute;top:calc(-26*var(--u));right:calc(-18*var(--u))}
 .langs{display:flex;flex-wrap:wrap;gap:calc(12*var(--u));justify-content:center}
 .chip{min-height:calc(64*var(--u));display:flex;gap:calc(10*var(--u));align-items:center;padding:calc(12*var(--u)) calc(18*var(--u));font-size:calc(22*var(--u))}
-.chip .code{font-weight:900;opacity:.7}
+.chip svg.flag{width:calc(48*var(--u));height:calc(32*var(--u));border-radius:calc(4*var(--u));box-shadow:0 0 0 1px rgba(0,0,0,.25);flex:none}
+.poph{margin:0 0 calc(18*var(--u));text-align:center;font-size:calc(28*var(--u))}
 .chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent-dark)}
 .themes.small{width:100%;gap:calc(14*var(--u))}
 .themes.small .nm{font-size:calc(16*var(--u));padding:calc(8*var(--u)) calc(10*var(--u))}

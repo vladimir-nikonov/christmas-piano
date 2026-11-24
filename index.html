@@ -141,10 +141,11 @@
   </div>
 </div>
 
-<!-- Quick language / theme picker (home, new player, child's page) -->
+<!-- Quick picker (home, new player, child's page): either languages with flags or themes with their splash screens -->
 <div class="screen" id="pop" hidden>
-  <div class="panel popp">
+  <div class="panel popp" role="dialog" aria-labelledby="popTitle">
     <button class="b ico x" id="btnPopClose" data-ta="close" data-icon="cross"></button>
+    <h2 class="poph" id="popTitle"></h2>
     <div class="langs" id="popLangs"></div>
     <div class="themes small" id="popThemes"></div>
   </div>

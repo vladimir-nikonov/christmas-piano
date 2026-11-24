@@ -282,6 +282,8 @@ try {
   log('switch language from the quick picker');
   await page.locator('#home .qlang').click();
   await visible('#pop');
+  assert.equal(await sn(() => document.querySelector('#popThemes').hidden), true, 'the language picker shows no themes');
+  assert.equal(await page.locator('#popLangs button svg.flag').count(), 5, 'every language has a flag');
   await page.click('#popLangs [lang=ru]');
   assert.equal(await page.title(), 'Снежные ноты');
   assert.equal(await sn(() => window.__sn.db.profiles[0].lang), 'ru');
@@ -348,6 +350,8 @@ try {
   log('theme from the quick picker');
   await page.locator('#home .qtheme').click();
   await visible('#popThemes');
+  assert.equal(await sn(() => document.querySelector('#popLangs').hidden), true, 'the theme picker shows no languages');
+  assert.equal(await page.locator('#popThemes button svg.pv svg.av').count(), 12, 'theme cards show the splash mascots');
   await page.locator('#popThemes button').nth(2).click();
   assert.equal(await sn(() => document.documentElement.dataset.theme), await sn(() => window.__sn.db.profiles[0].theme));
   assert.notEqual(await sn(() => window.__sn.db.profiles[0].theme), 'pixel');
