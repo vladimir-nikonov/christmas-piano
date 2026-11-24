@@ -7,7 +7,7 @@ import { state, G, fx, flakes, nextUnhit, keyFor } from '../game/game.js';
 import { ctx, W, H, DPR, U, LO, HI, isBlack, keys, kbTop, kbH, hitY, topY, bgCache, setBgCache } from './canvas.js';
 import { ICON } from './icons.js';
 import { noteName } from './labels.js';
-import { TH } from './theme.js';
+import { TH, THK } from './theme.js';
 
 /* ================= Drawing (themed) ================= */
 const pathCache = {};
@@ -24,12 +24,75 @@ function rrect(x, y, w, h, r){
   r = Math.max(0, Math.min(r, w / 2, h / 2)); ctx.beginPath();
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
 }
+// 4-point sparkle used by the anime notes and keys
+function sparkle(cx, cy, r, color){
+  ctx.beginPath(); ctx.moveTo(cx, cy - r); ctx.quadraticCurveTo(cx, cy, cx + r, cy); ctx.quadraticCurveTo(cx, cy, cx, cy + r);
+  ctx.quadraticCurveTo(cx, cy, cx - r, cy); ctx.quadraticCurveTo(cx, cy, cx, cy - r); ctx.fillStyle = color; ctx.fill();
+}
+// Snow cap along the top edge of a rect (winter notes and keys)
+function snowCap(x, y, w, h, color){
+  const bumps = Math.max(2, Math.round(w / (14 * U))), bw = w / bumps;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + h * 0.7);
+  for (let i = bumps - 1; i >= 0; i--){ const bx = x + i * bw; ctx.quadraticCurveTo(bx + bw / 2, y + h * (i % 2 ? 1.25 : 0.95), bx, y + h * 0.7); }
+  ctx.closePath(); ctx.fillStyle = color || '#F4FBFF'; ctx.fill();
+}
+// Falling note head, drawn in the current theme's style
 function noteBlock(x, y, w, h, col, radius){
+  if (THK === 'plastic'){
+    const r = Math.min(h / 2, w / 2, 26 * U);
+    rrect(x, y, w, h, r); ctx.fillStyle = col; ctx.fill();
+    ctx.save(); ctx.clip();
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(x, y + h * 0.62, w, h);
+    ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.ellipse(x + w * 0.34, y + h * 0.26, w * 0.26, Math.max(3 * U, h * 0.14), 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.arc(x + w * 0.78, y + h * 0.3, Math.max(2 * U, h * 0.07), 0, 7); ctx.fill();
+    ctx.restore();
+    rrect(x, y, w, h, r); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2 * U; ctx.stroke();
+    return;
+  }
+  if (THK === 'winter'){
+    rrect(x, y, w, h, radius); ctx.fillStyle = col; ctx.fill();
+    ctx.save(); ctx.clip();
+    const g = ctx.createLinearGradient(x, y, x + w, y + h); g.addColorStop(0, 'rgba(255,255,255,.35)'); g.addColorStop(.5, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(200,240,255,.3)');
+    ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 2 * U; ctx.beginPath(); ctx.moveTo(x + w * 0.18, y + h * 0.85); ctx.lineTo(x + w * 0.42, y + h * 0.45); ctx.stroke();
+    snowCap(x, y, w, Math.min(h * 0.32, 14 * U));
+    ctx.restore();
+    rrect(x, y, w, h, radius); ctx.strokeStyle = 'rgba(235,250,255,.85)'; ctx.lineWidth = 2 * U; ctx.stroke();
+    return;
+  }
+  if (THK === 'anime'){
+    const r = Math.min(radius, h / 3);
+    rrect(x, y, w, h, r); ctx.fillStyle = col; ctx.fill();
+    ctx.save(); ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,.38)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w * 0.62, y); ctx.lineTo(x, y + h * 0.9); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(70,20,90,.22)'; ctx.beginPath(); ctx.moveTo(x + w, y + h * 0.15); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w * 0.35, y + h); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    rrect(x, y, w, h, r); ctx.strokeStyle = 'rgba(255,240,255,.8)'; ctx.lineWidth = 2 * U; ctx.stroke();
+    sparkle(x + w - 9 * U, y + 9 * U, Math.min(9 * U, h * 0.25), '#fff');
+    return;
+  }
   rrect(x, y, w, h, radius); ctx.fillStyle = col; ctx.fill();
   ctx.save(); ctx.clip();
-  if (TH.radius <= 3){ const b = 4 * U; ctx.fillStyle = 'rgba(255,255,255,.32)'; ctx.fillRect(x, y, w, b); ctx.fillRect(x, y, b, h); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x, y + h - b, w, b); ctx.fillRect(x + w - b, y, b, h); }
-  else { ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.fillRect(x, y, w, Math.min(h * 0.38, 18 * U)); }
+  const b = 4 * U; ctx.fillStyle = 'rgba(255,255,255,.32)'; ctx.fillRect(x, y, w, b); ctx.fillRect(x, y, b, h); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x, y + h - b, w, b); ctx.fillRect(x + w - b, y, b, h);
   ctx.restore();
+}
+// Tail of a long note (from yt down to yb), drawn in the current theme's style
+function noteTail(cx, yt, yb, col, alpha){
+  const tw = Math.round(16 * U * 1.1), len = yb - yt;
+  ctx.globalAlpha = alpha;
+  if (THK === 'winter'){
+    const step = 18 * U; ctx.fillStyle = col;
+    for (let y = yb - step / 2; y > yt; y -= step){ ctx.beginPath(); ctx.arc(cx, y, tw * 0.42, 0, 7); ctx.fill(); }
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    for (let y = yb - step / 2; y > yt; y -= step){ ctx.beginPath(); ctx.arc(cx - tw * 0.12, y - tw * 0.12, tw * 0.12, 0, 7); ctx.fill(); }
+  } else if (THK === 'anime'){
+    const g = ctx.createLinearGradient(0, yt, 0, yb); g.addColorStop(0, col + '00'); g.addColorStop(1, col);
+    rrect(cx - tw / 2, yt, tw, len, tw / 2); ctx.fillStyle = g; ctx.fill();
+    for (let y = yb - 30 * U, i = 0; y > yt + 6 * U; y -= 34 * U, i++) sparkle(cx + (i % 2 ? 1 : -1) * tw * 0.9, y, 5 * U, '#fff');
+  } else {
+    rrect(cx - tw / 2, yt, tw, len, THK === 'pixel' ? 0 : tw / 2); ctx.fillStyle = col; ctx.fill();
+    if (THK === 'plastic'){ ctx.fillStyle = 'rgba(255,255,255,.4)'; rrect(cx - tw / 2 + 3 * U, yt + 3 * U, tw * 0.28, Math.max(0, len - 6 * U), tw * 0.14); ctx.fill(); }
+  }
 }
 function background(){
   if (bgCache && bgCache.w === W && bgCache.h === H && bgCache.t === TH) return bgCache.c;
@@ -90,7 +153,7 @@ export function draw(now, dt){
       const w = Math.round(Math.min(115 * U, k.w * (k.black ? 0.9 : 0.82))), x = Math.round(k.x + (k.w - w) / 2);
       const headH = Math.min(yb - yt, 56 * U);
       ctx.globalAlpha = n.missed ? 0.45 : 1;
-      if (yb - yt > headH + 2){ const tw = Math.round(16 * U * 1.1); ctx.globalAlpha *= n.hit ? 0.95 : 0.55; rrect(x + (w - tw) / 2, yt, tw, yb - yt - headH + 6, TH.radius > 3 ? tw / 2 : 0); ctx.fillStyle = col; ctx.fill(); ctx.globalAlpha = n.missed ? 0.45 : 1; }
+      if (yb - yt > headH + 2){ noteTail(x + w / 2, yt, yb - headH + 6, col, (n.missed ? 0.45 : 1) * (n.hit ? 0.95 : 0.55)); ctx.globalAlpha = n.missed ? 0.45 : 1; }
       if (n.hit || n === nu){ ctx.shadowColor = col; ctx.shadowBlur = n.hit ? 24 : 16 + Math.sin(now * 8) * 10; }
       noteBlock(x, yb - headH, w, headH, col, rad);
       ctx.shadowBlur = 0;
@@ -133,18 +196,45 @@ export function draw(now, dt){
       ctx.fillStyle = TH.accentDark; ctx.fillText(c, W / 2, hitY * 0.5 + 6 * U); ctx.fillStyle = TH.text; ctx.fillText(c, W / 2, hitY * 0.5); }
   }
 }
+// Key colours and surface details per theme
+const KEY_COLORS = {
+  pixel:   { white:['#F5F5FA', '#F5F5FA'], black:['#202435', '#202435'], bed:'rgba(0,0,0,.35)' },
+  plastic: { white:['#FFFFFF', '#E6E1FA'], black:['#4A3F8F', '#2A2260'], bed:'rgba(30,20,80,.45)' },
+  winter:  { white:['#F7FCFF', '#CFE8F2'], black:['#1D4452', '#0E2630'], bed:'rgba(5,25,35,.45)' },
+  anime:   { white:['#FFFFFF', '#FDE3F3'], black:['#3A2F66', '#1E1838'], bed:'rgba(20,10,40,.5)' }
+};
+function keyFill(black, y, h){
+  const c = KEY_COLORS[THK][black ? 'black' : 'white'];
+  if (c[0] === c[1]) return c[0];
+  const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, c[0]); g.addColorStop(1, c[1]); return g;
+}
+function keyDecor(x, y, w, h, black, now){
+  if (THK === 'pixel'){ ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(x, y + h - 6 * U, w, 6 * U); if (!black){ ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x, y, 3 * U, h); } return; }
+  if (THK === 'plastic'){
+    ctx.fillStyle = 'rgba(255,255,255,' + (black ? '.22' : '.75') + ')'; rrect(x + w * 0.14, y + 6 * U, w * 0.22, h * (black ? 0.6 : 0.35), w * 0.11); ctx.fill();
+    ctx.fillStyle = 'rgba(40,20,100,.14)'; ctx.fillRect(x, y + h - 10 * U, w, 10 * U); return;
+  }
+  if (THK === 'winter'){
+    const sh = (black ? 20 : 18) * U; snowCap(x, y - 1, w, sh + 4 * U, '#A9D6E8'); snowCap(x, y - 1, w, sh);
+    if (!black){ ctx.fillStyle = 'rgba(160,215,235,.35)'; for (let i = 0; i < 3; i++){ const fx0 = x + w * (0.25 + 0.25 * i), fy = y + h * (0.38 + 0.08 * (i % 2)); ctx.beginPath(); ctx.arc(fx0, fy, 2 * U, 0, 7); ctx.fill(); } }
+    return;
+  }
+  // anime
+  ctx.fillStyle = black ? '#F49AD1' : 'rgba(244,154,209,.55)'; ctx.fillRect(x, y, w, (black ? 3 : 4) * U);
+  if (black) sparkle(x + w / 2, y + h - 14 * U, 5 * U, 'rgba(255,217,141,' + (0.55 + 0.35 * Math.sin(now * 3 + x)) + ')');
+}
 function drawKeyboard(now){
   const nowMs = performance.now(), o = opts(), kr = Math.min(TH.radius, 12) * U;
-  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, kbTop, W, kbH);
+  ctx.fillStyle = KEY_COLORS[THK].bed; ctx.fillRect(0, kbTop, W, kbH);
   let hint = null; const fk = focus.key, fp = focus.waiting ? 1 : 0;
   if (o.hint && G && state === 'playing'){ const n = nextUnhit(); if (n && n.t - G.time < G.beat * 1.2) hint = keyFor(n.midi); }
   const drawKey = m => {
     const sd = decay(fx.soft[m], SOFT_MS);
     const k = keys[m], h = k.black ? Math.round(kbH * 0.58) : kbH - 8 * U, x = Math.round(k.x + (k.black ? 0 : 2) + wobble(sd)), w = Math.round(k.w - (k.black ? 0 : 4));
     const fl = fx.keyFlash[m], fa = fl ? Math.max(0, 1 - (nowMs - fl.at) / 450) : 0;
-    rrect(x, kbTop + 2, w, h, kr); ctx.fillStyle = k.black ? '#202435' : '#F5F5FA'; ctx.fill();
+    rrect(x, kbTop + 2, w, h, kr); ctx.fillStyle = keyFill(k.black, kbTop + 2, h); ctx.fill();
     ctx.save(); rrect(x, kbTop + 2, w, h, kr); ctx.clip();
-    if (TH.radius <= 3){ ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(x, kbTop + h - 6 * U, w, 6 * U); }
+    keyDecor(x, kbTop + 2, w, h, k.black, now);
     if (m === fk){ ctx.globalAlpha = Math.min(1, fp * (0.5 + 0.15 * pulse(now, 6)) + 0.4 * focus.nudge); ctx.fillStyle = PC_COLOR[focus.midi % 12]; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
     else if (m === hint){ ctx.globalAlpha = 0.45 + 0.2 * Math.sin(now * 7); ctx.fillStyle = PC_COLOR[m % 12]; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
     if (fx.heardKey[m] && nowMs - fx.heardKey[m] < 160 && !fa){ ctx.fillStyle = 'rgba(120,140,220,.4)'; ctx.fillRect(x, kbTop, w, h + 2); }

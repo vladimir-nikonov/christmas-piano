@@ -5,8 +5,10 @@ import { invalidateBg } from './canvas.js';
 import { THEMES } from './theme-data.js';
 
 export let TH = THEMES.pixel;
+// Key of the current theme ('pixel', 'plastic', 'winter', 'anime'): picks the note and keyboard style
+export let THK = 'pixel';
 export function applyTheme(key){
-  TH = THEMES[key] || THEMES.pixel;
+  TH = THEMES[key] || THEMES.pixel; THK = THEMES[key] ? key : 'pixel';
   document.documentElement.dataset.theme = THEMES[key] ? key : 'pixel';
   const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = TH.bg;
   invalidateBg();
