@@ -5,8 +5,9 @@ import { db, storeKind, save, loadDB, askPersist } from './data/storage.js';
 import { state, G, fx, onPlayed, frame } from './game/game.js';
 import { detectLang, LANG, useLang } from './i18n/index.js';
 import { layout, invalidateBg, keys, kbTop, kbH, isBlack } from './ui/canvas.js';
+import { reducedMotion } from './ui/motion.js';
 import { hydrateIcons } from './ui/icons.js';
-import { focus } from './ui/render.js';
+import { focus, drawn } from './ui/render.js';
 import { translateDom } from './ui/lang.js';
 import { renderHome, goHome } from './ui/screens/home.js';
 import { openProfiles, wizAt, wizStep, renderMe } from './ui/screens/profiles.js';
@@ -32,3 +33,5 @@ if (document.fonts) document.fonts.ready.then(() => invalidateBg());
 
 window.__sn = { detectPitch, onPlayed: m => onPlayed(m, performance.now(), 'touch'), get game(){ return G; }, get fx(){ return fx; }, get focus(){ return focus; }, get state(){ return state; }, get db(){ return db; }, get lang(){ return LANG; }, get storeKind(){ return storeKind; }, loadDB, save,
   keyPoint: m => ({ x: keys[m].x + keys[m].w / 2, y: kbTop + kbH * (isBlack(m) ? 0.3 : 0.85) }) };
+// Motion state for the smoke test (read-only).
+Object.defineProperties(window.__sn, { reducedMotion: { get: () => reducedMotion }, drawn: { get: () => ({ ...drawn }) } });

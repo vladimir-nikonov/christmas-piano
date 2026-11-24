@@ -29,6 +29,39 @@ function toneWav(freq, sr = 48000){
 }
 let step = 'start';
 const log = s => { step = s; console.log('  · ' + s); };
+// Tablet viewports: MatePad 11 landscape, with Chrome's bars (712, 720), a smaller tablet, portrait.
+const VIEWPORTS = [[1280, 800], [1280, 712], [1280, 720], [1024, 640], [800, 1280]];
+// In the visible screens, no button may stick out of the viewport, nothing may scroll, and every .b button
+// must be at least 64 logical units (64 * --u CSS px) on both sides.
+function layoutProblems(sels){
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:absolute;width:calc(64*var(--u))'; document.body.appendChild(probe);
+  const min = probe.getBoundingClientRect().width - 0.5; probe.remove();
+  const W = window.innerWidth, H = window.innerHeight, bad = [];
+  for (const sel of sels){
+    const scr = document.querySelector(sel);
+    if (!scr || !scr.getClientRects().length){ bad.push(sel + ' not visible'); continue; }
+    for (const el of scr.querySelectorAll('button')){
+      const r = el.getBoundingClientRect(); if (!r.width || !r.height) continue;
+      const id = sel + ' ' + (el.id ? '#' + el.id : el.className);
+      if (r.left < -0.5 || r.top < -0.5 || r.right > W + 0.5 || r.bottom > H + 0.5) bad.push(id + ' is clipped');
+      if (el.classList.contains('b') && (r.width < min || r.height < min)) bad.push(id + ' is ' + Math.round(r.width) + 'x' + Math.round(r.height) + ', below ' + Math.round(min));
+    }
+    if (scr.scrollHeight > scr.clientHeight + 1) bad.push(sel + ' scrolls');
+  }
+  const de = document.scrollingElement;
+  if (de.scrollHeight > H + 1 || de.scrollWidth > W + 1) bad.push('the page scrolls');
+  return bad;
+}
+async function checkLayoutOn(pg, sels){
+  for (const [width, height] of VIEWPORTS){
+    await pg.setViewportSize({ width, height });
+    await pg.waitForTimeout(250); // home re-renders 120 ms after a resize
+    assert.deepEqual(await pg.evaluate(layoutProblems, sels), [], sels.join(', ') + ' at ' + width + 'x' + height);
+  }
+  await pg.setViewportSize({ width: 1280, height: 800 });
+  await pg.waitForTimeout(250);
+}
 
 try {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, acceptDownloads: true });
@@ -59,6 +92,7 @@ try {
   // Level 1 stops the clock at each note until it is played: wait until the clock stands at the next unplayed note.
   const waitAtNextNote = () => page.waitForFunction(() => { const g = window.__sn.game, n = g && g.notes.find(n => !n.hit && !n.missed);
     return !!(n && g.waiting && g.time >= n.t); }, null, { timeout: 15000 });
+  const checkLayout = (...sels) => checkLayoutOn(page, sels);
 
   log('first launch opens the new player wizard');
   await page.goto(url);
@@ -101,6 +135,13 @@ try {
   await page.click('#btnSetClose');
   assert.equal(await sn(() => window.__sn.db.device.touch), true);
 
+  log('home: falling decor is drawn when motion is allowed');
+  assert.equal(await sn(() => window.__sn.reducedMotion), false);
+  assert.ok(await sn(() => window.__sn.drawn.flakes) > 0);
+
+  log('home fits every tablet viewport');
+  await checkLayout('#home');
+
   log('play level 1 (notes wait for the player) without mistakes, after the zoom-in entry');
   await page.click('#btnPlay');
   assert.ok(await sn(() => document.querySelector('#levels .tile[aria-pressed="true"]').getAnimations().some(a => a.playState === 'running' && !a.animationName)), 'entry zoom on the selected tile');
@@ -108,6 +149,8 @@ try {
   assert.equal(await page.locator('#home').isHidden(), true);
   await playLevel1Perfectly();
   assert.equal(await page.locator('#resPct').textContent(), '100%');
+  log('results fit every tablet viewport');
+  await checkLayout('#results');
   assert.equal(await sn(() => window.__sn.db.profiles[0].best['0:short']), 3);
   assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.jingle), { level: 0, streak: 1 });
   assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.birthday), { level: 0, streak: 0 });
@@ -163,6 +206,8 @@ try {
   await page.click('#btnPause');
   await visible('#pause');
   assert.ok(await page.locator('#pause .qfull svg').count() === 1, 'full-screen button in the pause menu');
+  log('pause menu and HUD fit every tablet viewport');
+  await checkLayout('#pause', '#hud');
   await page.click('#btnQuit');
   await visible('#home');
 
@@ -311,6 +356,9 @@ try {
     assert.ok(await dp.locator('#btnMicRetry').isVisible());
     assert.ok(await dp.locator('#btnMicTouch').isVisible());
     assert.ok(await dp.locator('#micErr .micbadge svg').count() >= 2, 'mic icon with a badge');
+    assert.ok(await dp.locator('#micErr').isVisible());
+    await checkLayoutOn(dp, ['#home']);   // home with the mic state shown
+    assert.ok(await dp.locator('#micErr').isVisible(), 'the mic state survives a resize');
     for (const [mode, key] of [['NotFoundError', 'micMissing'], ['NotReadableError', 'micBusy'], ['TypeError', 'micOther']]){
       await dsn(m => { window.__micMode = m; }, mode);
       await dp.click('#btnMicRetry');
@@ -348,6 +396,37 @@ try {
     await dp.waitForFunction(() => window.__sn.state === 'playing');
     assert.ok(await dp.locator('#micErr').isHidden());
     await dctx.close();
+  }
+
+  log('reduced motion: no falling decor and no particles on the canvas');
+  {
+    const rctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+    await rctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+    const rp = await rctx.newPage();
+    rp.on('pageerror', e => errors.push('pageerror: ' + e.message));
+    await rp.goto(url);
+    await rp.fill('#newName', 'Calm');
+    await rp.click('#btnStep2');
+    await rp.click('#btnNewOk');
+    await rp.locator('#home').waitFor({ state: 'visible' });
+    assert.equal(await rp.evaluate(() => window.__sn.reducedMotion), true);
+    // Collect what the canvas draws over a number of frames.
+    const watch = ms => rp.evaluate(ms => new Promise(res => { const t0 = performance.now(), m = { flakes: 0, particles: 0, glows: 0 };
+      const f = () => { const d = window.__sn.drawn; for (const k in m) m[k] = Math.max(m[k], d[k]); if (performance.now() - t0 < ms) window.requestAnimationFrame(f); else res(m); };
+      window.requestAnimationFrame(f); }), ms);
+    assert.equal((await watch(300)).flakes, 0);
+    await rp.click('#btnSettings');
+    await rp.check('#sTouch');
+    await rp.click('#btnSetClose');
+    await rp.click('#btnPlay');
+    await rp.waitForFunction(() => { const g = window.__sn.game, n = g && g.notes.find(n => !n.hit && !n.missed); return !!(n && g.waiting && g.time >= n.t); }, null, { timeout: 15000 });
+    const seen = watch(500);
+    await rp.evaluate(() => { const n = window.__sn.game.notes.find(n => !n.hit && !n.missed); window.__sn.onPlayed(n.midi); });
+    const m = await seen;
+    assert.equal(m.particles, 0, 'no particles');
+    assert.equal(m.flakes, 0, 'no flakes');
+    assert.ok(m.glows > 0, 'a hit shows a static glow instead');
+    await rctx.close();
   }
 
   log('microphone: a played E4 is heard and counted');

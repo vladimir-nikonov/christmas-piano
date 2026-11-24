@@ -9,6 +9,7 @@ import { $, showOnly } from '../dom.js';
 import { micFrame } from '../input/mic.js';
 import { requestWake } from '../platform/wake.js';
 import { U, LO, HI, keys, hitY } from '../ui/canvas.js';
+import { reducedMotion } from '../ui/motion.js';
 import { draw } from '../ui/render.js';
 import { goHome } from '../ui/screens/home.js';
 import { showResults } from '../ui/screens/results.js';
@@ -76,6 +77,8 @@ function wrongFx(midi, expected){
   updateHud();
 }
 export function burst(x, y, c, n){
+  // Reduced motion: one short glow that fades in place instead of flying particles.
+  if (reducedMotion){ fx.parts.push({ kind:'glow', x, y, c, life:0.3, age:0, r: (n >= 20 ? 70 : 54) * U }); return; }
   const kind = TH.fx;
   if (kind === 'ring'){ fx.parts.push({ kind:'ring', x, y, c, life:0.28, age:0, r: 10 * U }); n = Math.round(n / 2); }
   for (let i = 0; i < n; i++){

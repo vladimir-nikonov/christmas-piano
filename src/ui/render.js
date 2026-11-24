@@ -6,6 +6,7 @@ import { opts } from '../data/storage.js';
 import { state, G, fx, flakes, nextUnhit, keyFor } from '../game/game.js';
 import { ctx, W, H, DPR, U, LO, HI, isBlack, keys, kbTop, kbH, hitY, topY, bgCache, setBgCache } from './canvas.js';
 import { ICON } from './icons.js';
+import { reducedMotion } from './motion.js';
 import { noteName } from './labels.js';
 import { TH, THK } from './theme.js';
 
@@ -108,9 +109,9 @@ const LBL = () => TH.font + ', system-ui, sans-serif';
 /* ===== Waiting focus and soft wrong-note cues =====
    All motion amplitudes of these cues are kept here, so a reduced-motion mode can damp them in one place. */
 const NUDGE_MS = 650, SOFT_MS = 420, NEUTRAL = 'rgba(150,160,190,.85)', FOCUS_EDGE = 'rgba(24,35,53,.8)'; // note colours (yellow E) never hide the key outline
-const pulse = (now, speed) => Math.sin(now * speed);                                   // -1..1 steady pulse
+const pulse = (now, speed) => reducedMotion ? 0 : Math.sin(now * speed);              // -1..1 pulse; 0 (steady) with reduced motion
 const decay = (at, ms) => at ? Math.max(0, 1 - (performance.now() - at) / ms) : 0;      // 1 → 0 after an event
-const wobble = d => d ? Math.sin((1 - d) * 16) * 4 * U * d : 0;                        // small sideways shake, fading out
+const wobble = d => d && !reducedMotion ? Math.sin((1 - d) * 16) * 4 * U * d : 0;    // small sideways shake, fading out; none with reduced motion
 // What the cues point at this frame: the expected note while waiting, or briefly after a wrong note (nudge). Read by the smoke test.
 export const focus = { key: null, midi: null, waiting: false, nudge: 0 };
 function updateFocus(){
@@ -132,9 +133,12 @@ function laneGlow(now){
   ctx.fillRect(k.x, hitY * 0.35, lw, hitY * 0.65); ctx.fillRect(k.x + k.w - lw, hitY * 0.35, lw, hitY * 0.65);
   ctx.globalAlpha = 1;
 }
+// What the last frame drew (read by the smoke test through window.__sn).
+export const drawn = { flakes: 0, particles: 0, glows: 0 };
 export function draw(now, dt){
   ctx.drawImage(background(), 0, 0, W, H);
-  if (TH.decor !== 'glow'){ ctx.fillStyle = 'rgba(255,255,255,.45)';
+  drawn.flakes = drawn.particles = drawn.glows = 0;
+  if (TH.decor !== 'glow' && !reducedMotion){ drawn.flakes = flakes.length; ctx.fillStyle = 'rgba(255,255,255,.45)';
     for (const f of flakes){ f.y += f.s * dt * 3; if (f.y > 1) f.y = 0; const x = (f.x + Math.sin(now * 0.4 + f.d) * 0.01) * W, y = f.y * kbTop, r = f.r * U * 1.4;
       if (TH.decor === 'dots') ctx.fillRect(Math.round(x), Math.round(y), Math.round(r * 2), Math.round(r * 2)); else { ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); } } }
   const o = opts(), pps = G ? (hitY - topY) / G.look : 1, rad = Math.min(TH.radius, 16) * U;
@@ -154,11 +158,11 @@ export function draw(now, dt){
       const headH = Math.min(yb - yt, 56 * U);
       ctx.globalAlpha = n.missed ? 0.45 : 1;
       if (yb - yt > headH + 2){ noteTail(x + w / 2, yt, yb - headH + 6, col, (n.missed ? 0.45 : 1) * (n.hit ? 0.95 : 0.55)); ctx.globalAlpha = n.missed ? 0.45 : 1; }
-      if (n.hit || n === nu){ ctx.shadowColor = col; ctx.shadowBlur = n.hit ? 24 : 16 + Math.sin(now * 8) * 10; }
+      if (n.hit || n === nu){ ctx.shadowColor = col; ctx.shadowBlur = n.hit ? 24 : reducedMotion ? 20 : 16 + Math.sin(now * 8) * 10; }
       noteBlock(x, yb - headH, w, headH, col, rad);
       ctx.shadowBlur = 0;
       if (n === nu && focus.midi !== null && !n.hit){ // pulsing outline around the expected note
-        const gp = (4 + 2 * pulse(now, 6) + 6 * focus.nudge) * U;
+        const gp = (4 + 2 * pulse(now, 6) + (reducedMotion ? 0 : 6 * focus.nudge)) * U; // reduced motion: the nudge brightens, the outline does not grow
         rrect(x - gp, yb - headH - gp, w + gp * 2, headH + gp * 2, rad + gp); ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 3 * U; ctx.stroke();
       }
       if (o.labels !== 'none' && headH > 26 * U && !n.hit){
@@ -169,7 +173,7 @@ export function draw(now, dt){
     }
     if (state === 'playing' && G.wait && G.waiting && nu){
       const k = keys[keyFor(nu.midi)];
-      drawIcon('arrow-down', TH.reward, k.x + k.w / 2, hitY - 56 * U - 50 * U - Math.abs(Math.sin(now * 5)) * 16 * U, 56 * U);
+      drawIcon('arrow-down', TH.reward, k.x + k.w / 2, hitY - 56 * U - 50 * U - (reducedMotion ? 8 : Math.abs(Math.sin(now * 5)) * 16) * U, 56 * U);
     }
   }
   ctx.restore();
@@ -177,6 +181,9 @@ export function draw(now, dt){
   drawKeyboard(now);
   for (let i = fx.parts.length - 1; i >= 0; i--){ const p = fx.parts[i]; p.age += dt; if (p.age > p.life){ fx.parts.splice(i, 1); continue; }
     ctx.globalAlpha = 1 - p.age / p.life;
+    if (p.kind === 'glow'){ drawn.glows++; const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r); g.addColorStop(0, p.c); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); continue; }
+    drawn.particles++;
     if (p.kind === 'ring'){ ctx.strokeStyle = p.c; ctx.lineWidth = 4 * U; ctx.beginPath(); ctx.arc(p.x, p.y, p.r + (p.age / p.life) * 70 * U, 0, 7); ctx.stroke(); continue; }
     if (p.kind === 'bubbles') p.vy -= 200 * dt * U; else p.vy += 420 * dt * U;
     p.x += p.vx * dt; p.y += p.vy * dt;
@@ -187,8 +194,8 @@ export function draw(now, dt){
   }
   ctx.globalAlpha = 1;
   for (let i = fx.pops.length - 1; i >= 0; i--){ const p = fx.pops[i]; p.age += dt; if (p.age > 0.8){ fx.pops.splice(i, 1); continue; }
-    const sc = p.age < 0.12 ? p.age / 0.12 * 1.2 : 1; ctx.globalAlpha = 1 - Math.max(0, p.age - 0.4) / 0.4;
-    drawIcon(p.icon, p.c, p.x, p.y - p.age * 40 * U, p.size * sc, p.fill); }
+    const sc = reducedMotion ? 1 : p.age < 0.12 ? p.age / 0.12 * 1.2 : 1; ctx.globalAlpha = 1 - Math.max(0, p.age - 0.4) / 0.4;
+    drawIcon(p.icon, p.c, p.x, p.y - (reducedMotion ? 0 : p.age * 40 * U), p.size * sc, p.fill); }
   ctx.globalAlpha = 1;
   if (G && (state === 'playing' || state === 'demo') && G.time < 0){
     const c = Math.ceil(-G.time / G.beat);
@@ -236,7 +243,7 @@ function drawKeyboard(now){
     ctx.save(); rrect(x, kbTop + 2, w, h, kr); ctx.clip();
     keyDecor(x, kbTop + 2, w, h, k.black, now);
     if (m === fk){ ctx.globalAlpha = Math.min(1, fp * (0.5 + 0.15 * pulse(now, 6)) + 0.4 * focus.nudge); ctx.fillStyle = PC_COLOR[focus.midi % 12]; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
-    else if (m === hint){ ctx.globalAlpha = 0.45 + 0.2 * Math.sin(now * 7); ctx.fillStyle = PC_COLOR[m % 12]; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
+    else if (m === hint){ ctx.globalAlpha = reducedMotion ? 0.5 : 0.45 + 0.2 * Math.sin(now * 7); ctx.fillStyle = PC_COLOR[m % 12]; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
     if (fx.heardKey[m] && nowMs - fx.heardKey[m] < 160 && !fa){ ctx.fillStyle = 'rgba(120,140,220,.4)'; ctx.fillRect(x, kbTop, w, h + 2); }
     if (fa){ ctx.globalAlpha = fa; ctx.fillStyle = fl.c; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
     ctx.restore();
