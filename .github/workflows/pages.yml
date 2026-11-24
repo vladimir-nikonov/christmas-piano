@@ -17,12 +17,12 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# Build and deploy are separate jobs: deploy-pages sometimes failed to see an
+# artifact uploaded seconds earlier in the same job ("No artifacts named
+# github-pages"). Starting a new job gives the artifact time to register.
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
 
@@ -38,5 +38,12 @@ jobs:
         with:
           path: _site
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v5
