@@ -153,6 +153,14 @@ svg.off{color:var(--border)}
 .levelup{display:flex;align-items:center;gap:calc(16*var(--u));font-size:calc(58*var(--u));font-weight:900;color:var(--reward)}
 .levelup .blk{display:block;width:calc(100*var(--u));height:calc(100*var(--u));border-radius:calc(var(--radius) * .6);overflow:hidden;animation:pop .5s .2s cubic-bezier(.3,1.8,.5,1) both}
 .levelup .blk svg{width:100%;height:100%}
+.hist{display:flex;align-items:flex-end;gap:calc(12*var(--u));min-height:calc(44*var(--u))}
+.hist .hbest{display:flex;align-items:center;gap:calc(6*var(--u));font-size:calc(26*var(--u));font-weight:900;color:var(--reward);font-variant-numeric:tabular-nums}
+.hist .hbest svg{width:calc(26*var(--u));height:calc(26*var(--u))}
+.hist .hbars{display:flex;align-items:flex-end;gap:calc(4*var(--u));height:calc(44*var(--u))}
+.hist .hbars i{width:calc(12*var(--u));background:var(--border);border-radius:calc(var(--radius) * .15)}
+.hist .hbars i.top{background:var(--reward)}
+.hist .hbars i.now{outline:2px solid var(--text);outline-offset:1px}
+.hist .rec{font-size:calc(22*var(--u));font-weight:900;color:var(--reward);align-self:center}
 .btnrow{display:flex;gap:calc(16*var(--u));align-items:center}
 .wide{width:calc(170*var(--u));height:calc(92*var(--u))}
 .wide svg{width:calc(46*var(--u));height:calc(46*var(--u))}
@@ -225,6 +233,7 @@ svg.off{color:var(--border)}
   <div class="songs" id="songs"></div>
   <div class="levels" id="levels"></div>
   <div class="parts" id="parts"></div>
+  <div class="hist" id="homeHist"></div>
   <div class="playrow">
     <button class="b listen" id="btnListen" data-ta="listen" data-icon="speaker"></button>
     <button class="b primary play" id="btnPlay" data-ta="play" data-icon="play" data-fill="1"></button>
@@ -264,6 +273,7 @@ svg.off{color:var(--border)}
     <div class="stars-big" id="resStars"></div>
     <div class="bignum" id="resPct">0%</div>
     <div class="levelup" id="resLevelUp" hidden></div>
+    <div class="hist" id="resHist"></div>
     <div class="xprow" id="resXp"></div>
     <div class="btnrow">
       <button class="b ico" id="btnHome" data-ta="home" data-icon="home"></button>
@@ -296,7 +306,7 @@ svg.off{color:var(--border)}
     <div class="row"><label for="sLabels" data-t="sLabels"></label><select id="sLabels"></select></div>
     <div class="row"><label for="sHint" data-t="sHint"></label><input type="checkbox" id="sHint"></div>
     <div class="row"><label for="sOct" data-t="sOct"></label><input type="checkbox" id="sOct"><small data-t="sOctHelp"></small></div>
-    <div class="row"><label for="sUnlock" data-t="sUnlock"></label><input type="checkbox" id="sUnlock"><small data-t="sUnlockHelp"></small></div>
+    <div class="row"><label for="sLock" data-t="sLock"></label><input type="checkbox" id="sLock"><small data-t="sLockHelp"></small></div>
     <div class="row"><label data-t="sProgress"></label><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
       <button class="b txtbtn" id="btnReset"></button>
       <button class="b txtbtn danger" id="btnDelete"></button></div></div>
@@ -339,31 +349,31 @@ const I18N = {
   en: { songBirthday:'Happy Birthday', myPage:'My page', sKidHint:'The child changes name, avatar and theme on their own page (pencil button next to the player).', sKidOpen:'Open child’s page', title:'Snow Notes', pause:'Pause', progress:'Progress', mic:'Microphone', who:'Switch player', full:'Full screen', settings:'Parent settings', listen:'Listen to the tune', play:'Play', back:'Back', next:'Next', done:'Done', home:'Home', again:'Play again', nextLevel:'Next level', restart:'Restart', resume:'Resume', close:'Close', newPlayer:'New player', avatar:'Avatar', theme:'Theme', language:'Language', level:'Level', name:'Name',
     levels:['Wood','Stone','Iron','Gold','Diamond'], parts:['Start','Half','Whole song'], micErr:'Allow the microphone: tap the icon left of the address bar.',
     sHead:'Parent settings', sPlayer:'PLAYER', sName:'Name', sTheme:'Theme', sLang:'Language', sTempo:'Tempo', sTempoHelp:'Percent of the level tempo. The level goes up on its own only at 100% or more.', sTol:'Timing window', sTolHelp:'0 means "as the level sets". Otherwise how early or late a note may be.', sTolLevel:'as the level sets', ms:'ms',
-    sLabels:'Note names', lLetters:'Letters', lNone:'Colours only', sHint:'Highlight the next key', sOct:'Any octave', sOctHelp:'Count a note played in any octave of the keyboard.', sUnlock:'Unlock all levels', sUnlockHelp:'Otherwise the next block opens after two games in a row at 85% or more.',
+    sLabels:'Note names', lLetters:'Letters', lNone:'Colours only', sHint:'Highlight the next key', sOct:'Any octave', sOctHelp:'Count a note played in any octave of the keyboard.', sLock:'Open levels one by one', sLockHelp:'If on, the next block opens after two games in a row at 85% or more. If off, all levels are open.', best:'Best result', history:'Previous results', record:'Record!',
     sProgress:'Player progress', sReset:'Reset levels', sDelete:'Delete player', sConfirm:'Sure? Tap again', sDoneMsg:'Done', sDevice:'THIS DEVICE', sLat:'Microphone delay', sLatHelp:'If notes count as late, raise it. Usually 60–100 ms.', sSens:'Microphone sensitivity', sSensHelp:'Higher hears quiet notes but reacts more to noise.', sSensFmt:'{n} of 10',
     sTouch:'Screen taps', sTouchHelp:'Count taps on the drawn keys, to test without a keyboard.', sNote:'Everything is saved only in this browser on this device.' },
   pl: { songBirthday:'Happy Birthday', myPage:'Moja strona', sKidHint:'Imię, awatar i motyw dziecko zmienia na swojej stronie (przycisk z ołówkiem obok gracza).', sKidOpen:'Otwórz stronę dziecka', title:'Śnieżne nuty', pause:'Pauza', progress:'Postęp', mic:'Mikrofon', who:'Zmień gracza', full:'Pełny ekran', settings:'Ustawienia rodzica', listen:'Posłuchaj melodii', play:'Graj', back:'Wstecz', next:'Dalej', done:'Gotowe', home:'Start', again:'Jeszcze raz', nextLevel:'Następny poziom', restart:'Od początku', resume:'Wznów', close:'Zamknij', newPlayer:'Nowy gracz', avatar:'Awatar', theme:'Motyw', language:'Język', level:'Poziom', name:'Imię',
     levels:['Drewno','Kamień','Żelazo','Złoto','Diament'], parts:['Początek','Połowa','Cała piosenka'], micErr:'Zezwól na mikrofon: ikona po lewej stronie paska adresu.',
     sHead:'Ustawienia rodzica', sPlayer:'GRACZ', sName:'Imię', sTheme:'Motyw', sLang:'Język', sTempo:'Tempo', sTempoHelp:'Procent tempa poziomu. Poziom rośnie sam tylko przy 100% lub więcej.', sTol:'Tolerancja czasu', sTolHelp:'0 oznacza „jak na poziomie”. W innym razie: o ile wcześniej lub później można zagrać.', sTolLevel:'jak na poziomie', ms:'ms',
-    sLabels:'Nazwy dźwięków', lLetters:'Litery', lNone:'Tylko kolory', sHint:'Podświetlaj następny klawisz', sOct:'Dowolna oktawa', sOctHelp:'Zaliczaj dźwięk zagrany w dowolnej oktawie.', sUnlock:'Odblokuj wszystkie poziomy', sUnlockHelp:'W przeciwnym razie następny blok otwiera się po dwóch grach z rzędu na 85% lub więcej.',
+    sLabels:'Nazwy dźwięków', lLetters:'Litery', lNone:'Tylko kolory', sHint:'Podświetlaj następny klawisz', sOct:'Dowolna oktawa', sOctHelp:'Zaliczaj dźwięk zagrany w dowolnej oktawie.', sLock:'Otwieraj poziomy po kolei', sLockHelp:'Gdy włączone, następny blok otwiera się po dwóch grach z rzędu na 85% lub więcej. Gdy wyłączone, wszystkie poziomy są otwarte.', best:'Najlepszy wynik', history:'Poprzednie wyniki', record:'Rekord!',
     sProgress:'Postęp gracza', sReset:'Resetuj poziomy', sDelete:'Usuń gracza', sConfirm:'Na pewno? Naciśnij jeszcze raz', sDoneMsg:'Gotowe', sDevice:'TO URZĄDZENIE', sLat:'Opóźnienie mikrofonu', sLatHelp:'Jeśli nuty są zaliczane jako spóźnione, zwiększ. Zwykle 60–100 ms.', sSens:'Czułość mikrofonu', sSensHelp:'Wyżej słyszy ciche dźwięki, ale bardziej reaguje na hałas.', sSensFmt:'{n} z 10',
     sTouch:'Dotyk ekranu', sTouchHelp:'Zaliczaj dotknięcia narysowanych klawiszy, aby sprawdzić bez instrumentu.', sNote:'Wszystko zapisuje się tylko w tej przeglądarce na tym urządzeniu.' },
   uk: { songBirthday:'З днем народження', myPage:'Моя сторінка', sKidHint:'Ім’я, аватар і тему дитина змінює на своїй сторінці (кнопка з олівцем біля гравця).', sKidOpen:'Відкрити сторінку дитини', title:'Сніжні ноти', pause:'Пауза', progress:'Прогрес', mic:'Мікрофон', who:'Змінити гравця', full:'На весь екран', settings:'Налаштування для батьків', listen:'Послухати мелодію', play:'Грати', back:'Назад', next:'Далі', done:'Готово', home:'Додому', again:'Ще раз', nextLevel:'Наступний рівень', restart:'Спочатку', resume:'Продовжити', close:'Закрити', newPlayer:'Новий гравець', avatar:'Аватар', theme:'Тема', language:'Мова', level:'Рівень', name:'Ім’я',
     levels:['Дерево','Камінь','Залізо','Золото','Алмаз'], parts:['Початок','Половина','Уся пісня'], micErr:'Дозвольте мікрофон: значок ліворуч від адреси в браузері.',
     sHead:'Налаштування для батьків', sPlayer:'ГРАВЕЦЬ', sName:'Ім’я', sTheme:'Тема', sLang:'Мова', sTempo:'Темп', sTempoHelp:'Відсоток від темпу рівня. Рівень підвищується сам лише при 100% і вище.', sTol:'Допуск за часом', sTolHelp:'0 означає «як на рівні». Інакше наскільки можна помилитися раніше чи пізніше.', sTolLevel:'як на рівні', ms:'мс',
-    sLabels:'Назви нот', lLetters:'Літери', lNone:'Лише кольори', sHint:'Підсвічувати наступну клавішу', sOct:'Будь-яка октава', sOctHelp:'Зараховувати ноту в будь-якій октаві синтезатора.', sUnlock:'Відкрити всі рівні', sUnlockHelp:'Інакше наступний блок відкривається після двох ігор поспіль на 85% і більше.',
+    sLabels:'Назви нот', lLetters:'Літери', lNone:'Лише кольори', sHint:'Підсвічувати наступну клавішу', sOct:'Будь-яка октава', sOctHelp:'Зараховувати ноту в будь-якій октаві синтезатора.', sLock:'Відкривати рівні по черзі', sLockHelp:'Якщо увімкнено, наступний блок відкривається після двох ігор поспіль на 85% і більше. Якщо вимкнено, усі рівні відкриті.', best:'Найкращий результат', history:'Попередні результати', record:'Рекорд!',
     sProgress:'Прогрес гравця', sReset:'Скинути рівні', sDelete:'Видалити гравця', sConfirm:'Точно? Натисніть ще раз', sDoneMsg:'Готово', sDevice:'ЦЕЙ ПРИСТРІЙ', sLat:'Затримка мікрофона', sLatHelp:'Якщо ноти зараховуються пізно, збільште. Зазвичай 60–100 мс.', sSens:'Чутливість мікрофона', sSensHelp:'Вище означає, що чує тихі ноти, але більше реагує на шум.', sSensFmt:'{n} з 10',
     sTouch:'Натискання на екран', sTouchHelp:'Зараховувати дотики до намальованих клавіш, щоб перевірити без синтезатора.', sNote:'Усе зберігається лише в цьому браузері на цьому пристрої.' },
   ru: { songBirthday:'С днём рождения', myPage:'Моя страница', sKidHint:'Имя, аватар и тему ребёнок меняет на своей странице (кнопка с карандашом рядом с игроком).', sKidOpen:'Открыть страницу ребёнка', title:'Снежные ноты', pause:'Пауза', progress:'Прогресс', mic:'Микрофон', who:'Сменить игрока', full:'Во весь экран', settings:'Настройки для родителя', listen:'Послушать мелодию', play:'Играть', back:'Назад', next:'Дальше', done:'Готово', home:'Домой', again:'Ещё раз', nextLevel:'Следующий уровень', restart:'Сначала', resume:'Продолжить', close:'Закрыть', newPlayer:'Новый игрок', avatar:'Аватар', theme:'Тема', language:'Язык', level:'Уровень', name:'Имя',
     levels:['Дерево','Камень','Железо','Золото','Алмаз'], parts:['Начало','Половина','Вся песня'], micErr:'Разрешите микрофон: значок слева от адреса в браузере.',
     sHead:'Настройки для родителя', sPlayer:'ИГРОК', sName:'Имя', sTheme:'Тема', sLang:'Язык', sTempo:'Темп', sTempoHelp:'Процент от темпа уровня. Уровень повышается сам только при 100% и выше.', sTol:'Допуск по времени', sTolHelp:'0 означает «как на уровне». Иначе насколько можно ошибиться раньше или позже.', sTolLevel:'как на уровне', ms:'мс',
-    sLabels:'Подписи нот', lLetters:'Буквы', lNone:'Только цвет', sHint:'Подсвечивать следующую клавишу', sOct:'Любая октава', sOctHelp:'Засчитывать ноту в любой октаве синтезатора.', sUnlock:'Открыть все уровни', sUnlockHelp:'Иначе следующий блок открывается после двух игр подряд на 85% и больше.',
+    sLabels:'Подписи нот', lLetters:'Буквы', lNone:'Только цвет', sHint:'Подсвечивать следующую клавишу', sOct:'Любая октава', sOctHelp:'Засчитывать ноту в любой октаве синтезатора.', sLock:'Открывать уровни по очереди', sLockHelp:'Если включено, следующий блок открывается после двух игр подряд на 85% и больше. Если выключено, все уровни открыты.', best:'Лучший результат', history:'Прошлые результаты', record:'Рекорд!',
     sProgress:'Прогресс игрока', sReset:'Сбросить уровни', sDelete:'Удалить игрока', sConfirm:'Точно? Нажмите ещё раз', sDoneMsg:'Готово', sDevice:'ЭТО УСТРОЙСТВО', sLat:'Задержка микрофона', sLatHelp:'Если ноты засчитываются поздно, увеличьте. Обычно 60–100 мс.', sSens:'Чувствительность микрофона', sSensHelp:'Выше означает, что слышит тихие ноты, но больше реагирует на шум.', sSensFmt:'{n} из 10',
     sTouch:'Нажатия по экрану', sTouchHelp:'Засчитывать касания нарисованных клавиш, чтобы проверить без синтезатора.', sNote:'Всё сохраняется только в этом браузере на этом устройстве.' },
   es: { songBirthday:'Cumpleaños feliz', myPage:'Mi página', sKidHint:'El niño cambia el nombre, el avatar y el tema en su propia página (botón del lápiz junto al jugador).', sKidOpen:'Abrir la página del niño', title:'Notas de nieve', pause:'Pausa', progress:'Progreso', mic:'Micrófono', who:'Cambiar jugador', full:'Pantalla completa', settings:'Ajustes para padres', listen:'Escuchar la melodía', play:'Jugar', back:'Atrás', next:'Siguiente', done:'Listo', home:'Inicio', again:'Otra vez', nextLevel:'Siguiente nivel', restart:'Desde el principio', resume:'Continuar', close:'Cerrar', newPlayer:'Nuevo jugador', avatar:'Avatar', theme:'Tema', language:'Idioma', level:'Nivel', name:'Nombre',
     levels:['Madera','Piedra','Hierro','Oro','Diamante'], parts:['Inicio','Mitad','Canción completa'], micErr:'Permite el micrófono: toca el icono a la izquierda de la dirección.',
     sHead:'Ajustes para padres', sPlayer:'JUGADOR', sName:'Nombre', sTheme:'Tema', sLang:'Idioma', sTempo:'Tempo', sTempoHelp:'Porcentaje del tempo del nivel. El nivel sube solo con 100% o más.', sTol:'Margen de tiempo', sTolHelp:'0 significa «según el nivel». Si no, cuánto antes o después se puede tocar.', sTolLevel:'según el nivel', ms:'ms',
-    sLabels:'Nombres de notas', lLetters:'Letras', lNone:'Solo colores', sHint:'Resaltar la siguiente tecla', sOct:'Cualquier octava', sOctHelp:'Contar la nota en cualquier octava del teclado.', sUnlock:'Desbloquear todos los niveles', sUnlockHelp:'Si no, el siguiente bloque se abre tras dos partidas seguidas con 85% o más.',
+    sLabels:'Nombres de notas', lLetters:'Letras', lNone:'Solo colores', sHint:'Resaltar la siguiente tecla', sOct:'Cualquier octava', sOctHelp:'Contar la nota en cualquier octava del teclado.', sLock:'Abrir los niveles uno a uno', sLockHelp:'Si está activado, el siguiente bloque se abre tras dos partidas seguidas con 85% o más. Si no, todos los niveles están abiertos.', best:'Mejor resultado', history:'Resultados anteriores', record:'¡Récord!',
     sProgress:'Progreso del jugador', sReset:'Reiniciar niveles', sDelete:'Eliminar jugador', sConfirm:'¿Seguro? Toca otra vez', sDoneMsg:'Listo', sDevice:'ESTE DISPOSITIVO', sLat:'Retraso del micrófono', sLatHelp:'Si las notas cuentan como tarde, súbelo. Normalmente 60–100 ms.', sSens:'Sensibilidad del micrófono', sSensHelp:'Más alto oye notas suaves, pero reacciona más al ruido.', sSensFmt:'{n} de 10',
     sTouch:'Toques en pantalla', sTouchHelp:'Contar toques en las teclas dibujadas, para probar sin teclado.', sNote:'Todo se guarda solo en este navegador de este dispositivo.' }
 };
@@ -503,7 +513,7 @@ function blockSVG(i){
 
 /* ================= Storage: per-child profiles + device settings ================= */
 const DB_KEY = 'snezhnye-noty-v2';
-const DEF_OPTS = { tempo:100, tolMs:0, labels:'native', anyOct:true, hint:true, unlockAll:false };
+const DEF_OPTS = { tempo:100, tolMs:0, labels:'native', anyOct:true, hint:true, lockLevels:false };
 const DEF_DEV = { latency:80, sens:5, touch:false };
 // Primary store: IndexedDB (db 'snezhnye-noty', store 'kv', key 'db'). localStorage[DB_KEY] is the legacy
 // store, migrated once on first run and used as a fallback when IndexedDB is unavailable or a write fails.
@@ -516,10 +526,25 @@ function normalizeDB(d){
   const r = freshDB();
   if (d && typeof d === 'object'){ Object.assign(r, d); r.device = Object.assign({}, DEF_DEV, d.device); }
   r.profiles = Array.isArray(r.profiles) ? r.profiles.filter(p => p && typeof p === 'object' && typeof p.id === 'string' && p.id) : [];
-  r.profiles.forEach(p => { p.theme = THEMES[p.theme] ? p.theme : 'pixel'; p.opts = Object.assign({}, DEF_OPTS, p.opts); if (p.opts.labels === 'ru') p.opts.labels = 'native'; if (p.opts.labels === 'en') p.opts.labels = 'letters'; p.sel = p.sel || { level:0, part:'short' }; p.best = p.best || {};
+  r.profiles.forEach(p => { p.theme = THEMES[p.theme] ? p.theme : 'pixel'; p.opts = Object.assign({}, DEF_OPTS, p.opts); if (p.opts.labels === 'ru') p.opts.labels = 'native'; if (p.opts.labels === 'en') p.opts.labels = 'letters'; delete p.opts.unlockAll; p.sel = p.sel || { level:0, part:'short' }; p.best = p.best || {};
+    p.hist = normHist(p.hist); p.top = (p.top && typeof p.top === 'object' && !Array.isArray(p.top)) ? p.top : {};
+    Object.keys(p.hist).forEach(k => { p.top[k] = Math.max(+p.top[k] || 0, ...p.hist[k].map(e => e.pct)); });
     p.name = typeof p.name === 'string' ? p.name : ''; p.level = Math.max(0, Math.floor(+p.level) || 0); p.streak = +p.streak || 0; p.avatar = Math.max(0, Math.floor(+p.avatar) || 0); });
   if (!r.profiles.some(p => p.id === r.current)) r.current = r.profiles[0] ? r.profiles[0].id : null;
   return r;
+}
+// Per level+part history of results ("level:part" -> last HIST_MAX games, oldest first).
+const HIST_MAX = 10;
+function normHist(h){
+  const out = {};
+  if (h && typeof h === 'object' && !Array.isArray(h)) Object.keys(h).forEach(k => {
+    if (!/^([a-z0-9_-]{1,32}:)?\d+:(short|half|full)$/.test(k) || !Array.isArray(h[k])) return;
+    const a = h[k].filter(e => e && typeof e === 'object' && Number.isFinite(+e.pct))
+      .map(e => ({ at: +e.at || 0, pct: Math.max(0, Math.min(100, Math.round(+e.pct))), stars: Math.max(0, Math.min(3, Math.floor(+e.stars) || 0)), score: Math.max(0, Math.floor(+e.score) || 0) }))
+      .slice(-HIST_MAX);
+    if (a.length) out[k] = a;
+  });
+  return out;
 }
 function lsRead(){ try { const raw = localStorage.getItem(DB_KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; } }
 function lsWrite(d){ try { localStorage.setItem(DB_KEY, JSON.stringify(d)); return true; } catch(e){ return false; } }
@@ -580,7 +605,7 @@ function askPersist(){
 const P = () => db.profiles.find(p => p.id === db.current) || null;
 const opts = () => (P() || { opts: DEF_OPTS }).opts;
 const dev = () => db.device;
-const unlocked = (p, i) => p.opts.unlockAll || i <= p.level;
+const unlocked = (p, i) => !p.opts.lockLevels || i <= p.level;
 
 /* ================= Music ================= */
 const LETTERS = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
@@ -800,6 +825,10 @@ function finish(){
   const metric = G.wait ? Math.round(G.notes.filter(n => n.hit && !n.wrong).length / total * 100) : Math.round(G.hits / total * 100);
   const stars = metric >= 95 ? 3 : metric >= 80 ? 2 : metric >= 50 ? 1 : 0;
   const key = bestKey(G.song, G.level, G.part); p.best[key] = Math.max(p.best[key] || 0, stars);
+  const prevTop = p.top[key], record = prevTop !== undefined && metric > prevTop;
+  p.top[key] = Math.max(prevTop || 0, metric);
+  (p.hist[key] = p.hist[key] || []).push({ at: Date.now(), pct: metric, stars, score: G.score });
+  if (p.hist[key].length > HIST_MAX) p.hist[key].splice(0, p.hist[key].length - HIST_MAX);
   let levelUp = false;
   if (G.level === p.level && !o.tolMs && o.tempo >= 100){
     if (metric >= 85){ p.streak = (p.streak || 0) + 1; if (p.streak >= 2 && p.level < LEVELS.length - 1){ p.level++; p.streak = 0; levelUp = true; } }
@@ -811,9 +840,10 @@ function finish(){
   $('#resPct').textContent = metric + '%';
   const lu = $('#resLevelUp'); lu.hidden = !levelUp;
   if (levelUp) lu.innerHTML = '<span class="blk">' + blockSVG(p.level) + '</span><span>+1</span>';
-  $('#resXp').innerHTML = (!levelUp && G.level === p.level && p.level < LEVELS.length - 1 && !o.unlockAll)
-    ? '<span class="blk">' + blockSVG(p.level + 1) + '</span><span class="pips"><i class="' + (p.streak > 0 ? 'on' : '') + '"></i><i></i></span>' + icon('lock') : '';
-  $('#btnNext').hidden = !levelUp;
+  $('#resXp').innerHTML = (!levelUp && G.level === p.level && p.level < LEVELS.length - 1)
+    ? '<span class="blk">' + blockSVG(p.level + 1) + '</span><span class="pips"><i class="' + (p.streak > 0 ? 'on' : '') + '"></i><i></i></span>' + (o.lockLevels ? icon('lock') : '') : '';
+  $('#resHist').innerHTML = histHTML(p, key, true) + (record ? '<span class="rec">' + tx('record') + '</span>' : '');
+  $('#btnNext').hidden = !(G.level < LEVELS.length - 1 && unlocked(p, G.level + 1));
   showOnly('#results');
   if (stars) for (let i = 0; i < 4; i++) setTimeout(() => burst(W * (0.2 + Math.random() * 0.6), H * 0.4, NOTE_COLORS[(i * 2) % 7], 30), i * 180);
 }
@@ -967,6 +997,7 @@ const px = n => Math.round(n * U);
 function renderHome(){
   const p = P(); applyTheme(p.theme); updateQuick();
   $('#btnWho').innerHTML = avatarSVG(p.avatar, px(50)) + '<span class="nm"></span>'; $('#btnWho .nm').textContent = p.name || '';
+  if (!unlocked(p, p.sel.level)) p.sel.level = Math.min(p.level, LEVELS.length - 1);
   const songs = $('#songs'); songs.textContent = '';
   SONG_KEYS.forEach(k => {
     const b = document.createElement('button'); b.className = 'b song'; b.setAttribute('aria-pressed', songKey(p) === k);
@@ -980,7 +1011,7 @@ function renderHome(){
     const stars = Math.max(0, ...PART_KEYS.map(k => p.best[bestKey(songKey(p), i, k)] || 0));
     b.innerHTML = '<span class="blk">' + blockSVG(i) + '</span>' + (open ? '' : '<span class="lock">' + icon('lock') + '</span>') +
       '<span class="stars">' + (open ? starRow(stars) : '') + '</span>' +
-      (i === p.level && !p.opts.unlockAll && i < LEVELS.length - 1 ? '<span class="pips"><i class="' + (p.streak > 0 ? 'on' : '') + '"></i><i></i></span>' : '');
+      (i === p.level && i < LEVELS.length - 1 ? '<span class="pips"><i class="' + (p.streak > 0 ? 'on' : '') + '"></i><i></i></span>' : '');
     b.onclick = () => { if (!open){ b.animate([{ transform:'translateX(-6px)' }, { transform:'translateX(6px)' }, { transform:'none' }], 200); return; } p.sel.level = i; save(); renderHome(); };
     box.appendChild(b);
   });
@@ -991,6 +1022,15 @@ function renderHome(){
     b.innerHTML = icon('music').repeat(i + 1); b.onclick = () => { p.sel.part = k; save(); renderHome(); };
     parts.appendChild(b);
   });
+  $('#homeHist').innerHTML = histHTML(p, bestKey(songKey(p), p.sel.level, p.sel.part), false);
+}
+// Best % and bars of the last results for one level+part.
+function histHTML(p, key, markLast){
+  const h = p.hist[key] || []; if (!h.length) return '';
+  const top = p.top[key] || 0;
+  return '<span class="hbest" title="' + tx('best') + '" aria-label="' + tx('best') + ': ' + top + '%">' + icon('star', { fill: true }) + '<span>' + top + '%</span></span>' +
+    '<span class="hbars" role="img" aria-label="' + tx('history') + ': ' + h.map(e => e.pct + '%').join(', ') + '">' +
+    h.map((e, i) => '<i class="' + (e.pct === top ? 'top' : '') + (markLast && i === h.length - 1 ? ' now' : '') + '" style="height:' + Math.max(8, e.pct) + '%" title="' + fmtDate(e.at) + ': ' + e.pct + '%"></i>').join('') + '</span>';
 }
 function goHome(){
   state = 'home'; paused = false; G = null;
@@ -1046,7 +1086,7 @@ function wizStep(n){
 $('#btnStep2').onclick = () => { pickName = $('#newName').value.trim(); wizStep(2); };
 $('#newName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnStep2').click(); });
 $('#btnNewOk').onclick = () => {
-  const p = { id: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1e4), name: pickName, avatar: pickAv, theme: pickTheme, lang: LANG, level:0, streak:0, best:{}, sel:{ level:0, part:'short' }, opts: Object.assign({}, DEF_OPTS) };
+  const p = { id: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1e4), name: pickName, avatar: pickAv, theme: pickTheme, lang: LANG, level:0, streak:0, best:{}, hist:{}, top:{}, sel:{ level:0, part:'short' }, opts: Object.assign({}, DEF_OPTS) };
   db.profiles.push(p); db.current = p.id; save(); goHome();
 };
 $('#btnNewBack').onclick = () => { if (wizAt === 2) wizStep(1); else { if (P()) applyTheme(P().theme); openProfiles(); } };
@@ -1085,8 +1125,8 @@ $('#btnResume').onclick = () => { paused = false; $('#pause').hidden = true; };
 $('#btnRestart').onclick = () => startGame(false);
 $('#btnQuit').onclick = goHome;
 $('#btnHome').onclick = goHome;
-$('#btnAgain').onclick = () => startGame(false);
-$('#btnNext').onclick = () => startGame(false);
+$('#btnAgain').onclick = () => { const p = P(); if (G){ p.sel.song = G.song; p.sel.level = G.level; p.sel.part = G.part; } startGame(false); };
+$('#btnNext').onclick = () => { const p = P(); if (G){ p.sel.song = G.song; p.sel.level = Math.min(LEVELS.length - 1, G.level + 1); } startGame(false); };
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'playing'){ paused = true; $('#pause').hidden = false; } });
 document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && state === 'home' && document.activeElement === document.body){ e.preventDefault(); $('#btnPlay').click(); } });
 
@@ -1151,9 +1191,9 @@ function openSettings(){
   LANGS.forEach(L => { const o = document.createElement('option'); o.value = L.id; o.textContent = L.name; lg.appendChild(o); });
   lg.value = LANG; lg.onchange = e => setLang(e.target.value);
   $('#sLabels').value = p.opts.labels; $('#sLabels').onchange = e => { p.opts.labels = e.target.value; heardShown = undefined; save(); };
-  [['#sHint','hint'],['#sOct','anyOct'],['#sUnlock','unlockAll']].forEach(([id, k]) => { $(id).checked = !!p.opts[k]; $(id).onchange = e => { p.opts[k] = e.target.checked; save(); }; });
+  [['#sHint','hint'],['#sOct','anyOct'],['#sLock','lockLevels']].forEach(([id, k]) => { $(id).checked = !!p.opts[k]; $(id).onchange = e => { p.opts[k] = e.target.checked; save(); }; });
   $('#sTouch').checked = dev().touch; $('#sTouch').onchange = e => { dev().touch = e.target.checked; save(); };
-  armButton('#btnReset', tx('sReset'), () => { p.level = 0; p.streak = 0; p.best = {}; p.sel.level = 0; save(); });
+  armButton('#btnReset', tx('sReset'), () => { p.level = 0; p.streak = 0; p.best = {}; p.hist = {}; p.top = {}; p.sel.level = 0; save(); });
   armButton('#btnDelete', tx('sDelete'), () => { db.profiles = db.profiles.filter(x => x.id !== p.id); db.current = db.profiles[0] ? db.profiles[0].id : null; save(); $('#settings').hidden = true; goHome(); });
   renderBackupInfo(); $('#restoreAsk').hidden = true;
   $('#settings').hidden = false;
