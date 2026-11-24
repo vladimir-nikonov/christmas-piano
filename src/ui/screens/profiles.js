@@ -18,7 +18,7 @@ export function openProfiles(){
   db.profiles.forEach(p => {
     const t = THEMES[p.theme], b = document.createElement('button'); b.className = 'b ptile'; b.setAttribute('aria-label', p.name || tx('who'));
     b.style.background = t.panel; b.style.borderColor = t.border; b.style.color = t.text; b.style.borderRadius = t.radius + 'px'; b.style.fontFamily = t.font + ', system-ui, sans-serif'; b.style.boxShadow = '0 ' + px(5) + 'px 0 ' + t.accentDark;
-    b.innerHTML = avatarSVG(p.avatar, px(96), p.theme) + '<span class="nm"></span><span class="meta"><span style="display:block;width:' + px(28) + 'px;height:' + px(28) + 'px;border-radius:3px;overflow:hidden">' + blockSVG(p.level) + '</span></span>';
+    b.innerHTML = avatarSVG(p.avatar, px(96), p.theme) + '<span class="nm"></span><span class="meta"><span style="display:block;width:' + px(28) + 'px;height:' + px(28) + 'px;border-radius:3px;overflow:hidden">' + blockSVG(p.level, p.theme) + '</span></span>';
     b.querySelector('.nm').textContent = p.name || ' ';
     b.onclick = () => { db.current = p.id; save(); goHome(); };
     box.appendChild(b);

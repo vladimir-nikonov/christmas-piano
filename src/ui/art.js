@@ -79,7 +79,53 @@ export function avatarSVG(i, size, theme){
 // Splash mascots: three characters per theme
 export const SPLASH_CAST = { pixel:[0, 4, 5], plastic:[6, 7, 1], winter:[9, 3, 2], anime:[8, 4, 1] };
 function rng(seed){ return () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }; }
-export function blockSVG(i){
+// Material colours used by the non-pixel block styles: base, light, dark
+const MAT = {
+  wood:['#a0703c','#d3a56a','#5c3b1e'], stone:['#8a8f98','#bfc4cb','#575c64'], iron:['#c8ccd2','#f1f3f6','#868d97'],
+  gold:['#f7c948','#fff1a6','#b8820f'], diamond:['#4fe0e8','#d8fcff','#178f9c']
+};
+let blkSeq = 0;
+// Level blocks are drawn in the current theme's style:
+// pixel = textured pixel cubes, plastic = glossy toy blocks with an emblem, winter = pixel cubes under snow, anime = faceted gems.
+export function blockSVG(i, theme){
+  const th = THEMES[theme] ? theme : themeKey(), mat = LEVELS[i].mat, [c, lt, dk] = MAT[mat] || MAT.diamond, id = 'bk' + (++blkSeq);
+  if (th === 'plastic'){
+    const emblem = {
+      wood:'<path d="M28 34Q40 30 52 34M26 42Q40 38 54 42M28 50Q40 46 52 50" stroke="' + dk + '" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/>',
+      stone:'<circle cx="32" cy="36" r="4" fill="' + dk + '" opacity=".55"/><circle cx="48" cy="44" r="5" fill="' + dk + '" opacity=".55"/><circle cx="36" cy="51" r="3" fill="' + dk + '" opacity=".55"/>',
+      iron:'<circle cx="26" cy="30" r="3.2" fill="' + dk + '"/><circle cx="54" cy="30" r="3.2" fill="' + dk + '"/><circle cx="26" cy="54" r="3.2" fill="' + dk + '"/><circle cx="54" cy="54" r="3.2" fill="' + dk + '"/>',
+      gold:'<path d="M40 27L44 37L55 37L46 44L49 55L40 48L31 55L34 44L25 37L36 37Z" fill="' + lt + '" stroke="' + dk + '" stroke-width="2" stroke-linejoin="round"/>',
+      diamond:'<path d="M40 26L44 38L56 42L44 46L40 58L36 46L24 42L36 38Z" fill="#fff" opacity=".9"/>'
+    }[mat] || '';
+    return '<svg class="block block-plastic" viewBox="0 0 80 80" aria-hidden="true"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + lt + '"/><stop offset=".55" stop-color="' + c + '"/><stop offset="1" stop-color="' + dk + '"/></linearGradient></defs>' +
+      '<ellipse cx="40" cy="74" rx="30" ry="5" fill="rgba(0,0,0,.28)"/>' +
+      '<rect x="6" y="10" width="68" height="62" rx="18" fill="' + dk + '"/><rect x="6" y="6" width="68" height="60" rx="18" fill="url(#' + id + ')"/>' +
+      '<rect x="18" y="20" width="44" height="40" rx="12" fill="' + c + '" stroke="' + lt + '" stroke-width="2.5" opacity=".95"/>' + emblem +
+      '<ellipse cx="30" cy="15" rx="17" ry="6" fill="#fff" opacity=".45"/></svg>';
+  }
+  if (th === 'anime'){
+    return '<svg class="block block-anime" viewBox="0 0 80 80" aria-hidden="true"><defs><radialGradient id="' + id + '"><stop offset="0" stop-color="' + c + '" stop-opacity=".55"/><stop offset="1" stop-color="' + c + '" stop-opacity="0"/></radialGradient></defs>' +
+      '<circle cx="40" cy="42" r="38" fill="url(#' + id + ')"/>' +
+      '<path d="M40 5L74 40L40 75L6 40Z" fill="' + c + '"/>' +
+      '<path d="M40 5L6 40L24 40L40 20Z" fill="' + lt + '"/><path d="M40 5L74 40L56 40L40 20Z" fill="' + c + '"/>' +
+      '<path d="M6 40L40 75L40 58L24 40Z" fill="' + dk + '" opacity=".75"/><path d="M74 40L40 75L40 58L56 40Z" fill="' + dk + '"/>' +
+      '<path d="M40 20L56 40L40 58L24 40Z" fill="' + lt + '" opacity=".85"/><path d="M40 20L48 30L40 40L32 30Z" fill="#fff" opacity=".55"/>' +
+      '<path d="M40 5L74 40L40 75L6 40Z" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2" stroke-linejoin="round"/>' +
+      '<path d="M64 10L66 16L72 18L66 20L64 26L62 20L56 18L62 16Z" fill="#fff"/></svg>';
+  }
+  const grid = pixelBlock(i);
+  if (th === 'winter'){
+    return '<svg class="block block-winter" viewBox="0 0 80 80" aria-hidden="true"><g transform="scale(10)" shape-rendering="crispEdges">' + grid + '</g>' +
+      '<rect width="80" height="80" fill="#cdf3ff" opacity=".12"/>' +
+      '<path d="M0 0H80V14Q74 20 68 14Q62 22 54 15Q48 21 40 15Q32 23 24 15Q16 21 10 14Q4 19 0 13Z" fill="#f4fbff"/>' +
+      '<path d="M0 10Q4 15 10 10Q16 17 24 11Q32 19 40 11Q48 17 54 11Q62 18 68 10Q74 16 80 10V14Q74 20 68 14Q62 22 54 15Q48 21 40 15Q32 23 24 15Q16 21 10 14Q4 19 0 13Z" fill="#bfe6f5"/>' +
+      '<path d="M14 18L17 30L20 18ZM44 19L46 27L48 19ZM60 18L63 34L66 17Z" fill="#dff6ff" opacity=".9"/>' +
+      '<circle cx="12" cy="6" r="1.6" fill="#fff"/><circle cx="66" cy="5" r="1.4" fill="#fff"/></svg>';
+  }
+  return '<svg class="block block-pixel" viewBox="0 0 8 8" preserveAspectRatio="none" shape-rendering="crispEdges" aria-hidden="true">' + grid + '</svg>';
+}
+// The original textured pixel cube (8x8 grid) used by the pixel and winter styles
+function pixelBlock(i){
   const r = rng(97 + i * 31), px = [], pick = a => a[Math.floor(r() * a.length)];
   for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++){
     let c;
@@ -92,6 +138,6 @@ export function blockSVG(i){
     }
     px.push('<rect x="' + x + '" y="' + y + '" width="1" height="1" fill="' + c + '"/>');
   }
-  return '<svg class="block" viewBox="0 0 8 8" preserveAspectRatio="none" shape-rendering="crispEdges" aria-hidden="true">' + px.join('') +
-    '<rect width="8" height=".5" fill="rgba(255,255,255,.35)"/><rect width=".5" height="8" fill="rgba(255,255,255,.25)"/><rect y="7.5" width="8" height=".5" fill="rgba(0,0,0,.35)"/><rect x="7.5" width=".5" height="8" fill="rgba(0,0,0,.3)"/></svg>';
+  return px.join('') +
+    '<rect width="8" height=".5" fill="rgba(255,255,255,.35)"/><rect width=".5" height="8" fill="rgba(255,255,255,.25)"/><rect y="7.5" width="8" height=".5" fill="rgba(0,0,0,.35)"/><rect x="7.5" width=".5" height="8" fill="rgba(0,0,0,.3)"/>';
 }
