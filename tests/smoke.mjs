@@ -394,6 +394,11 @@ try {
   await page.click('#btnHome');
   await visible('#home');
   assert.equal(await sn(() => { const p = window.__sn.db.profiles[0]; return p.sel.level === p.prog.jingle.level; }), true, 'back home after a game selects the current level');
+  log('results buttons do nothing once the results are gone (a late second tap)');
+  const selBefore = await sn(() => window.__sn.db.profiles[0].sel.level);
+  await sn(() => { document.querySelector('#btnNext').click(); document.querySelector('#btnAgain').click(); });
+  assert.equal(await sn(() => window.__sn.state), 'home');
+  assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), selBefore);
 
   log('portrait layout');
   await page.setViewportSize({ width: 800, height: 1280 });

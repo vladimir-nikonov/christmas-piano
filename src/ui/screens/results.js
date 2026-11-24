@@ -72,6 +72,8 @@ function clearFly(){ document.querySelectorAll('#results .flylayer').forEach(l =
 
 // The primary button runs the chosen action; tapping it also skips the reward, since the results screen closes.
 $('#btnMain').onclick = () => { clearFly(); $($('#btnMain').dataset.go === 'next' ? '#btnNext' : '#btnAgain').click(); };
+// Leaving the results any other way also stops the reward, so no star flight keeps running behind the next screen.
+['#btnHome', '#btnAgain', '#btnNext'].forEach(id => $(id).addEventListener('click', clearFly));
 // Enter / Space on the results screen trigger the primary action (unless another results button has focus).
 document.addEventListener('keydown', e => {
   if ((e.key !== 'Enter' && e.key !== ' ') || $('#results').hidden) return;

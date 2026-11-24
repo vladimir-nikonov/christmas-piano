@@ -173,8 +173,11 @@ $('#btnResume').onclick = () => { if (!inPause()) return; $('#pause').hidden = t
 $('#btnRestart').onclick = () => { if (inPause()) startGame(false); };
 $('#btnQuit').onclick = () => { if (inPause()) goHome(); };
 $('#btnHome').onclick = goHome;
-$('#btnAgain').onclick = () => { const p = P(); if (G){ p.sel.song = G.song; p.sel.level = G.level; p.sel.part = G.part; } startGame(false); };
-$('#btnNext').onclick = () => { const p = P(); if (G){ p.sel.song = G.song; p.sel.level = Math.min(LEVELS.length - 1, G.level + 1); } startGame(false); };
+// Replay / Next act only while the results are shown: a second tap would otherwise read the game the first tap
+// just started (Next would skip a level) or restart it.
+const onResults = () => state === 'results' && !$('#results').hidden;
+$('#btnAgain').onclick = () => { if (!onResults()) return; const p = P(); if (G){ p.sel.song = G.song; p.sel.level = G.level; p.sel.part = G.part; } startGame(false); };
+$('#btnNext').onclick = () => { if (!onResults()) return; const p = P(); if (G){ p.sel.song = G.song; p.sel.level = Math.min(LEVELS.length - 1, G.level + 1); } startGame(false); };
 // Safe auto-pause: going to the background, locking the screen, losing focus or losing the microphone.
 document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
 addEventListener('pagehide', () => pauseGame());
