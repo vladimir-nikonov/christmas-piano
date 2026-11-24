@@ -1,0 +1,105 @@
+Snezhnye Noty (Снежные ноты) — Non-Commercial License
+Copyright (c) 2026 Vladimir Nikonov. All rights reserved.
+
+================================================================================
+РУССКИЙ
+================================================================================
+
+1. Объект лицензии.
+   Настоящая лицензия распространяется на весь исходный код, документацию,
+   графику, звуки, тексты, дизайн, игровые механики, методику обучения и иные
+   идеи и решения, содержащиеся в этом репозитории и в опубликованном на его
+   основе приложении (далее — «Произведение»).
+
+2. Что разрешено без отдельного согласия автора.
+   Любому лицу бесплатно разрешается в некоммерческих целях:
+   а) использовать Произведение для личного обучения, в семье, в
+      некоммерческих учебных заведениях и кружках при условии, что за доступ
+      к Произведению не берётся плата;
+   б) изучать, копировать и изменять исходный код для личных нужд;
+   в) распространять копии и изменённые версии бесплатно, если сохраняется
+      это уведомление об авторском праве и текст настоящей лицензии, а
+      изменённые версии явно помечены как изменённые.
+
+3. Что запрещено без письменного разрешения автора.
+   Без предварительного письменного разрешения автора запрещается любое
+   коммерческое использование Произведения, его частей, а также идей,
+   концепций, механик и решений, впервые воплощённых в Произведении, в том
+   числе:
+   а) продажа, сдача в аренду, лицензирование Произведения или производных
+      от него работ;
+   б) включение Произведения, его частей или производных работ в платные
+      продукты, сервисы, подписки, приложения в магазинах приложений;
+   в) использование в платных курсах, уроках, музыкальных школах и иной
+      деятельности, приносящей доход;
+   г) размещение рекламы в Произведении или в производных работах, сбор и
+      монетизация данных пользователей;
+   д) создание коммерческого продукта, воспроизводящего идеи, концепцию,
+      игровые механики, методику или узнаваемый облик Произведения, даже если
+      код написан заново.
+
+4. Получение разрешения.
+   По вопросам коммерческого использования обращайтесь к автору через
+   GitHub: https://github.com/vladimir-nikonov
+   Разрешение действительно только в письменной форме.
+
+5. Прекращение.
+   При нарушении условий настоящей лицензии все предоставленные ею права
+   автоматически прекращаются.
+
+6. Отказ от гарантий.
+   ПРОИЗВЕДЕНИЕ ПРЕДОСТАВЛЯЕТСЯ «КАК ЕСТЬ», БЕЗ КАКИХ-ЛИБО ГАРАНТИЙ, ЯВНЫХ
+   ИЛИ ПОДРАЗУМЕВАЕМЫХ. АВТОР НЕ НЕСЁТ ОТВЕТСТВЕННОСТИ ЗА ЛЮБОЙ УЩЕРБ,
+   ВОЗНИКШИЙ В СВЯЗИ С ИСПОЛЬЗОВАНИЕМ ПРОИЗВЕДЕНИЯ.
+
+================================================================================
+ENGLISH
+================================================================================
+
+1. Scope.
+   This license covers all source code, documentation, graphics, sounds,
+   texts, design, game mechanics, teaching method and other ideas and
+   solutions contained in this repository and in the application published
+   from it (the "Work").
+
+2. Permitted without separate permission.
+   Anyone may, free of charge and for non-commercial purposes only:
+   a) use the Work for personal learning, within a family, and in
+      non-profit educational settings, provided no fee is charged for
+      access to the Work;
+   b) study, copy and modify the source code for personal use;
+   c) redistribute copies and modified versions free of charge, provided
+      this copyright notice and this license are retained and modified
+      versions are clearly marked as modified.
+
+3. Prohibited without the author's written permission.
+   Any commercial use of the Work, any part of it, or of the ideas,
+   concepts, mechanics and solutions first embodied in the Work is
+   prohibited without the author's prior written permission, including:
+   a) selling, renting or licensing the Work or derivative works;
+   b) including the Work, its parts or derivative works in paid products,
+      services, subscriptions or app-store applications;
+   c) using it in paid courses, lessons, music schools or any other
+      revenue-generating activity;
+   d) placing advertising in the Work or derivative works, or collecting
+      and monetizing user data;
+   e) creating a commercial product that reproduces the ideas, concept,
+      game mechanics, method or recognizable look of the Work, even if the
+      code is rewritten from scratch.
+
+4. Obtaining permission.
+   For commercial use, contact the author via GitHub:
+   https://github.com/vladimir-nikonov
+   Permission is valid only in writing.
+
+5. Termination.
+   Any breach of this license automatically terminates all rights granted
+   by it.
+
+6. Disclaimer of warranty.
+   THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DAMAGES ARISING
+   FROM THE USE OF THE WORK.
+
+In case of discrepancy between the Russian and English versions, the
+Russian version prevails.
