@@ -1,6 +1,6 @@
 # Developing Snezhnye Noty
 
-The repository's working language is English: documentation, instructions, commit messages and code comments are written in English. Only the app's user-facing UI text stays in Russian.
+The repository's working language is English: documentation, instructions, commit messages and code comments are written in English. The app's user-facing UI is translated into English, Polish, Ukrainian, Russian and Spanish through the `I18N` dictionaries in `index.html` (the language follows the browser and can be changed per player); add every new UI string to all five languages.
 
 The whole app is a single `index.html` file (vanilla JS, no build step). The site is published to GitHub Pages by the `.github/workflows/pages.yml` workflow: every push to `main` deploys `index.html` automatically, so anything merged into `main` and pushed reaches the kids' tablet within a minute. Deployment status is in the Actions tab; to redeploy manually, run `gh workflow run pages.yml`.
 
