@@ -185,6 +185,32 @@ svg.off{color:var(--border)}
 .flylayer{position:fixed;inset:0;pointer-events:none}
 .fly{position:fixed;color:var(--reward)}
 .fly svg{width:100%;height:100%}
+.fly i{position:absolute;inset:0;display:block}
+.fly .ff{color:var(--accent)}
+/* Theme flavour (src/ui/themefx.js, data in THEME_MOTION): particles and the opening ring, in layers that never take taps */
+.tfx{position:fixed;inset:0;pointer-events:none;z-index:20;overflow:hidden}
+.tp,.tr{position:absolute;display:block;pointer-events:none;will-change:transform,opacity}
+.tp-pixel{background:var(--reward);box-shadow:calc(3*var(--u)) calc(3*var(--u)) 0 rgba(0,0,0,.35)}
+.tp-pixel.alt{background:var(--accent)}
+.tp-puff{color:var(--reward);filter:drop-shadow(0 calc(3*var(--u)) 0 rgba(0,0,0,.18))}
+.tp-puff.alt{color:#fff}
+.tp-puff svg{width:100%;height:100%;overflow:visible}
+.tp-puff svg.i path{stroke:currentColor;stroke-width:5;stroke-linejoin:round}
+.tp-lantern{border-radius:45% 45% 35% 35%;background:radial-gradient(circle at 50% 40%,#fffbe6 0,var(--reward) 45%,#c0782e 100%);box-shadow:0 0 calc(16*var(--u)) calc(4*var(--u)) color-mix(in srgb, var(--reward) 65%, transparent)}
+.tp-lantern::before{content:"";position:absolute;left:30%;right:30%;top:-18%;height:18%;background:#3b2a1a;border-radius:2px}
+.tp-lantern.alt{background:radial-gradient(circle at 50% 40%,#fff 0,#e6fbff 50%,#7fc8dc 100%);box-shadow:0 0 calc(14*var(--u)) calc(3*var(--u)) rgba(191,243,255,.6)}
+.tp-crystal{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);background:linear-gradient(135deg,#fff 0,var(--accent) 45%,var(--border) 100%)}
+.tp-crystal.alt{background:linear-gradient(135deg,#fff 0,var(--reward) 50%,var(--accent) 100%)}
+.tr-square{border:calc(10*var(--u)) solid var(--reward);box-shadow:inset 0 0 0 calc(10*var(--u)) color-mix(in srgb, var(--accent) 60%, transparent)}
+.tr-soft{border-radius:50%;border:calc(16*var(--u)) solid color-mix(in srgb, var(--reward) 70%, #fff);box-shadow:0 0 calc(30*var(--u)) color-mix(in srgb, var(--accent) 60%, transparent)}
+.tr-lit{border-radius:calc(10*var(--u));background:radial-gradient(circle,rgba(255,246,214,.95) 0,color-mix(in srgb, var(--reward) 70%, transparent) 40%,transparent 70%);box-shadow:0 0 calc(40*var(--u)) color-mix(in srgb, var(--reward) 50%, transparent)}
+.tr-portal{border-radius:50%;background:conic-gradient(var(--accent),var(--reward),var(--border),#fff,var(--accent));
+  -webkit-mask:radial-gradient(circle,transparent 52%,#000 55%,#000 68%,transparent 71%);mask:radial-gradient(circle,transparent 52%,#000 55%,#000 68%,transparent 71%)}
+/* How the lock leaves the new level block, per theme (THEME_MOTION.unlock) */
+@keyframes lk-crumble{0%,30%{opacity:1;clip-path:inset(0);animation-timing-function:steps(1,end)}45%{opacity:1;clip-path:inset(0 0 25% 0);animation-timing-function:steps(1,end)}60%{opacity:1;clip-path:inset(15% 8% 45% 8%);animation-timing-function:steps(1,end)}75%{opacity:1;clip-path:inset(40% 25% 45% 25%);animation-timing-function:steps(1,end)}100%{opacity:0;clip-path:inset(50%)}}
+@keyframes lk-pop{0%{opacity:1;transform:none}35%{opacity:1;transform:scale(.85,1.12)}55%{opacity:1;transform:scale(1.35)}100%{opacity:0;transform:scale(1.8)}}
+@keyframes lk-melt{0%{opacity:1;transform:none;filter:none}35%{opacity:1;transform:none;filter:drop-shadow(0 0 calc(12*var(--u)) var(--reward))}100%{opacity:0;transform:translateY(calc(40*var(--u))) scaleY(.4);filter:blur(calc(4*var(--u))) drop-shadow(0 0 calc(12*var(--u)) var(--reward))}}
+@keyframes lk-shatter{0%{opacity:1;transform:none;filter:none}35%{opacity:1;transform:rotate(-8deg) scale(1.05);filter:brightness(1.6)}55%{opacity:.9;transform:rotate(14deg) scale(1.25);filter:brightness(2.4)}100%{opacity:0;transform:rotate(30deg) scale(.2);filter:brightness(3)}}
 .hist{display:flex;align-items:flex-end;gap:calc(12*var(--u));min-height:calc(44*var(--u))}
 .hist .hbest{display:flex;align-items:center;gap:calc(6*var(--u));font-size:calc(26*var(--u));font-weight:900;color:var(--reward);font-variant-numeric:tabular-nums}
 .hist .hbest svg{width:calc(26*var(--u));height:calc(26*var(--u))}

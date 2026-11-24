@@ -162,8 +162,9 @@ try {
   assert.equal(r3.go, 'again');
   assert.deepEqual([r3.again, r3.next, r3.levelUp], [false, true, false]);
 
-  log('Enter on the results replays; a second clean game opens the next level');
+  log('Enter on the results replays (a short fade of the field); a second clean game opens the next level');
   await page.keyboard.press('Enter');
+  assert.ok(await sn(() => document.getElementById('stage').getAnimations().length > 0), 'replay fades the field in');
   await playLevel1Perfectly();
   const rUp = await resultsButtons();
   assert.deepEqual(rUp.primaries, ['btnMain']);
@@ -236,6 +237,7 @@ try {
   await visible('#home');
   await page.click('#btnWho');
   await visible('#profiles');
+  assert.ok(await sn(() => document.getElementById('profiles').getAnimations().length > 0), 'the player list expands from the avatar');
   await page.goBack();
   await visible('#home');
   // Going home through the app's own buttons consumes the history entry, so entries never pile up.
@@ -522,6 +524,37 @@ try {
     await dctx.close();
   }
 
+  log('every theme: the themed entry (particles, opening ring) starts the game and leaves nothing over the notes');
+  {
+    const tctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await tctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+    const tp = await tctx.newPage();
+    tp.on('pageerror', e => errors.push('pageerror: ' + e.message));
+    await tp.goto(url);
+    await tp.fill('#newName', 'Themes');
+    await tp.click('#btnStep2');
+    await tp.click('#btnNewOk');
+    await tp.locator('#home').waitFor({ state: 'visible' });
+    await tp.click('#btnSettings');
+    await tp.check('#sTouch');
+    await tp.click('#btnSetClose');
+    for (const th of ['pixel', 'plastic', 'winter', 'anime']){
+      await tp.evaluate(t => { window.__sn.db.profiles[0].theme = t; }, th);
+      await tp.locator('#songs button').nth(0).click(); // re-renders home in that theme
+      assert.equal(await tp.evaluate(() => document.documentElement.dataset.theme), th);
+      await tp.click('#btnPlay');
+      const e = await tp.evaluate(() => ({ parts: document.querySelectorAll('.tfx .tp').length, rings: document.querySelectorAll('.tfx .tr').length,
+        tile: document.querySelector('#levels .tile[aria-pressed="true"]').getAnimations().some(a => a.playState === 'running') }));
+      assert.ok(e.tile && e.parts > 0 && e.rings === 1, th + ': themed entry ' + JSON.stringify(e));
+      await tp.waitForFunction(() => window.__sn.state === 'playing');
+      assert.equal(await tp.locator('.tfx').count(), 0, th + ': the effects are gone once the game starts');
+      await tp.click('#btnPause');
+      await tp.click('#btnQuit');
+      await tp.locator('#home').waitFor({ state: 'visible' });
+    }
+    await tctx.close();
+  }
+
   log('reduced motion: no falling decor and no particles on the canvas');
   {
     const rctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
@@ -543,6 +576,7 @@ try {
     await rp.check('#sTouch');
     await rp.click('#btnSetClose');
     await rp.click('#btnPlay');
+    assert.equal(await rp.locator('.tfx, .tp, .tr').count(), 0, 'reduced motion: no entry particles or ring');
     await rp.waitForFunction(() => { const g = window.__sn.game, n = g && g.notes.find(n => !n.hit && !n.missed); return !!(n && g.waiting && g.time >= n.t); }, null, { timeout: 15000 });
     const seen = watch(500);
     await rp.evaluate(() => { const n = window.__sn.game.notes.find(n => !n.hit && !n.missed); window.__sn.onPlayed(n.midi); });

@@ -10,6 +10,8 @@ import { W, keys, hitY } from '../canvas.js';
 import { icon } from '../icons.js';
 import { TH } from '../theme.js';
 import { histHTML } from './home.js';
+import { state } from '../../game/game.js';
+import { unlockFx, flyContent, flight, landFx, moveRight, fadeReset } from '../themefx.js';
 
 const reducedMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 
@@ -41,29 +43,32 @@ export function showResults({ p, pr, key, song, level, metric, stars, record, le
   main.dataset.go = act.main; main.dataset.ta = ta; main.setAttribute('aria-label', tx(ta));
   main.classList.toggle('lvl', act.main === 'next');
   main.innerHTML = act.main === 'next' ? '<span class="blk">' + blockSVG(level + 1) + '</span>' + icon('play', { fill: true }) : icon('retry');
+  // The new level block opens the theme's way (lock crumbles, pops, melts or shatters), with its particles
+  if (levelUp) unlockFx(lu.querySelector('.blk'), calm ? null : rewardLayer());
   if (stars && !calm) celebrate();
 }
+// One layer per results visit for the reward effects; clearFly() stops and removes it.
+function rewardLayer(){
+  return $('#results .flylayer') || Object.assign($('#results').appendChild(document.createElement('div')), { className: 'flylayer' });
+}
 
-// The last note turns into particles, and one star per earned star flies from it up to the star row (under 1 s).
+// The last note turns into particles, and one star per earned star flies from it up to the star row (about 1 s).
 function celebrate(){
   const last = G && G.notes[G.notes.length - 1], k = last && keys[keyFor(last.midi)];
   const x = k ? k.x + k.w / 2 : W / 2, y = hitY;
   burst(x, y, TH.reward, 30);
-  const layer = document.createElement('div'); layer.className = 'flylayer'; $('#results').appendChild(layer);
+  const layer = rewardLayer();
   $('#resStars').querySelectorAll('span.wait').forEach((slot, i) => {
     const show = () => slot.classList.remove('wait');
     const r = slot.getBoundingClientRect(), s = r.width || 60;
-    const el = document.createElement('div'); el.className = 'fly'; el.innerHTML = icon('star', { fill: true });
+    const el = document.createElement('div'); el.className = 'fly'; el.innerHTML = flyContent();
     el.style.cssText = 'left:' + (x - s / 2) + 'px;top:' + (y - s / 2) + 'px;width:' + s + 'px;height:' + s + 'px';
     layer.appendChild(el);
     if (!el.animate){ show(); return; }
     const dx = r.left - (x - s / 2), dy = r.top - (y - s / 2);
-    const a = el.animate([
-      { transform: 'translate(0,0) scale(.4)', opacity: 0.4 },
-      { transform: 'translate(' + dx * 0.5 + 'px,' + (dy * 0.5 - 60) + 'px) scale(1.2)', opacity: 1, offset: 0.6 },
-      { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(1)', opacity: 1 }
-    ], { duration: 600, delay: i * 120, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'both' });
-    a.onfinish = () => { show(); el.remove(); };
+    // The theme sets the flight's feel (pixel steps, toy spring, soft glide, energy turning into a star)
+    const a = flight(el, dx, dy, i * 100);
+    a.onfinish = () => { show(); el.remove(); if (!layer.dataset.skip) landFx(layer, r.left + s / 2, r.top + s / 2); };
     a.oncancel = show;
   });
 }
@@ -79,4 +84,22 @@ document.addEventListener('keydown', e => {
   const a = document.activeElement;
   if (a && a.tagName === 'BUTTON' && a.closest('#results')) return;
   e.preventDefault(); $('#btnMain').click();
+});
+
+// Skip the reward: a tap anywhere on the results (outside the buttons) jumps every effect to its end.
+$('#results').addEventListener('pointerdown', e => {
+  if (e.target.closest('button')) return;
+  const l = $('#results .flylayer'); if (l){ l.dataset.skip = '1'; l.getAnimations({ subtree: true }).forEach(a => a.finish()); }
+});
+// Spatial transitions out of the results: Next level = the field arrives from the right; Replay = short fade and reset.
+// Each runs only when the tap really started a new game (the handlers ignore taps outside the results / pause).
+const field = () => [$('#stage'), $('#hud')];
+let before = null;
+['#btnNext', '#btnAgain', '#btnRestart'].forEach(id => {
+  $(id).addEventListener('click', () => { before = { results: !$('#results').hidden, pause: !$('#pause').hidden }; }, true);
+  $(id).addEventListener('click', () => {
+    const was = before; before = null;
+    if (!was || !(was.results || was.pause) || state !== 'playing' || !$('#results').hidden) return;
+    if (id === '#btnNext') moveRight(field()); else fadeReset(field());
+  });
 });

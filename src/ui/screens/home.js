@@ -17,6 +17,7 @@ import { openNewProfile } from './profiles.js';
 import { updateBackupNag } from './settings.js';
 import { setScreenInput } from '../inputmode.js';
 import { applyTheme } from '../theme.js';
+import { entryTiming, entryFrames, entryFx, dropLayer, zoomOutFrames } from '../themefx.js';
 
 /* ================= Screens ================= */
 // Level the child picked by hand during this home visit; while it is set, coming back to home keeps it.
@@ -82,12 +83,13 @@ export function goHome(){
 const reduceMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 const anim = (el, frames, opts) => (el && el.animate ? el.animate(frames, opts) : null);
 function zoomOutHome(home){
-  const r = reduceMotion();
-  anim(home, r ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'scale(1.06)' }, { opacity: 1, transform: 'none' }],
-    { duration: r ? 150 : 280, easing: 'ease-out' });
+  const z = zoomOutFrames();
+  anim(home, z.frames, { duration: z.dur, easing: z.easing });
 }
 // Play / Listen: the selected level tile grows towards the centre while the rest of home fades out,
 // then the game starts (count-in included) and the HUD fades in. Reduced motion: a quick fade only.
+// The theme flavours the zoom (easing, spring, turn, light) and adds its particles and opening ring (themefx.js);
+// the effects layer is dropped when the game starts, so nothing stays over the notes.
 // Home ignores taps during the transition; the game clock starts only after it.
 // The caller has already moved the machine into Countdown / Preview (entering), which ignores a second Play or Listen.
 function enterGame(demo){
@@ -95,22 +97,23 @@ function enterGame(demo){
   const go = () => { startGame(demo); dispatch(E.ENTERED); };
   if (home.hidden || !home.animate){ go(); return; }
   homePick = null;
-  const r = reduceMotion(), dur = r ? 160 : 340, opts = { duration: dur, easing: 'ease-in', fill: 'forwards' }, list = [];
+  const r = reduceMotion(), et = entryTiming(), dur = et.dur, opts = { duration: dur, easing: 'ease-in', fill: 'forwards' }, list = [];
+  let layer = null;
   const fade = el => list.push(anim(el, [{ opacity: 1 }, { opacity: 0 }], opts));
   home.style.pointerEvents = 'none';
   const tile = !r && $('#levels .tile[aria-pressed="true"]');
   if (tile){
     const b = tile.getBoundingClientRect(), dx = innerWidth / 2 - (b.left + b.width / 2), dy = innerHeight / 2 - (b.top + b.height / 2);
     tile.style.zIndex = '2';
-    list.push(anim(tile, [{ transform: 'none', opacity: 1 }, { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(2.4)', opacity: 1, offset: 0.7 },
-      { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(2.8)', opacity: 0 }], { ...opts, easing: 'ease-in-out' }));
+    list.push(anim(tile, entryFrames(dx, dy), { ...opts, easing: et.easing }));
+    layer = entryFx({ x: b.left + b.width / 2, y: b.top + b.height / 2 }, { x: innerWidth / 2, y: innerHeight / 2 }, dur);
     [...home.children].forEach(el => { if (el.id !== 'levels') fade(el); });
     [...$('#levels').children].forEach(el => { if (el !== tile) fade(el); });
     list.push(anim(home, [{}, { backgroundColor: 'transparent' }], opts));
   } else fade(home);
   setTimeout(() => {
     go();
-    list.forEach(a => a && a.cancel()); home.style.pointerEvents = ''; if (tile) tile.style.zIndex = '';
+    list.forEach(a => a && a.cancel()); dropLayer(layer); home.style.pointerEvents = ''; if (tile) tile.style.zIndex = '';
     anim($('#hud'), [{ opacity: 0 }, { opacity: 1 }], { duration: r ? 120 : 220, easing: 'ease-out' });
   }, dur);
 }

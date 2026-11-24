@@ -11,6 +11,7 @@ import { updateQuick } from '../lang.js';
 import { goHome } from './home.js';
 import { THEMES, THEME_KEYS } from '../theme-data.js';
 import { applyTheme, themePreview } from '../theme.js';
+import { expandFrom } from '../themefx.js';
 
 export function openProfiles(){ if (dispatch(E.PROFILES)) renderProfiles(); }
 export function renderProfiles(){
@@ -62,6 +63,11 @@ $('#btnNewOk').onclick = () => {
 };
 $('#btnNewBack').onclick = () => { if (wizAt === 2) wizStep(1); else { if (P()) applyTheme(P().theme); openProfiles(); } };
 $('#btnWho').onclick = openProfiles;
+// Spatial: the player list expands from the avatar. The capture listener reads the avatar's place before the
+// handler hides home; the second listener runs after it and animates only if the list really opened.
+let whoRect = null;
+$('#btnWho').addEventListener('click', e => { whoRect = e.currentTarget.getBoundingClientRect(); }, true);
+$('#btnWho').addEventListener('click', () => { const r = whoRect; whoRect = null; if (!$('#profiles').hidden) expandFrom($('#profiles'), r); });
 
 /* Child's own page: name, avatar, theme. Saved on every tap. */
 export function openMe(){ if (!dispatch(E.ME)) return; renderMe(); updateQuick(); }
