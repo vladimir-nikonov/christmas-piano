@@ -569,6 +569,31 @@ try {
     await mp.waitForFunction(() => window.__sn.state === 'playing');
     await mp.waitForFunction(() => window.__sn.game.notes[0].hit, null, { timeout: 20000 });
     assert.equal(await mp.locator('#heard').textContent(), 'E');
+
+    log('camera: the self-view window opens from the HUD, moves, resizes, remembers and closes');
+    await mp.click('#hud .qcam');
+    await mp.waitForFunction(() => window.__sn.camStream && document.querySelector('#camVideo').videoWidth > 0, null, { timeout: 10000 });
+    assert.equal(await mp.locator('#cam').isVisible(), true);
+    assert.equal(await mp.getAttribute('#hud .qcam', 'aria-pressed'), 'true');
+    const box0 = await mp.locator('#cam').boundingBox();
+    await mp.mouse.move(box0.x + box0.width / 2, box0.y + box0.height / 2);
+    await mp.mouse.down();
+    await mp.mouse.move(box0.x - 300, box0.y + 250, { steps: 8 });
+    await mp.mouse.up();
+    const box1 = await mp.locator('#cam').boundingBox();
+    assert.ok(box1.x < box0.x - 200 && box1.y > box0.y + 150, 'dragging moves the window');
+    assert.equal(box1.width, box0.width, 'a drag does not resize');
+    await mp.mouse.click(box1.x + box1.width / 2, box1.y + box1.height / 2);
+    const box2 = await mp.locator('#cam').boundingBox();
+    assert.ok(box2.width > box1.width, 'a tap makes the window bigger');
+    const vp = mp.viewportSize();
+    assert.ok(box2.x >= 0 && box2.y >= 0 && box2.x + box2.width <= vp.width + 1 && box2.y + box2.height <= vp.height + 1, 'the window stays on screen');
+    const cam = await mp.evaluate(() => ({ ...window.__sn.db.device.cam }));
+    assert.equal(cam.on, true); assert.equal(cam.size, 1);
+    await mp.click('#btnCamClose');
+    assert.equal(await mp.locator('#cam').isVisible(), false);
+    assert.equal(await mp.evaluate(() => window.__sn.camStream), null, 'closing releases the camera');
+    assert.equal(await mp.evaluate(() => window.__sn.db.device.cam.on), false);
   } finally { await micBrowser.close(); }
 
   assert.deepEqual(errors, []);

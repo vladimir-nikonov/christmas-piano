@@ -18,7 +18,15 @@
   <div id="prog" data-ta="progress"><i></i></div>
   <div class="pill" id="micPill" data-ta="mic"><span data-icon="mic"></span><span id="micbars"><i></i><i></i><i></i><i></i></span><span id="heard">—</span></div>
   <div class="pill"><span class="rw" data-icon="star" data-fill="1"></span><span id="score">0</span><span id="combo"></span></div>
+  <button class="b ico qcam"></button>
   <button class="b ico qfull" data-ta="full" data-icon="fullscreen"></button>
+</div>
+
+<!-- Self-view: the player sees themself from the front camera; drag to move, tap to resize -->
+<div id="cam" hidden>
+  <video id="camVideo" autoplay muted playsinline></video>
+  <p id="camMsg" role="alert" hidden></p>
+  <button class="x" id="btnCamClose" data-ta="close" data-icon="cross"></button>
 </div>
 
 <div class="screen" id="home" hidden>
@@ -28,6 +36,7 @@
     <button class="b ico qtheme" data-ta="theme"></button>
     <button class="b ico" id="btnBackupNag" data-ta="backupNag" data-icon="arrow-down" hidden style="opacity:.6"></button>
     <button class="b ico qinput"></button>
+    <button class="b ico qcam"></button>
     <button class="b ico qfull" id="btnFull" data-ta="full" data-icon="fullscreen"></button>
     <button class="b ico" id="btnSettings" data-ta="settings" data-icon="gear"></button>
   </div>

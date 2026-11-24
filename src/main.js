@@ -13,6 +13,8 @@ import { translateDom } from './ui/lang.js';
 import { renderHome, goHome } from './ui/screens/home.js';
 import { renderProfiles, wizAt, wizStep, renderMe } from './ui/screens/profiles.js';
 import { showSplash } from './ui/splash.js';
+import { restoreCamera } from './ui/camwin.js';
+import { getCamStream } from './input/camera.js';
 // Modules that only attach event handlers when loaded:
 import './input/touch.js';
 import './input/keyboard.js';
@@ -30,11 +32,11 @@ layout();
 hydrateIcons();
 useLang(detectLang()); translateDom();
 askPersist();
-loadDB().catch(() => {}).then(() => { goHome(); if (db.profiles.length) showSplash(); });
+loadDB().catch(() => {}).then(() => { goHome(); restoreCamera(); if (db.profiles.length) showSplash(); });
 requestAnimationFrame(frame);
 if (document.fonts) document.fonts.ready.then(() => invalidateBg());
 
-window.__sn = { detectPitch, onPlayed: m => onPlayed(m, performance.now(), 'touch'), get game(){ return G; }, get fx(){ return fx; }, get focus(){ return focus; }, get state(){ return state; }, get nav(){ return flow.state.name; }, get paused(){ return paused; }, get db(){ return db; }, get lang(){ return LANG; }, get storeKind(){ return storeKind; }, loadDB, save,
+window.__sn = { detectPitch, onPlayed: m => onPlayed(m, performance.now(), 'touch'), get game(){ return G; }, get fx(){ return fx; }, get focus(){ return focus; }, get state(){ return state; }, get nav(){ return flow.state.name; }, get paused(){ return paused; }, get db(){ return db; }, get lang(){ return LANG; }, get storeKind(){ return storeKind; }, get camStream(){ return getCamStream(); }, loadDB, save,
   keyPoint: m => ({ x: keys[m].x + keys[m].w / 2, y: kbTop + kbH * (isBlack(m) ? 0.3 : 0.85) }) };
 // Motion state for the smoke test (read-only).
 Object.defineProperties(window.__sn, { reducedMotion: { get: () => reducedMotion }, drawn: { get: () => ({ ...drawn }) } });
