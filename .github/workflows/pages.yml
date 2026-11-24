@@ -7,10 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Least privilege: jobs that run npm packages only read the repo; publishing rights are given to deploy alone.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # One deployment at a time; a newer push does not cancel one that has already started.
 concurrency:
@@ -30,7 +29,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run lint
       - run: npm run test:unit
       # Headless run of the real app in the runner's preinstalled Google Chrome.
@@ -58,6 +57,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
