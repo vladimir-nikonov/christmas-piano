@@ -4,7 +4,7 @@ import { tone, tick } from '../audio/synth.js';
 import { LEVELS } from '../core/levels.js';
 import { PC_COLOR } from '../core/music.js';
 import { SONGS, songKey, bestKey } from '../core/songs.js';
-import { HIST_MAX, save, P, opts, dev, prog } from '../data/storage.js';
+import { HIST_MAX, save, P, opts, dev, prog, partFor } from '../data/storage.js';
 import { E, S, dispatch, is, flow, view as state, paused } from '../core/flow.js';
 import { $ } from '../dom.js';
 import { micFrame } from '../input/mic.js';
@@ -24,13 +24,13 @@ export let G = null;
 export const fx = { parts:[], pops:[], keyFlash:{}, heardKey:{}, soft:{}, nudge:null };
 
 export function startGame(demo){
-  const p = P(), o = p.opts, L = LEVELS[p.sel.level], S = SONGS[songKey(p)];
+  const p = P(), o = p.opts, L = LEVELS[p.sel.level], S = SONGS[songKey(p)], part = partFor(p, songKey(p), p.sel.level);
   const bpm = demo ? S.bpm : S.bpm * L.pct / 100 * o.tempo / 100, beat = 60 / bpm;
   const tol = o.tolMs ? o.tolMs / 1000 : (L.tol || 0.5);
-  const notes = S.parts[p.sel.part].reduce((acc, [m, d]) => { const b = acc.length ? acc[acc.length - 1].beat + acc[acc.length - 1].dur : 0; acc.push({ midi:m, beat:b, dur:d }); return acc; }, [])
+  const notes = S.parts[part].reduce((acc, [m, d]) => { const b = acc.length ? acc[acc.length - 1].beat + acc[acc.length - 1].dur : 0; acc.push({ midi:m, beat:b, dur:d }); return acc; }, [])
     .map(n => ({ ...n, t: n.beat * beat, d: n.dur * beat, hit:false, missed:false, wrong:0, grade:null }));
   const look = Math.max(2.2, 4 * beat);
-  G = { demo, wait: L.wait && !demo, song: songKey(p), meter: S.meter, level: p.sel.level, part: p.sel.part, beat, tol, notes, look,
+  G = { demo, wait: L.wait && !demo, song: songKey(p), meter: S.meter, level: p.sel.level, part, beat, tol, notes, look,
         time: -Math.max(look, S.meter * beat) - 0.4, lastTickBeat: null, end: notes[notes.length - 1].t + notes[notes.length - 1].d + 0.8,
         score:0, combo:0, bestCombo:0, hits:0, perfect:0, finished:false, waiting:false, resumeIn:0, resumeBeat:null };
   $('#micPill').hidden = demo || !!dev().touch;

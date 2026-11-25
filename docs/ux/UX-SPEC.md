@@ -10,14 +10,14 @@ Starting, replaying, the next level and resuming after a pause take one tap; swi
 
 ## Screens and states
 
-- **Home:** avatar, song, five levels (wood, stone, iron, gold, diamond), the current level highlighted, locked levels dimmed with a lock, XP, a big Play button, a secondary Listen button, unobtrusive settings. Select the current level automatically; remember the song length and other parameters. Levels opened before stay available for replay.
+- **Home:** avatar, song, five levels (wood, stone, iron, gold, diamond), the current level highlighted, locked levels dimmed with a lock, XP, a big Play button, a secondary Listen button, unobtrusive settings. Select the current level automatically. Each level plays a set part of the song (the start, half or the whole song), shown on its tile as a sheet whose played lines are bold and the rest thin and grey; there is no separate length picker for the child. Levels opened before stay available for replay.
 - **Entry:** the selected block grows, everything else fades out, the keyboard appears and a 3–2–1 countdown runs. No separate confirmation. Check the microphone before the countdown; if access is denied, show a clear action that restores it.
 - **Game:** only pause, progress, microphone status, score/stars, the full-screen toggle, notes, the hit line and the keyboard. No settings, profiles, themes, home or difficulty. Note colours are the same in every theme.
 - **Waiting:** not a separate page. Stop the notes, highlight the lane, the note and the key, show an arrow. The right note continues the game automatically. A wrong note gets soft feedback, never punishment.
 - **Pause:** the frozen field under a dimmed overlay, a big Resume button, secondary Replay and Home. Keep the time, note positions, the expected note, the score and the mode. Use a short countdown on resume when needed. Losing focus or the microphone pauses the game safely.
 - **Results:** the last note turns into particles and stars; 0–3 stars, accuracy, XP, progress. 0–1 stars → replay; 2–3 stars without a new level → keep practising; a new level opened → play it; the last level → play again. Home and Replay are secondary and never duplicate the main action. The next game never starts automatically. The reward does not need to be dismissed.
 - **Profiles:** opened from the avatar; restores the child's own progress, theme, songs and settings. The theme does not affect progress.
-- **Settings:** a service panel over the world: tempo, timing tolerance, latency and microphone sensitivity, note labels, difficulty, a reset with confirmation and protection against accidental taps.
+- **Settings:** a service panel over the world: tempo, timing tolerance, latency and microphone sensitivity, note labels, difficulty, a reset with confirmation and protection against accidental taps. The panel can be set up for any player (adults play too): a songs × levels table shows each level's length, best stars and %, and the current level; tapping a cell changes that level's length for that song.
 
 ## Spatial navigation
 

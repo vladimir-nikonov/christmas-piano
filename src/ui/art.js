@@ -141,3 +141,14 @@ function pixelBlock(i){
   return px.join('') +
     '<rect width="8" height=".5" fill="rgba(255,255,255,.35)"/><rect width=".5" height="8" fill="rgba(255,255,255,.25)"/><rect y="7.5" width="8" height=".5" fill="rgba(0,0,0,.35)"/><rect x="7.5" width=".5" height="8" fill="rgba(0,0,0,.3)"/>';
 }
+
+/* ================= Song length: a sheet of lines ================= */
+// The played part is drawn as thick lines in the text colour, the rest as thin muted lines,
+// so the picture says "this much of the song is played" without reading.
+const SHEET_ON = { short:1, half:2, full:4 }, SHEET_W = [64, 72, 58, 68];
+export function sheetSVG(part){
+  const on = SHEET_ON[part] || 4;
+  return '<svg class="sheet-ico" viewBox="0 0 96 80" aria-hidden="true"><rect x="4" y="3" width="88" height="74" rx="8" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="3"/>' +
+    SHEET_W.map((w, i) => '<line x1="16" x2="' + (16 + w) + '" y1="' + (19 + i * 14) + '" y2="' + (19 + i * 14) + '" stroke="currentColor" stroke-linecap="round" ' +
+      (i < on ? 'stroke-width="7"' : 'stroke-width="2.5" stroke-opacity=".35"') + '/>').join('') + '</svg>';
+}

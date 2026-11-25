@@ -1,15 +1,15 @@
-// Home screen: song, level and part pickers, play/listen buttons, in-game controls.
+// Home screen: song and level pickers (each level shows how much of the song it plays), play/listen buttons, in-game controls.
 
 import { audio } from '../../audio/synth.js';
 import { LEVELS } from '../../core/levels.js';
 import { SONGS, SONG_KEYS, songKey, bestKey, PART_KEYS } from '../../core/songs.js';
-import { db, save, P, dev, prog, unlocked } from '../../data/storage.js';
+import { db, save, P, dev, prog, unlocked, partFor } from '../../data/storage.js';
 import { E, S, dispatch, can, is } from '../../core/flow.js';
 import { $ } from '../../dom.js';
 import { G, startGame, setGame, resumeGame } from '../../game/game.js';
 import { tx, fmtDate } from '../../i18n/index.js';
 import { startMic, watchMicPermission, onMicLost } from '../../input/mic.js';
-import { avatarSVG, blockSVG } from '../art.js';
+import { avatarSVG, blockSVG, sheetSVG } from '../art.js';
 import { px } from '../canvas.js';
 import { icon } from '../icons.js';
 import { syncLang, updateQuick } from '../lang.js';
@@ -37,23 +37,16 @@ export function renderHome(){
   const box = $('#levels'), pr = prog(p); box.textContent = '';
   LEVELS.forEach((L, i) => {
     const open = unlocked(p, i), b = document.createElement('button');
-    const cur = i === pr.level;
-    b.className = 'b tile' + (open ? '' : ' locked') + (cur ? ' cur' : ''); if (cur) b.dataset.current = '1'; b.setAttribute('aria-pressed', i === p.sel.level); b.setAttribute('aria-label', tx('level') + ' ' + (i + 1) + ': ' + tx('levels')[i]);
+    const cur = i === pr.level, part = partFor(p, songKey(p), i);
+    b.className = 'b tile' + (open ? '' : ' locked') + (cur ? ' cur' : ''); if (cur) b.dataset.current = '1'; b.setAttribute('aria-pressed', i === p.sel.level); b.setAttribute('aria-label', tx('level') + ' ' + (i + 1) + ': ' + tx('levels')[i] + ', ' + tx('parts')[PART_KEYS.indexOf(part)]); b.dataset.part = part;
     const stars = Math.max(0, ...PART_KEYS.map(k => p.best[bestKey(songKey(p), i, k)] || 0));
     b.innerHTML = (cur ? '<span class="curmark">' + icon('play', { fill: true }) + '</span>' : '') + '<span class="blk">' + blockSVG(i) + '</span>' + (open ? '' : '<span class="lock">' + icon('lock') + '</span>') +
-      '<span class="stars">' + (open ? starRow(stars) : '') + '</span>' +
+      '<span class="meta"><span class="len">' + sheetSVG(part) + '</span><span class="stars">' + (open ? starRow(stars) : '') + '</span></span>' +
       (i === pr.level && i < LEVELS.length - 1 ? '<span class="pips"><i class="' + (pr.streak > 0 ? 'on' : '') + '"></i><i></i></span>' : '');
     b.onclick = () => { if (!open){ b.animate([{ transform:'translateX(-6px)' }, { transform:'translateX(6px)' }, { transform:'none' }], 200); return; } p.sel.level = i; homePick = { id: p.id, song: songKey(p) }; save(); renderHome(); };
     box.appendChild(b);
   });
-  const parts = $('#parts'); parts.textContent = '';
-  PART_KEYS.forEach((k, i) => {
-    const b = document.createElement('button'); b.className = 'b part'; b.setAttribute('aria-pressed', p.sel.part === k);
-    b.setAttribute('aria-label', tx('parts')[i]);
-    b.innerHTML = icon('music').repeat(i + 1); b.onclick = () => { p.sel.part = k; save(); renderHome(); };
-    parts.appendChild(b);
-  });
-  $('#homeHist').innerHTML = histHTML(p, bestKey(songKey(p), p.sel.level, p.sel.part), false);
+  $('#homeHist').innerHTML = histHTML(p, bestKey(songKey(p), p.sel.level, partFor(p, songKey(p), p.sel.level)), false);
 }
 // Best % and bars of the last results for one level+part.
 export function histHTML(p, key, markLast){
@@ -182,7 +175,7 @@ $('#btnQuit').onclick = () => { if (is(S.PAUSED)) goHome(); };
 $('#btnHome').onclick = goHome;
 // Replay / Next act only while the results are shown (the machine is in Results or LevelUp): a second tap would
 // otherwise read the game the first tap just started (Next would skip a level) or restart it.
-$('#btnAgain').onclick = () => { if (!dispatch(E.REPLAY)) return; const p = P(); if (G){ p.sel.song = G.song; p.sel.level = G.level; p.sel.part = G.part; } startGame(false); };
+$('#btnAgain').onclick = () => { if (!dispatch(E.REPLAY)) return; const p = P(); if (G){ p.sel.song = G.song; p.sel.level = G.level; } startGame(false); };
 $('#btnNext').onclick = () => { if (!dispatch(E.NEXT)) return; const p = P(); if (G){ p.sel.song = G.song; p.sel.level = Math.min(LEVELS.length - 1, G.level + 1); } startGame(false); };
 // Safe auto-pause: going to the background, locking the screen, losing focus or losing the microphone.
 document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });

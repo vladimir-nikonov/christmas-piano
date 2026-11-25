@@ -136,6 +136,30 @@ try {
   await page.click('#btnSetClose');
   assert.equal(await sn(() => window.__sn.db.device.touch), true);
 
+  log('home: no separate length row; every level tile shows its default length');
+  assert.equal(await page.locator('#parts').count(), 0);
+  assert.deepEqual(await page.locator('#levels .tile').evaluateAll(t => t.map(b => b.dataset.part)), ['short', 'half', 'full', 'full', 'full']);
+
+  log('parent settings: songs x levels table, a cell changes how much of the song that level plays');
+  await page.click('#btnSettings');
+  await visible('#settings');
+  assert.equal(await page.locator('#sPick button').count(), 1);
+  assert.equal(await page.locator('#sLen tbody tr').count(), 2);
+  assert.equal(await page.locator('#sLen .lencell').count(), 10);
+  const cell = page.locator('#sLen .lencell[data-song="jingle"][data-level="0"]');
+  assert.ok(await cell.evaluate(b => b.classList.contains('cur')), 'the current level cell is outlined');
+  assert.equal(await page.locator('#btnLenReset').isHidden(), true);
+  await cell.click();
+  assert.equal(await sn(() => window.__sn.db.profiles[0].len['jingle:0']), 'half');
+  assert.ok(await cell.evaluate(b => b.classList.contains('changed')));
+  await page.click('#btnSetClose');
+  assert.equal(await page.locator('#levels .tile').nth(0).getAttribute('data-part'), 'half');
+  await page.click('#btnSettings');
+  await page.click('#btnLenReset');
+  assert.deepEqual(await sn(() => window.__sn.db.profiles[0].len), {});
+  await page.click('#btnSetClose');
+  assert.equal(await page.locator('#levels .tile').nth(0).getAttribute('data-part'), 'short');
+
   log('home: falling decor is drawn when motion is allowed');
   assert.equal(await sn(() => window.__sn.reducedMotion), false);
   assert.ok(await sn(() => window.__sn.drawn.flakes) > 0);
@@ -398,7 +422,7 @@ try {
   await page.locator('#results').waitFor({ state: 'visible', timeout: 30000 });
   assert.equal(await page.locator('#resPct').textContent(), '0%');
   assert.equal(await sn(() => window.__sn.game.notes.every(n => n.missed)), true);
-  assert.equal(await sn(() => window.__sn.db.profiles[0].hist['1:short'].length), 1);
+  assert.equal(await sn(() => window.__sn.db.profiles[0].hist['1:half'].length), 1);
   const r0 = await resultsButtons();
   assert.deepEqual(r0.primaries, ['btnMain'], '0 stars: one primary');
   assert.equal(r0.go, 'again');

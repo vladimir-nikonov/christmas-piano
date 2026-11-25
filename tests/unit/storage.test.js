@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeDB, normHist, freshDB, freshProg, prog, unlocked, DEF_OPTS, DEF_DEV, HIST_MAX } from '../../src/data/storage.js';
+import { normalizeDB, normHist, normLen, partFor, setPartFor, freshDB, freshProg, prog, unlocked, DEF_OPTS, DEF_DEV, HIST_MAX } from '../../src/data/storage.js';
 import { SONG_KEYS } from '../../src/core/songs.js';
 import { LEVELS } from '../../src/core/levels.js';
 
@@ -70,4 +70,23 @@ test('levels open one by one only when the parent asks, per song', () => {
   p.opts.lockLevels = true;
   assert.equal(unlocked(p, 2), false);
   assert.equal(unlocked(p, 2, 'jingle'), true);
+});
+
+test('song length: each level has a default, a parent override is kept per song and level', () => {
+  assert.deepEqual(LEVELS.map(L => L.part), ['short', 'half', 'full', 'full', 'full']);
+  const [p] = normalizeDB({ profiles: [{ id: 'a' }] }).profiles;
+  assert.deepEqual(p.len, {}, 'old records get no overrides');
+  assert.equal(partFor(p, 'jingle', 0), 'short');
+  assert.equal(partFor(p, 'birthday', 2), 'full');
+  setPartFor(p, 'jingle', 2, 'half');
+  assert.equal(partFor(p, 'jingle', 2), 'half');
+  assert.equal(partFor(p, 'birthday', 2), 'full', 'other songs keep the default');
+  setPartFor(p, 'jingle', 2, 'full');
+  assert.deepEqual(p.len, {}, 'setting the default back drops the override');
+});
+
+test('broken song lengths are dropped on load', () => {
+  assert.deepEqual(normLen({ 'jingle:0': 'full', 'jingle:1': 'half', 'jingle:9': 'full', 'x:0': 'long', bad: 'short', 'birthday:3': 'short' }),
+    { 'jingle:0': 'full', 'birthday:3': 'short' });
+  for (const v of [null, 'x', [], 5]) assert.deepEqual(normLen(v), {});
 });

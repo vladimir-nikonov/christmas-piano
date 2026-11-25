@@ -79,10 +79,9 @@ svg.off{color:var(--border)}
 .songs{display:flex;gap:calc(14*var(--u));flex-wrap:wrap;justify-content:center}
 .song{height:calc(68*var(--u));padding:0 calc(22*var(--u));font-size:calc(30*var(--u));font-weight:900;color:var(--reward)}
 .song[aria-pressed="true"]{background:var(--border);outline:calc(4*var(--u)) solid var(--text);outline-offset:calc(3*var(--u))}
-.parts{display:flex;gap:calc(14*var(--u))}
-.part{min-width:calc(110*var(--u));height:calc(72*var(--u));padding:0 calc(14*var(--u));display:flex;gap:calc(2*var(--u));justify-content:center;align-items:center;color:var(--reward)}
-.part svg{width:calc(30*var(--u));height:calc(30*var(--u))}
-.part[aria-pressed="true"]{background:var(--border);outline:calc(4*var(--u)) solid var(--text);outline-offset:calc(3*var(--u))}
+.tile .meta{display:flex;align-items:center;gap:calc(8*var(--u))}
+.tile .len{width:calc(36*var(--u));height:calc(30*var(--u));color:var(--text);flex:none}
+.tile .len svg,.lencell .len svg{display:block;width:100%;height:100%}
 
 /* Home corner (language, theme, backup, full screen, settings): same places and touch size, but calmer than Play */
 #home .corner.r .b{background:color-mix(in srgb, var(--panel) 45%, transparent);border-color:transparent;box-shadow:none;opacity:.72}
@@ -252,6 +251,26 @@ svg.off{color:var(--border)}
 .mehead{display:flex;align-items:center;gap:calc(18*var(--u));flex-wrap:wrap;justify-content:center}
 .mehead .av{display:block}
 #me .avpick button{padding:calc(6*var(--u))}
+.spick{display:flex;gap:8px;flex-wrap:wrap;padding:6px 0 10px}
+.spick .who{display:inline-flex;align-items:center;gap:8px;min-height:48px}
+.spick .who svg{width:28px;height:28px;border-radius:4px}
+.spick .who[aria-pressed="true"]{outline:3px solid var(--text);outline-offset:2px}
+.lenwrap{overflow-x:auto;margin:4px 0 0}
+.lentable{border-collapse:separate;border-spacing:6px;width:100%;table-layout:fixed;min-width:520px}
+.lentable thead th:first-child,.lentable tbody th{width:120px}
+.lentable tbody th{text-align:left;font-weight:800;font-size:15px;color:var(--reward);line-height:1.2}
+.lentable thead .blk{display:block;width:36px;height:36px;margin:0 auto;border-radius:4px;overflow:hidden}
+.lentable thead .blk svg{width:100%;height:100%}
+.lencell{width:100%;min-height:64px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;font-size:13px;font-weight:800}
+.lencell .len{width:34px;height:28px;color:var(--text)}
+.lencell .cstars{display:flex;gap:1px;color:var(--reward)}
+.lencell .cstars svg{width:13px;height:13px}
+.lencell .cpct{font-variant-numeric:tabular-nums;opacity:.85}
+.lencell.cur{outline:3px solid var(--reward);outline-offset:1px}
+.lencell.locked{opacity:.5}
+.lencell.changed::after{content:"";position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.lenrow{border-bottom:none}
+.lenrow .txtbtn{grid-column:1/-1;justify-self:end}
 .sheet .whoami{display:inline-flex;align-items:center;gap:8px;vertical-align:middle;margin-left:8px;color:var(--text);letter-spacing:0}
 .sheet .whoami svg{width:28px;height:28px;border-radius:4px}
 

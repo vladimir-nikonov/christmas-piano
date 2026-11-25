@@ -2,7 +2,7 @@
 // Keep compatibility with old records: normalizeDB() upgrades anything older on load.
 
 import { LEVELS } from '../core/levels.js';
-import { SONG_KEYS, songKey } from '../core/songs.js';
+import { SONG_KEYS, PART_KEYS, songKey } from '../core/songs.js';
 import { THEMES } from '../ui/theme-data.js';
 
 /* ================= Storage: per-child profiles + device settings ================= */
@@ -22,7 +22,7 @@ export function normalizeDB(d){
   r.profiles.forEach(p => { p.theme = THEMES[p.theme] ? p.theme : 'pixel'; p.opts = Object.assign({}, DEF_OPTS, p.opts); if (p.opts.labels === 'ru') p.opts.labels = 'native'; if (p.opts.labels === 'en') p.opts.labels = 'letters'; delete p.opts.unlockAll; p.sel = p.sel || { level:0, part:'short' }; p.best = p.best || {};
     p.hist = normHist(p.hist); p.top = (p.top && typeof p.top === 'object' && !Array.isArray(p.top)) ? p.top : {};
     Object.keys(p.hist).forEach(k => { p.top[k] = Math.max(+p.top[k] || 0, ...p.hist[k].map(e => e.pct)); });
-    p.name = typeof p.name === 'string' ? p.name : ''; p.level = Math.max(0, Math.floor(+p.level) || 0); p.streak = +p.streak || 0; p.avatar = Math.max(0, Math.floor(+p.avatar) || 0); normProg(p); });
+    p.name = typeof p.name === 'string' ? p.name : ''; p.level = Math.max(0, Math.floor(+p.level) || 0); p.streak = +p.streak || 0; p.avatar = Math.max(0, Math.floor(+p.avatar) || 0); p.len = normLen(p.len); normProg(p); });
   if (!r.profiles.some(p => p.id === r.current)) r.current = r.profiles[0] ? r.profiles[0].id : null;
   return r;
 }
@@ -48,6 +48,21 @@ export function normProg(p){
   SONG_KEYS.forEach(k => { const o = old[k] && typeof old[k] === 'object' ? old[k] : { level: p.level, streak: p.streak };
     p.prog[k] = { level: Math.max(0, Math.min(top, Math.floor(+o.level) || 0)), streak: Math.max(0, Math.floor(+o.streak) || 0) }; });
   p.level = Math.max(0, ...SONG_KEYS.map(k => p.prog[k].level));
+}
+// Song length per song and level, set by a parent: p.len["song:level"] = 'short' | 'half' | 'full'.
+// Only changes from the level's default are kept; everything else follows LEVELS[level].part.
+export function normLen(l){
+  const out = {};
+  if (l && typeof l === 'object' && !Array.isArray(l)) Object.keys(l).forEach(k => {
+    const m = /^([a-z0-9_-]{1,32}):(\d+)$/.exec(k);
+    if (m && +m[2] < LEVELS.length && PART_KEYS.includes(l[k]) && l[k] !== LEVELS[+m[2]].part) out[k] = l[k];
+  });
+  return out;
+}
+export const partFor = (p, song, level) => (p.len && p.len[song + ':' + level]) || LEVELS[level].part;
+export function setPartFor(p, song, level, part){
+  const k = song + ':' + level; p.len = p.len || {};
+  if (part === LEVELS[level].part) delete p.len[k]; else p.len[k] = part;
 }
 export const freshProg = () => Object.fromEntries(SONG_KEYS.map(k => [k, { level:0, streak:0 }]));
 function lsRead(){ try { const raw = localStorage.getItem(DB_KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; } }

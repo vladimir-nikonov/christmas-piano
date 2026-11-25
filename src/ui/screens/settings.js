@@ -2,12 +2,15 @@
 
 import { LETTERS, NOTE_NATIVE } from '../../core/music.js';
 import { BACKUP_FORMAT, BACKUP_EVERY, parseBackup } from '../../data/backup.js';
-import { db, persisted, normalizeDB, save, askPersist, P, dev, setDB, freshProg, wipeDB } from '../../data/storage.js';
+import { db, persisted, normalizeDB, save, askPersist, P, dev, setDB, freshProg, wipeDB, prog, unlocked, partFor, setPartFor } from '../../data/storage.js';
+import { LEVELS } from '../../core/levels.js';
+import { SONGS, SONG_KEYS, PART_KEYS, bestKey } from '../../core/songs.js';
 import { $ } from '../../dom.js';
 import { E, dispatch } from '../../core/flow.js';
 import { LANGS, LANG, tx, fmtDate } from '../../i18n/index.js';
 import { resetHeard } from '../../input/mic.js';
-import { avatarSVG } from '../art.js';
+import { avatarSVG, blockSVG, sheetSVG } from '../art.js';
+import { icon } from '../icons.js';
 import { setScreenInput } from '../inputmode.js';
 import { setLang } from '../lang.js';
 import { goHome } from './home.js';
@@ -15,10 +18,13 @@ import { openMe } from './profiles.js';
 
 /* Parent settings: a panel over home (the navigation state Settings) */
 const bindRange = (id, out, get, set, fmt) => { const el = $(id); el.value = get(); $(out).textContent = fmt(+el.value); el.oninput = () => { set(+el.value); $(out).textContent = fmt(+el.value); save(); }; };
-export function openSettings(){ if (!dispatch(E.SETTINGS)) return false; renderSettings(); return true; }
+// The player the panel is set up for. Any player can be chosen here; who plays on home does not change.
+let target = null;
+const sp = () => db.profiles.find(x => x === target) || P();
+export function openSettings(){ if (!dispatch(E.SETTINGS)) return false; target = P(); renderSettings(); return true; }
 export function renderSettings(){
-  const p = P();
-  $('#sWho').innerHTML = avatarSVG(p.avatar, 28, p.theme) + '<span></span>'; $('#sWho').lastChild.textContent = p.name || tx('noName');
+  const p = sp();
+  renderPlayerPick(p); renderLenTable(p);
   bindRange('#sTempo', '#oTempo', () => p.opts.tempo, v => p.opts.tempo = v, v => v + '%');
   bindRange('#sTol', '#oTol', () => p.opts.tolMs, v => p.opts.tolMs = v, v => v ? '±' + v + ' ' + tx('ms') : tx('sTolLevel'));
   bindRange('#sLat', '#oLat', () => dev().latency, v => dev().latency = v, v => v + ' ' + tx('ms'));
@@ -32,8 +38,43 @@ export function renderSettings(){
   [['#sHint','hint'],['#sOct','anyOct'],['#sLock','lockLevels']].forEach(([id, k]) => { $(id).checked = !!p.opts[k]; $(id).onchange = e => { p.opts[k] = e.target.checked; save(); }; });
   $('#sTouch').checked = dev().touch; $('#sTouch').onchange = e => setScreenInput(e.target.checked);
   armButton('#btnReset', tx('sReset'), () => { p.level = 0; p.streak = 0; p.prog = freshProg(); p.best = {}; p.hist = {}; p.top = {}; p.sel.level = 0; save(); });
-  armButton('#btnDelete', tx('sDelete'), () => { db.profiles = db.profiles.filter(x => x.id !== p.id); db.current = db.profiles[0] ? db.profiles[0].id : null; save(); goHome(); });
+  armButton('#btnDelete', tx('sDelete'), () => { db.profiles = db.profiles.filter(x => x.id !== p.id); if (!db.profiles.some(x => x.id === db.current)) db.current = db.profiles[0] ? db.profiles[0].id : null; save(); goHome(); });
   renderBackupInfo(); $('#restoreAsk').hidden = true; $('#wipeAsk').hidden = true;
+}
+function renderPlayerPick(p){
+  const box = $('#sPick'); box.textContent = '';
+  db.profiles.forEach(x => {
+    const b = document.createElement('button'); b.className = 'b txtbtn who'; b.setAttribute('aria-pressed', x === p);
+    b.innerHTML = avatarSVG(x.avatar, 28, x.theme) + '<span></span>'; b.lastChild.textContent = x.name || tx('noName');
+    b.onclick = () => { target = x; renderSettings(); };
+    box.appendChild(b);
+  });
+}
+// Songs as rows, levels as cells. A cell shows the length that level plays (sheet icon), the best stars and
+// best % for that length; the current level is outlined, locked levels are dimmed. Tapping a cell cycles the length.
+const starRow = on => [0,1,2].map(i => icon('star', { fill: i < on, cls: i < on ? '' : 'off' })).join('');
+function renderLenTable(p){
+  const t = $('#sLen');
+  let h = '<thead><tr><th></th>' + LEVELS.map((L, i) => '<th scope="col"><span class="blk" role="img" aria-label="' + tx('levels')[i] + '">' + blockSVG(i, p.theme) + '</span></th>').join('') + '</tr></thead><tbody>';
+  SONG_KEYS.forEach(song => {
+    const pr = prog(p, song);
+    h += '<tr><th scope="row"></th>' + LEVELS.map((L, i) => {
+      const part = partFor(p, song, i), key = bestKey(song, i, part), stars = p.best[key] || 0, top = p.top[key];
+      const cls = 'b lencell' + (i === pr.level ? ' cur' : '') + (unlocked(p, i, song) ? '' : ' locked') + (part !== L.part ? ' changed' : '');
+      return '<td><button class="' + cls + '" data-song="' + song + '" data-level="' + i + '" data-part="' + part + '">' +
+        '<span class="len">' + sheetSVG(part) + '</span><span class="cstars">' + starRow(stars) + '</span><span class="cpct">' + (top ? top + '%' : '—') + '</span></button></td>';
+    }).join('') + '</tr>';
+  });
+  t.innerHTML = h + '</tbody>';
+  t.querySelectorAll('tbody tr').forEach((tr, r) => { tr.firstChild.textContent = SONGS[SONG_KEYS[r]].title(); });
+  t.querySelectorAll('.lencell').forEach(b => {
+    const song = b.dataset.song, i = +b.dataset.level, pr = prog(p, song), part = b.dataset.part, top = p.top[bestKey(song, i, part)];
+    b.setAttribute('aria-label', SONGS[song].title() + ', ' + tx('levels')[i] + ': ' + tx('parts')[PART_KEYS.indexOf(part)] +
+      (i === pr.level ? ', ' + tx('sLenCur') : '') + (top ? ', ' + tx('best') + ' ' + top + '%' : ''));
+    b.onclick = () => { setPartFor(p, song, i, PART_KEYS[(PART_KEYS.indexOf(part) + 1) % PART_KEYS.length]); save(); renderLenTable(p); t.querySelector('[data-song="' + song + '"][data-level="' + i + '"]').focus(); };
+  });
+  $('#btnLenReset').hidden = !Object.keys(p.len || {}).length;
+  $('#btnLenReset').onclick = () => { p.len = {}; save(); renderLenTable(p); };
 }
 /* Backup: export / import JSON, weekly reminder */
 function renderBackupInfo(){
@@ -102,6 +143,7 @@ $('#btnWipeYes').onclick = async () => {
   await wipeDB();
   location.reload();
 };
-$('#btnKidPage').onclick = openMe;
+// The child's page belongs to the player chosen in the panel, who then also becomes the one playing.
+$('#btnKidPage').onclick = () => { const p = sp(); if (p && db.current !== p.id){ db.current = p.id; save(); } openMe(); };
 $('#btnSettings').onclick = () => { if (openSettings()) $('#settings').scrollTop = 0; };
 $('#btnSetClose').onclick = goHome;
