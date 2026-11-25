@@ -109,6 +109,13 @@ try {
   assert.equal(await sn(() => window.__sn.db.profiles[0].name), 'Tester');
   assert.equal(await page.locator('#btnWho .nm').textContent(), 'Tester');
   assert.ok(await page.locator('#songs button').count() >= 2);
+  const hint = () => sn(() => { const h = document.querySelector('#homeHint'); return h.classList.contains('on') ? h.dataset.key : null; });
+
+  log('home hint: a new player is told to pick a song and Play pulses');
+  assert.equal(await hint(), 'hStart');
+  await page.waitForFunction(() => document.querySelector('#btnPlay').classList.contains('nudge'));
+  assert.ok((await page.locator('#homeHint').textContent()).length > 3);
+  assert.equal(await page.locator('#homeHint .hp svg').count(), 1, 'the ▶ in the text is the Play icon');
 
   log('home: one primary button, the current level is marked and selected');
   assert.equal(await page.locator('#home .b.primary:visible').count(), 1);   // the hidden mic state has its own Try again
@@ -120,8 +127,11 @@ try {
   await sn(() => { window.__sn.db.profiles[0].prog.birthday.level = 2; });
   await page.locator('#levels .tile').nth(1).click();
   assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 1);
+  assert.equal(await hint(), 'hAhead', 'a level above the current one is called harder');
   await page.locator('#songs button').nth(1).click();
   assert.equal(await sn(() => window.__sn.db.profiles[0].sel.song), 'birthday');
+  assert.equal(await hint(), 'hSong', 'switching the song says each song has its own level');
+  assert.ok(await page.locator('#homeHint').textContent().then(t => t.includes(' ')));
   assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 2);
   assert.equal(await page.locator('#levels .tile').nth(2).getAttribute('data-current'), '1');
   assert.equal(await page.locator('#levels .tile').nth(2).getAttribute('aria-pressed'), 'true');
@@ -199,9 +209,18 @@ try {
   assert.deepEqual(rUp.x, r3.x, 'Home, Replay and the primary keep their slots');
   assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.jingle), { level: 1, streak: 0 });
 
+  log('home hint: back home after a new level, its lock leaves the tile and Play pulses');
+  await page.click('#btnHome');
+  await visible('#home');
+  assert.equal(await hint(), 'hLevelUp');
+  await page.waitForFunction(() => !!document.querySelector('#levels .tile.cur .lk') && document.querySelector('#btnPlay').classList.contains('nudge'));
+  await page.locator('#levels .tile').nth(0).click({ force: true });
+  assert.equal(await hint(), 'hReplay', 'an earlier level is a replay for the stars');
+
   log('a wrong note in level 1 is counted against the note, with soft feedback only (key hint off)');
   await sn(() => { window.__sn.db.profiles[0].opts.hint = false; });
-  await page.click('#btnAgain');
+  await page.click('#btnPlay');
+  assert.equal(await hint(), null, 'the hint goes away when the game starts');
   await waitAtNextNote();
   assert.equal(await sn(() => window.__sn.focus.midi === window.__sn.game.notes[0].midi), true, 'waiting focuses the expected note');
   assert.equal(await sn(() => window.__sn.nav), 'waiting', 'the navigation machine is in Waiting');
@@ -327,6 +346,7 @@ try {
   await page.waitForTimeout(800);
   await page.click('#btnPause');
   await visible('#home');
+  assert.equal(await hint(), 'hAfterDemo', 'after listening: now your turn');
 
   log('back up to a file and restore from it');
   await page.click('#btnSettings');

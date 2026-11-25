@@ -123,6 +123,7 @@ function finish(){
   }
   p.level = Math.max(p.level, pr.level);
   if (levelUp) p.sel.level = pr.level;
+  G.levelUp = levelUp;   // home reads it to open the new level there too
   save();
   noteResult({ name: p.name, song: SONGS[G.song].title(), stars, metric });
   showResults({ p, pr, key, song: G.song, level: G.level, metric, stars, record, levelUp });

@@ -4,7 +4,8 @@ import { audio } from '../../audio/synth.js';
 import { LEVELS } from '../../core/levels.js';
 import { SONGS, SONG_KEYS, songKey, bestKey, PART_KEYS } from '../../core/songs.js';
 import { db, save, P, dev, prog, unlocked, partFor } from '../../data/storage.js';
-import { E, S, dispatch, can, is } from '../../core/flow.js';
+import { E, S, dispatch, can, is, flow } from '../../core/flow.js';
+import { homeHint } from '../../core/hint.js';
 import { $ } from '../../dom.js';
 import { G, startGame, setGame, resumeGame } from '../../game/game.js';
 import { tx, fmtDate } from '../../i18n/index.js';
@@ -17,7 +18,7 @@ import { openNewProfile } from './profiles.js';
 import { updateBackupNag } from './settings.js';
 import { setScreenInput } from '../inputmode.js';
 import { applyTheme } from '../theme.js';
-import { entryTiming, entryFrames, entryFx, dropLayer, zoomOutFrames } from '../themefx.js';
+import { entryTiming, entryFrames, entryFx, dropLayer, zoomOutFrames, fxLayer, unlockFx, calm } from '../themefx.js';
 
 /* ================= Screens ================= */
 // Level the child picked by hand during this home visit; while it is set, coming back to home keeps it.
@@ -31,7 +32,7 @@ export function renderHome(){
   const songs = $('#songs'); songs.textContent = '';
   SONG_KEYS.forEach(k => {
     const b = document.createElement('button'); b.className = 'b song'; b.setAttribute('aria-pressed', songKey(p) === k);
-    b.textContent = SONGS[k].title(); b.onclick = () => { p.sel.song = k; p.sel.level = prog(p, k).level; homePick = null; save(); renderHome(); };
+    b.textContent = SONGS[k].title(); b.onclick = () => { const changed = songKey(p) !== k; p.sel.song = k; p.sel.level = prog(p, k).level; homePick = null; save(); renderHome(); if (changed) showHint('song'); };
     songs.appendChild(b);
   });
   const box = $('#levels'), pr = prog(p); box.textContent = '';
@@ -43,7 +44,7 @@ export function renderHome(){
     b.innerHTML = (cur ? '<span class="curmark">' + icon('play', { fill: true }) + '</span>' : '') + '<span class="blk">' + blockSVG(i) + '</span>' + (open ? '' : '<span class="lock">' + icon('lock') + '</span>') +
       '<span class="meta"><span class="len">' + sheetSVG(part) + '</span><span class="stars">' + (open ? starRow(stars) : '') + '</span></span>' +
       (i === pr.level && i < LEVELS.length - 1 ? '<span class="pips"><i class="' + (pr.streak > 0 ? 'on' : '') + '"></i><i></i></span>' : '');
-    b.onclick = () => { if (!open){ b.animate([{ transform:'translateX(-6px)' }, { transform:'translateX(6px)' }, { transform:'none' }], 200); return; } p.sel.level = i; homePick = { id: p.id, song: songKey(p) }; save(); renderHome(); };
+    b.onclick = () => { if (!open){ b.animate([{ transform:'translateX(-6px)' }, { transform:'translateX(6px)' }, { transform:'none' }], 200); return; } const changed = p.sel.level !== i; p.sel.level = i; homePick = { id: p.id, song: songKey(p) }; save(); renderHome(); if (changed) showHint('pick'); };
     box.appendChild(b);
   });
   $('#homeHist').innerHTML = histHTML(p, bestKey(songKey(p), p.sel.level, partFor(p, songKey(p), p.sel.level)), false);
@@ -61,6 +62,7 @@ export function histHTML(p, key, markLast){
 export function goHome(){
   if (!db.profiles.length){ if (!can(E.NEW_PLAYER)) return false; setGame(null); syncLang(); openNewProfile(); return true; }
   if (!can(E.HOME)) return false;
+  const from = HOME_FROM[flow.state.name], g = G;
   setGame(null);
   if (!P()) db.current = db.profiles[0].id;
   const p = P();
@@ -69,8 +71,69 @@ export function goHome(){
   const home = $('#home'), wasHidden = home.hidden;
   renderHome(); dispatch(E.HOME); updateBackupNag();
   if (wasHidden) zoomOutHome(home);
+  idleDone = false; showHint(from, g);
   return true;
 }
+
+/* ---- Hint: what to do next and why home looks like this. The gesture carries the meaning, the line of text
+   is a caption that fades after a few seconds (src/core/hint.js picks which one). ---- */
+const HOME_FROM = { [S.RESULTS]: 'results', [S.LEVEL_UP]: 'results', [S.PREVIEW]: 'demo', [S.NEW_PLAYER]: 'newPlayer', [S.PROFILES]: 'player' };
+const HINT_MS = 6000, IDLE_MS = 8000;
+let hintSeq = 0, hintT = 0, idleT = 0, idleDone = false, hintLayer = null;
+const onHome = () => is(S.HOME) && !$('#home').hidden;
+export function showHint(from, g){
+  const p = P(); if (!p) return;
+  clearHint();
+  const pr = prog(p), h = homeHint({ from, sel: p.sel.level, cur: pr.level, last: LEVELS.length - 1,
+    played: g ? g.level : null, levelUp: !!(g && g.levelUp), streak: pr.streak, name: p.name });
+  if (from === 'idle') idleDone = true;
+  armIdle();
+  if (!h) return;
+  const el = $('#homeHint'), seq = hintSeq;
+  el.dataset.key = h.key; el.textContent = '';
+  // ▶ in the text is drawn as the Play icon; the name is the player's own text, so it goes in as text
+  tx(h.key).replace('{level}', h.level != null ? tx('levels')[h.level] : '').replace('{name}', h.name || '').split('▶').forEach((part, i) => {
+    if (i) el.insertAdjacentHTML('beforeend', '<span class="hp">' + icon('play', { fill: true }) + '</span>');
+    el.appendChild(document.createTextNode(part));
+  });
+  el.classList.add('on');
+  hintT = setTimeout(() => { el.classList.remove('on'); $('#btnPlay').classList.remove('nudge'); }, HINT_MS);
+  // The gesture starts once home has zoomed back in
+  setTimeout(() => { if (seq === hintSeq && onHome()) hintGesture(h); }, calm() ? 0 : 320);
+}
+function hintGesture(h){
+  if (h.play){ const b = $('#btnPlay'); b.classList.remove('nudge'); void b.offsetWidth; b.classList.add('nudge'); }
+  const tile = $('#levels .tile.cur'); if (!tile || calm()) return;
+  if (h.tile === 'unlock'){
+    // The new level's lock leaves the theme's way, as on the results screen
+    const blk = tile.querySelector('.blk'), lk = document.createElement('span'); lk.className = 'lk'; lk.innerHTML = icon('lock'); blk.appendChild(lk);
+    hintLayer = fxLayer($('#home')); unlockFx(blk, hintLayer);
+    tile.animate([{ transform: 'scale(.85)' }, { transform: 'scale(1.12)', offset: 0.55 }, { transform: 'none' }], { duration: 700, easing: 'cubic-bezier(.3,1.6,.5,1)' });
+    const l = hintLayer; setTimeout(() => { lk.remove(); if (hintLayer === l){ dropLayer(l); hintLayer = null; } }, 1400);
+  } else if (h.tile === 'pip'){
+    const pip = tile.querySelector('.pips i:not(.on)');
+    if (pip) pip.animate([{ transform: 'none' }, { transform: 'scale(1.5)', background: 'var(--reward)' }, { transform: 'none' }], { duration: 600, iterations: 3, easing: 'ease-in-out' });
+  } else if (h.tile === 'cur'){
+    tile.animate([{ transform: 'none' }, { transform: 'translateY(calc(-14 * var(--u)))' }, { transform: 'none' }], { duration: 420, iterations: 2, easing: 'ease-out' });
+  }
+}
+function clearHint(){
+  hintSeq++; clearTimeout(hintT);
+  const el = $('#homeHint'); el.classList.remove('on');
+  $('#btnPlay').classList.remove('nudge');
+  if (hintLayer){ dropLayer(hintLayer); hintLayer = null; }
+}
+// Nothing happened on home for a while (once per visit): Play pulses. Waits while the splash or the mic state is up.
+function armIdle(){
+  clearTimeout(idleT); if (idleDone) return;
+  idleT = setTimeout(() => {
+    if (!onHome()) return;
+    if (!$('#splash').hidden || !$('#micErr').hidden || $('#homeHint').classList.contains('on')){ armIdle(); return; }
+    showHint('idle');
+  }, IDLE_MS);
+}
+$('#home').addEventListener('pointerdown', () => armIdle());
+$('#btnPlay').addEventListener('animationend', e => { if (e.animationName === 'nudge') $('#btnPlay').classList.remove('nudge'); });
 
 /* ---- Entry / return transitions (Web Animations, so they run alongside the CSS reduced-motion rule) ---- */
 const reduceMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -86,6 +149,7 @@ function zoomOutHome(home){
 // Home ignores taps during the transition; the game clock starts only after it.
 // The caller has already moved the machine into Countdown / Preview (entering), which ignores a second Play or Listen.
 function enterGame(demo){
+  clearHint(); clearTimeout(idleT);
   const home = $('#home');
   const go = () => { startGame(demo); dispatch(E.ENTERED); };
   if (home.hidden || !home.animate){ go(); return; }
