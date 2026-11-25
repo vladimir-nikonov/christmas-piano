@@ -3,15 +3,14 @@
 import { LEVELS } from '../../core/levels.js';
 import { unlocked } from '../../data/storage.js';
 import { $ } from '../../dom.js';
-import { burst, keyFor, G } from '../../game/game.js';
+import { keyFor, G } from '../../game/game.js';
 import { tx } from '../../i18n/index.js';
 import { blockSVG } from '../art.js';
 import { W, keys, hitY } from '../canvas.js';
 import { icon } from '../icons.js';
-import { TH } from '../theme.js';
 import { histHTML } from './home.js';
 import { state, paused } from '../../game/game.js';
-import { unlockFx, flyContent, flight, landFx, moveRight, fadeReset } from '../themefx.js';
+import { unlockFx, flyContent, flight, landFx, moveRight, fadeReset, particles } from '../themefx.js';
 
 const reducedMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 
@@ -52,12 +51,12 @@ function rewardLayer(){
   return $('#results .flylayer') || Object.assign($('#results').appendChild(document.createElement('div')), { className: 'flylayer' });
 }
 
-// The last note turns into particles, and one star per earned star flies from it up to the star row (about 1 s).
+// The last note's place bursts into theme particles, and one star per earned star flies from it up to the star row (about 1 s).
 function celebrate(){
   const last = G && G.notes[G.notes.length - 1], k = last && keys[keyFor(last.midi)];
   const x = k ? k.x + k.w / 2 : W / 2, y = hitY;
-  burst(x, y, TH.reward, 30);
   const layer = rewardLayer();
+  particles(layer, x, y); // on the results layer: the game field is covered by the theme picture
   $('#resStars').querySelectorAll('span.wait').forEach((slot, i) => {
     const show = () => slot.classList.remove('wait');
     const r = slot.getBoundingClientRect(), s = r.width || 60;
