@@ -19,10 +19,25 @@ const ICONS = ['arrow-down', 'camera', 'check', 'cross', 'film', 'fullscreen', '
   'mic', 'music', 'pause', 'pencil', 'play', 'plus', 'rec', 'retry', 'share', 'speaker', 'star', 'stop', 'trash'];
 
 const read = p => readFileSync(join(dir, p), 'utf8').trim();
-// Accept only plain static SVG: no scripts, event handlers, external references or embedded documents.
+// Accept only plain static SVG: an allowlist of shape elements and presentation attributes.
+// Anything else (scripts, styles, animation, links, entities, comments, ids) stops the import.
+const TAGS = new Set(['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polygon', 'polyline', 'defs', 'linearGradient', 'radialGradient', 'stop']);
+const ATTRS = new Set(['xmlns', 'viewBox', 'd', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'points',
+  'fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'stroke-dasharray', 'opacity',
+  'transform', 'shape-rendering', 'display', 'offset', 'stop-color', 'stop-opacity', 'gradientUnits', 'fx', 'fy']);
 function clean(svg, file){
-  if (!/^<svg[\s>]/.test(svg) || /<script|<foreignObject|<image|\son[a-z]+=|href=|url\((?!#)/i.test(svg)) throw new Error('unexpected content in ' + file);
-  if (/\sid="/.test(svg)) throw new Error('ids are not allowed (they clash when many SVGs share a page): ' + file);
+  const bad = why => { throw new Error(why + ' in ' + file); };
+  if (!/^<svg[\s>]/.test(svg) || !/<\/svg>$/.test(svg)) bad('not a single <svg> element');
+  if (/<!|<\?|&/.test(svg)) bad('comments, doctype, processing instructions or entities');
+  const rest = svg.replace(/<\/?([A-Za-z][\w-]*)((?:\s+[\w:-]+="[^"<>]*")*)\s*\/?>/g, (m, tag, attrs) => {
+    if (!TAGS.has(tag)) bad('element <' + tag + '>');
+    for (const [, name, value] of attrs.matchAll(/\s+([\w:-]+)="([^"]*)"/g)){
+      if (!ATTRS.has(name)) bad('attribute ' + name);
+      if (/url\(|javascript:|expression/i.test(value)) bad('value of ' + name);
+    }
+    return '';
+  });
+  if (rest.trim()) bad('text or malformed markup');
   return svg.replace(/\s*xmlns="http:\/\/www\.w3\.org\/2000\/svg"/, '').replace(/>\s+</g, '><');
 }
 
