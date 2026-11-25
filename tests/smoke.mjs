@@ -399,6 +399,7 @@ try {
   await page.waitForFunction(() => window.__sn.state === 'demo');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.waitForTimeout(800);
+  assert.equal(await page.locator('#hudSpd').isVisible(), false, 'no speed column in the listen-only preview');
   await page.click('#btnPause');
   await visible('#home');
   assert.equal(await hint(), 'hAfterDemo', 'after listening: now your turn');
@@ -479,6 +480,20 @@ try {
   await page.waitForFunction(() => window.__sn.game.time > 0.3);
   await page.click('#btnPause');
   await waitPaused();
+  // Playback speed column on the right: − slows the running song in place (same beat, longer beats), + brings it back
+  assert.equal(await page.locator('#hudSpd').isVisible(), true, 'speed column in the game');
+  const pos = () => sn(() => { const g = window.__sn.game; return { beat: g.beat, at: g.time / g.beat, tempo: window.__sn.db.profiles[0].opts.tempo }; });
+  const s0 = await pos(), shown = v => new RegExp('^' + String(v / 100).replace('.', '[.,]') + '×$');
+  assert.match(await page.locator('#spdVal').textContent(), shown(s0.tempo), 'the speed reads like a video player (1.3×)');
+  await page.click('#btnSlower');
+  const s1 = await pos();
+  assert.equal(s1.tempo, s0.tempo - 5, 'slower steps 0.05×');
+  assert.match(await page.locator('#spdVal').textContent(), shown(s1.tempo));
+  assert.ok(Math.abs(s1.beat - s0.beat * s0.tempo / s1.tempo) < 1e-9, 'beats get longer');
+  assert.ok(Math.abs(s1.at - s0.at) < 1e-9, 'the song keeps its place');
+  await page.click('#btnFaster');
+  assert.equal((await pos()).tempo, s0.tempo);
+  assert.equal(await sn(() => window.__sn.game.minTempo), s1.tempo, 'the slowest speed of the run is kept for the level-up rule');
   const snap = () => sn(() => { const g = window.__sn.game; return { time: g.time, score: g.score, missed: g.notes.filter(n => n.missed).length }; });
   const before = await snap();
   await page.waitForTimeout(300);

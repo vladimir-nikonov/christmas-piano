@@ -30,6 +30,13 @@
     <button class="b ico qinput" hidden></button>
     <button class="b ico" id="btnHudHome" data-ta="home" data-icon="home"></button>
   </div>
+  <!-- Playback speed: a column on the right edge, like the speed setting of a video player (0.5× ... 1.3×).
+       It changes the speed of the running song in place; hidden in the listen-only preview. -->
+  <div class="hudspd" id="hudSpd" role="group" data-ta="speed">
+    <button class="b ico" id="btnFaster" data-ta="faster" data-icon="plus"></button>
+    <div class="spd"><span data-icon="speed"></span><b id="spdVal">1×</b><small data-t="speed"></small></div>
+    <button class="b ico" id="btnSlower" data-ta="slower" data-icon="minus"></button>
+  </div>
 </div>
 
 <!-- Self-view: the player sees themself from the front camera; drag to move, tap to resize -->

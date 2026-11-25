@@ -33,7 +33,8 @@ export function startGame(demo){
   const look = Math.max(2.2, 4 * beat);
   G = { demo, wait: L.wait && !demo, song: songKey(p), meter: S.meter, level: p.sel.level, part, beat, tol, notes, look,
         time: -Math.max(look, S.meter * beat) - 0.4, lastTickBeat: null, end: notes[notes.length - 1].t + notes[notes.length - 1].d + 0.8,
-        score:0, combo:0, bestCombo:0, hits:0, perfect:0, finished:false, waiting:false, resumeIn:0, resumeBeat:null };
+        score:0, combo:0, bestCombo:0, hits:0, perfect:0, finished:false, waiting:false, resumeIn:0, resumeBeat:null,
+        minTempo: o.tempo };
   $('#micPill').hidden = demo || !!dev().touch;
   updateHud(); requestWake();
 }
@@ -117,7 +118,7 @@ function finish(){
   if (p.hist[key].length > HIST_MAX) p.hist[key].splice(0, p.hist[key].length - HIST_MAX);
   let levelUp = false;
   const pr = prog(p, G.song);
-  if (G.level === pr.level && !o.tolMs && o.tempo >= 100){
+  if (G.level === pr.level && !o.tolMs && G.minTempo >= 100){
     if (metric >= 85){ pr.streak++; if (pr.streak >= 2 && pr.level < LEVELS.length - 1){ pr.level++; pr.streak = 0; levelUp = true; } }
     else pr.streak = 0;
   }
@@ -172,3 +173,21 @@ export function resumeGame(){
   return true;
 }
 export function setGame(g){ G = g; }
+
+// Playback speed (opts.tempo, % of the level tempo), shown as 0.5x ... 1.3x like the speed setting of a video player.
+// It can change in the middle of a song: the whole timeline is rescaled around the current moment, so the song keeps
+// its place (same beat, same falling notes) and just plays slower or faster from there. The timing window stays in
+// real seconds. Only a run played at 100% or more the whole time counts for going up a level.
+export const SPEED = Object.freeze({ min:50, max:130, step:5 });
+export function setSpeed(pct){
+  const p = P(); pct = Math.max(SPEED.min, Math.min(SPEED.max, Math.round(pct / SPEED.step) * SPEED.step));
+  if (pct === p.opts.tempo) return false;
+  p.opts.tempo = pct; save();
+  if (!G || G.demo || G.finished) return true;
+  const beat = 60 / (SONGS[G.song].bpm * LEVELS[G.level].pct / 100 * pct / 100), r = beat / G.beat;
+  for (const n of G.notes){ n.t *= r; n.d *= r; }
+  const last = G.notes[G.notes.length - 1];
+  G.time *= r; G.resumeIn *= r; G.beat = beat; G.look = Math.max(2.2, 4 * beat); G.end = last.t + last.d + 0.8;
+  G.minTempo = Math.min(G.minTempo, pct);
+  return true;
+}

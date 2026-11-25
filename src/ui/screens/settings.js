@@ -7,7 +7,7 @@ import { LEVELS } from '../../core/levels.js';
 import { SONGS, SONG_KEYS, PART_KEYS, bestKey } from '../../core/songs.js';
 import { $ } from '../../dom.js';
 import { E, dispatch } from '../../core/flow.js';
-import { LANGS, LANG, tx, fmtDate } from '../../i18n/index.js';
+import { LANGS, LANG, tx, fmtDate, fmtSpeed } from '../../i18n/index.js';
 import { resetHeard } from '../../input/mic.js';
 import { avatarSVG, blockSVG, sheetSVG } from '../art.js';
 import { icon } from '../icons.js';
@@ -25,7 +25,7 @@ export function openSettings(){ if (!dispatch(E.SETTINGS)) return false; target 
 export function renderSettings(){
   const p = sp();
   renderPlayerPick(p); renderLenTable(p);
-  bindRange('#sTempo', '#oTempo', () => p.opts.tempo, v => p.opts.tempo = v, v => v + '%');
+  bindRange('#sTempo', '#oTempo', () => p.opts.tempo, v => p.opts.tempo = v, v => fmtSpeed(v) + ' (' + v + '%)');
   bindRange('#sTol', '#oTol', () => p.opts.tolMs, v => p.opts.tolMs = v, v => v ? '±' + v + ' ' + tx('ms') : tx('sTolLevel'));
   bindRange('#sLat', '#oLat', () => dev().latency, v => dev().latency = v, v => v + ' ' + tx('ms'));
   bindRange('#sSens', '#oSens', () => dev().sens, v => dev().sens = v, v => tx('sSensFmt').replace('{n}', v));

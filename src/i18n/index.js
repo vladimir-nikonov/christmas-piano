@@ -20,3 +20,5 @@ export let LANG = 'en';
 export const tx = k => (I18N[LANG] && I18N[LANG][k] != null) ? I18N[LANG][k] : I18N.en[k];
 export const fmtDate = d => { try { return new Date(d).toLocaleDateString(LANG); } catch(e){ return ''; } };
 export function useLang(code){ LANG = code; }
+// Playback speed as a video player writes it: 1×, 0.75×, 1.25× (decimal separator of the language).
+export const fmtSpeed = pct => { const v = pct / 100; try { return v.toLocaleString(LANG, { maximumFractionDigits: 2 }) + '×'; } catch(e){ return v + '×'; } };

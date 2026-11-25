@@ -7,8 +7,8 @@ import { db, save, P, dev, prog, unlocked, partFor } from '../../data/storage.js
 import { E, S, dispatch, can, is, flow } from '../../core/flow.js';
 import { homeHint } from '../../core/hint.js';
 import { $ } from '../../dom.js';
-import { G, startGame, setGame, resumeGame } from '../../game/game.js';
-import { tx, fmtDate } from '../../i18n/index.js';
+import { G, startGame, setGame, resumeGame, setSpeed, SPEED } from '../../game/game.js';
+import { tx, fmtDate, fmtSpeed } from '../../i18n/index.js';
 import { startMic, watchMicPermission, onMicLost } from '../../input/mic.js';
 import { avatarSVG, blockSVG, sheetSVG } from '../art.js';
 import { px } from '../canvas.js';
@@ -252,6 +252,17 @@ function syncPlayback(s){
   $('#hudCtl .qinput').hidden = !p;
 }
 flow.subscribe(syncPlayback); syncPlayback(flow.state);
+// Playback speed column on the right: + / − step the speed by 0.05× and apply it to the running song at once
+// (saved per player, the same value as Tempo in parent settings). Not shown in the listen-only preview.
+export function syncSpeed(){
+  const v = P() ? P().opts.tempo : 100;
+  $('#spdVal').textContent = fmtSpeed(v);
+  $('#btnFaster').disabled = v >= SPEED.max; $('#btnSlower').disabled = v <= SPEED.min;
+  $('#hudSpd').hidden = is(S.PREVIEW);
+}
+$('#btnFaster').onclick = () => { setSpeed(P().opts.tempo + SPEED.step); syncSpeed(); };
+$('#btnSlower').onclick = () => { setSpeed(P().opts.tempo - SPEED.step); syncSpeed(); };
+flow.subscribe(syncSpeed);
 // Home straight from the game screen: a running game pauses first, then leaves through the same Paused -> Home path;
 // the listen-only preview just ends. Ignored while the game screen is still sliding in.
 $('#btnHudHome').onclick = () => {

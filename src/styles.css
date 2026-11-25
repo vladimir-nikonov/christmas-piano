@@ -167,6 +167,18 @@ svg.off{color:var(--border)}
 #hud .hudctl .ico svg{width:calc(40*var(--u));height:calc(40*var(--u))}
 #hud .hudctl #btnPause.primary{width:calc(96*var(--u));height:calc(96*var(--u))}
 #hud .hudctl #btnPause.primary svg{width:calc(48*var(--u));height:calc(48*var(--u))}
+/* Playback speed column on the right edge, under the top row: faster, the speed (1×) with its name, slower */
+.hudspd{position:absolute;top:calc(10px + env(safe-area-inset-top,0px) + 86*var(--u));right:max(12px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;align-items:center;gap:calc(10*var(--u))}
+.hudspd > *{pointer-events:auto}
+#hud .hudspd .ico{width:calc(72*var(--u));height:calc(72*var(--u))}
+#hud .hudspd .ico svg{width:calc(34*var(--u));height:calc(34*var(--u))}
+.hudspd .spd{display:flex;flex-direction:column;align-items:center;gap:calc(2*var(--u));min-width:calc(88*var(--u));
+  background:var(--panel);border:2px solid var(--border);border-radius:var(--radius);padding:calc(8*var(--u)) calc(8*var(--u))}
+.hudspd .spd svg{width:calc(30*var(--u));height:calc(30*var(--u));color:var(--accent)}
+.hudspd .spd b{font-size:calc(30*var(--u));font-weight:900;font-variant-numeric:tabular-nums;line-height:1.1}
+.hudspd .spd small{font-size:calc(15*var(--u));font-weight:700;opacity:.8;text-align:center}
+.hudspd button:disabled{opacity:.35}
 /* Paused: the frozen field dims under the controls */
 #stage{transition:filter .2s}
 body.paused #stage{filter:brightness(.55) saturate(.8)}
