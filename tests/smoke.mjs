@@ -851,6 +851,10 @@ try {
     assert.equal(await mp.evaluate(() => window.__sn.recording), true, 'the end card is still being filmed');
     await mp.waitForFunction(() => !window.__sn.recording, null, { timeout: 8000 });
     await mp.waitForFunction(() => !document.querySelector('#results .qvcard').hidden);
+    { // The self-view window floats over every screen where the child left it; drag it to the bottom-left corner first.
+      const c = await mp.locator('#cam').boundingBox(), vp = mp.viewportSize();
+      if (c){ await mp.mouse.move(c.x + c.width / 2, c.y + c.height / 2); await mp.mouse.down();
+        await mp.mouse.move(c.width / 2 + 4, vp.height - c.height / 2 - 4, { steps: 8 }); await mp.mouse.up(); } }
     await mp.click('#results .qvcard');
     assert.equal(await mp.locator('#vcard').isVisible(), true);
     await mp.waitForFunction(() => document.querySelector('#vcVideo').readyState >= 1, null, { timeout: 10000 });
