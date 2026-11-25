@@ -118,9 +118,13 @@ try {
   await page.click('#btnNewOk');
   await visible('#step3');
   assert.equal(await sn(() => window.__sn.nav), 'newPlayer');
-  assert.equal(await page.locator('#introDots i').count(), 3);
-  await page.click('#btnIntroNext');
-  await page.click('#btnIntroNext');
+  log('the first note: a wrong key only wobbles, the right one shows the stars and Let\'s play');
+  assert.equal(await page.locator('#firstNote .fnkey').count(), 5);
+  assert.equal(await page.isHidden('#btnIntroNext'), true, 'no Let\'s play before the note');
+  await page.locator('#firstNote .fnkey[data-m="60"]').dispatchEvent('pointerdown');
+  assert.equal(await page.locator('#firstNote .fn.done').count(), 0, 'a wrong key does not finish');
+  await page.keyboard.press('KeyD');
+  await page.locator('#firstNote .fn.done').waitFor();
   assert.equal(await page.isHidden('#btnIntroSkip'), true);
   await page.click('#btnIntroNext');
   await visible('#home');
@@ -152,6 +156,13 @@ try {
   assert.equal(await page.locator('#levels .tile').nth(0).getAttribute('data-current'), '1');
   assert.equal(await page.locator('#levels .tile').nth(0).getAttribute('aria-pressed'), 'true');
 
+  log('levels open one by one by default: only wood is open');
+  assert.equal(await sn(() => window.__sn.db.profiles[0].opts.lockLevels), true);
+  assert.equal(await page.locator('#levels .tile.locked').count(), 4, 'every level above wood is locked');
+  // The rest of the run picks levels freely, as a parent can allow.
+  await sn(() => { window.__sn.db.profiles[0].opts.lockLevels = false; return window.__sn.save(); });
+  await page.locator('#songs button').nth(1).click(); await page.locator('#songs button').nth(0).click();
+
   log('switching the song selects that song\'s current level');
   await sn(() => { window.__sn.db.profiles[0].prog.birthday.level = 2; });
   await page.locator('#levels .tile').nth(1).click();
@@ -182,7 +193,7 @@ try {
 
   log('home: no separate length row; every level tile shows its default length');
   assert.equal(await page.locator('#parts').count(), 0);
-  assert.deepEqual(await page.locator('#levels .tile').evaluateAll(t => t.map(b => b.dataset.part)), ['short', 'half', 'full', 'full', 'full']);
+  assert.deepEqual(await page.locator('#levels .tile').evaluateAll(t => t.map(b => b.dataset.part)), ['short', 'full', 'half', 'full', 'full']);
 
   log('parent settings: songs x levels table, a cell changes how much of the song that level plays');
   await page.click('#btnSettings');
@@ -518,10 +529,10 @@ try {
   await sn(() => { const el = document.querySelector('#sTempo'); el.value = 130; el.dispatchEvent(new Event('input')); });
   assert.equal(await sn(() => window.__sn.db.profiles[0].opts.tempo), 130);
   await page.click('#btnSetClose');
-  await page.locator('#levels button').nth(1).click({ force: true });   // the current level tile bobs, so it is never "stable"
+  await page.locator('#levels button').nth(2).click({ force: true });   // iron, the first timed level; the current level tile bobs, so it is never "stable"
   await page.click('#btnSettings');
   await page.click('#btnSetClose');
-  assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 1, 'a level picked by hand survives closing settings');
+  assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 2, 'a level picked by hand survives closing settings');
   await page.click('#btnPlay');
   await page.waitForFunction(() => window.__sn.state === 'playing' && !window.__sn.game.wait);
 
@@ -574,7 +585,7 @@ try {
   await page.locator('#results').waitFor({ state: 'visible', timeout: 30000 });
   assert.equal(await page.locator('#resPct').textContent(), '0%');
   assert.equal(await sn(() => window.__sn.game.notes.every(n => n.missed)), true);
-  assert.equal(await sn(() => window.__sn.db.profiles[0].hist['1:half'].length), 1);
+  assert.equal(await sn(() => window.__sn.db.profiles[0].hist['2:half'].length), 1);
   const r0 = await resultsButtons();
   assert.deepEqual(r0.primaries, ['btnMain'], '0 stars: one primary');
   assert.equal(r0.go, 'again');

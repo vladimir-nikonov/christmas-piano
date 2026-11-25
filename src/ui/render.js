@@ -1,7 +1,8 @@
 // Canvas drawing: falling notes, keyboard, effects, count-in.
 
 import { letterFor } from '../core/keymap.js';
-import { PC_COLOR } from '../core/music.js';
+import { noteColor } from '../core/music.js';
+import { cuesFor } from '../core/levels.js';
 import { fingerFor } from '../core/songs.js';
 import { tx } from '../i18n/index.js';
 import { opts } from '../data/storage.js';
@@ -118,6 +119,9 @@ const decay = (at, ms) => at ? Math.max(0, 1 - (performance.now() - at) / ms) : 
 const wobble = d => d && !reducedMotion ? Math.sin((1 - d) * 16) * 4 * U * d : 0;    // small sideways shake, fading out; none with reduced motion
 // What the cues point at this frame: the expected note while waiting, or briefly after a wrong note (nudge). Read by the smoke test.
 export const focus = { key: null, midi: null, waiting: false, nudge: 0 };
+// The cues the running level shows this frame (src/core/levels.js); read by the smoke test.
+export let cue = cuesFor(-1, {}, true);
+const colOf = midi => noteColor(midi, cue.colors);
 function updateFocus(){
   const n = G && state === 'playing' && G.wait && G.waiting ? nextUnhit() : null;
   const nd = G && state === 'playing' && fx.nudge ? decay(fx.nudge.at, NUDGE_MS) : 0;
@@ -128,7 +132,7 @@ function updateFocus(){
 // Soft column glow over the expected note's lane, from the top down to the hit line, with outlined edges (shape, not only colour).
 function laneGlow(now){
   if (focus.key === null) return;
-  const k = keys[focus.key], col = PC_COLOR[focus.midi % 12];
+  const k = keys[focus.key], col = colOf(focus.midi);
   const a = Math.min(1, (focus.waiting ? 0.3 + 0.06 * pulse(now, 4) : 0) + 0.35 * focus.nudge);
   if (a <= 0) return;
   const g = ctx.createLinearGradient(0, 0, 0, hitY); g.addColorStop(0, col + '00'); g.addColorStop(1, col);
@@ -145,6 +149,7 @@ export function draw(now, dt){
   if (!reducedMotion) drawn.flakes = drawAmbient(ctx, THK, TH, now, dt, W, hitY, U);
   const o = opts(), pps = G ? (hitY - topY) / G.look : 1, rad = Math.min(TH.radius, 16) * U;
   ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hitY + 2); ctx.clip();
+  cue = cuesFor(G ? G.level : -1, o, !G || G.demo);
   updateFocus();
   if (G && (state === 'playing' || state === 'demo' || state === 'results')){
     const nu = G.wait ? nextUnhit() : null;
@@ -155,7 +160,7 @@ export function draw(now, dt){
       if (yt > hitY || yb < -20) continue;
       if (n.hit) yb = Math.min(yb, hitY);
       if (yb - yt < 2) continue;
-      const col = n.missed ? TH.border : PC_COLOR[n.midi % 12];
+      const col = n.missed ? TH.border : colOf(n.midi);
       const w = Math.round(Math.min(115 * U, k.w * (k.black ? 0.9 : 0.82))), x = Math.round(k.x + (k.w - w) / 2);
       const headH = Math.min(yb - yt, 56 * U);
       ctx.globalAlpha = n.missed ? 0.45 : 1;
@@ -167,7 +172,7 @@ export function draw(now, dt){
         const gp = (4 + 2 * pulse(now, 6) + (reducedMotion ? 0 : 6 * focus.nudge)) * U; // reduced motion: the nudge brightens, the outline does not grow
         rrect(x - gp, yb - headH - gp, w + gp * 2, headH + gp * 2, rad + gp); ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 3 * U; ctx.stroke();
       }
-      if (o.labels !== 'none' && headH > 26 * U && !n.hit){
+      if (cue.names && headH > 26 * U && !n.hit){
         ctx.fillStyle = 'rgba(18,24,46,.92)'; ctx.font = '800 ' + Math.round(Math.min(30 * U, w * 0.3)) + 'px ' + LBL();
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(noteName(n.midi), x + w / 2, yb - headH / 2 + 1);
       }
@@ -242,7 +247,7 @@ function fingerHint(m, midi, cx, top, h, s, tag){
   const f = G && fingerFor(G.song, midi); if (!f) return;
   handHint.key = m; handHint.hand = f.hand; handHint.finger = f.finger;
   const gap = 3 * U, ht = top + (h - s * 1.2 - gap - tag) / 2;
-  drawHand(cx, ht, s, f.hand, f.finger, PC_COLOR[midi % 12]);
+  drawHand(cx, ht, s, f.hand, f.finger, colOf(midi));
   const ty = ht + s * 1.2 + gap + tag / 2, tw = tag * 1.3;
   rrect(cx - tw / 2, ty - tag / 2, tw, tag, tag / 2); ctx.fillStyle = '#182335'; ctx.fill();
   ctx.fillStyle = '#FFFFFF'; ctx.font = '900 ' + Math.round(tag * 0.72) + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -292,13 +297,13 @@ function keyDecor(x, y, w, h, black, now){
   if (black) sparkle(x + w / 2, y + h - 14 * U, 5 * U, 'rgba(255,217,141,' + (0.55 + 0.35 * Math.sin(now * 3 + x)) + ')');
 }
 function drawKeyboard(now){
-  const nowMs = performance.now(), o = opts(), kr = Math.min(TH.radius, 12) * U;
+  const nowMs = performance.now(), kr = Math.min(TH.radius, 12) * U;
   ctx.fillStyle = KEY_COLORS[THK].bed; ctx.fillRect(0, kbTop, W, kbH);
   let hint = null; const fk = focus.key, fp = focus.waiting ? 1 : 0;
-  if (o.hint && G && state === 'playing'){ const n = nextUnhit(); if (n && n.t - G.time < G.beat * 1.2){ hint = keyFor(n.midi); } }
+  if (cue.key && G && state === 'playing'){ const n = nextUnhit(); if (n && n.t - G.time < G.beat * 1.2){ hint = keyFor(n.midi); } }
   handHint.key = handHint.hand = handHint.finger = null; let hand = null;
   // The hand shows as soon as the next note appears at the top of the field, so the child can get the finger ready.
-  const hn = o.hands !== false && G && (state === 'playing' || state === 'demo') ? nextUnhit() : null;
+  const hn = cue.hand && G && (state === 'playing' || state === 'demo') ? nextUnhit() : null;
   const handKey = hn && hn.t - G.time < G.look ? keyFor(hn.midi) : null;
   const drawKey = m => {
     const sd = decay(fx.soft[m], SOFT_MS);
@@ -307,8 +312,8 @@ function drawKeyboard(now){
     rrect(x, kbTop + 2, w, h, kr); ctx.fillStyle = keyFill(k.black, kbTop + 2, h); ctx.fill();
     ctx.save(); rrect(x, kbTop + 2, w, h, kr); ctx.clip();
     keyDecor(x, kbTop + 2, w, h, k.black, now);
-    if (m === fk){ ctx.globalAlpha = Math.min(1, fp * (0.5 + 0.15 * pulse(now, 6)) + 0.4 * focus.nudge); ctx.fillStyle = PC_COLOR[focus.midi % 12]; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
-    else if (m === hint){ ctx.globalAlpha = reducedMotion ? 0.5 : 0.45 + 0.2 * Math.sin(now * 7); ctx.fillStyle = PC_COLOR[m % 12]; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
+    if (m === fk){ ctx.globalAlpha = Math.min(1, fp * (0.5 + 0.15 * pulse(now, 6)) + 0.4 * focus.nudge); ctx.fillStyle = colOf(focus.midi); ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
+    else if (m === hint){ ctx.globalAlpha = reducedMotion ? 0.5 : 0.45 + 0.2 * Math.sin(now * 7); ctx.fillStyle = colOf(m); ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
     if (fx.heardKey[m] && nowMs - fx.heardKey[m] < 160 && !fa){ ctx.fillStyle = 'rgba(120,140,220,.4)'; ctx.fillRect(x, kbTop, w, h + 2); }
     if (fa){ ctx.globalAlpha = fa; ctx.fillStyle = fl.c; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
     ctx.restore();
@@ -318,10 +323,11 @@ function drawKeyboard(now){
     // Once the computer keyboard is used, show which letter plays each key.
     const kl = fx.kbLetters && letterFor(m);
     if (kl){ ctx.fillStyle = k.black ? 'rgba(255,255,255,.8)' : 'rgba(24,35,53,.55)'; ctx.font = '700 ' + Math.round(Math.min(18 * U, w * 0.36)) + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(kl, x + w / 2, kbTop + 2 + (k.black ? h - 24 * U : 8 * U)); }
-    if (!k.black){
+    // The colour tab with the note name, as far as the level still shows colours or names.
+    if (!k.black && (cue.colors || cue.names)){
       const cx = x + w / 2, sh = Math.round(Math.min(30 * U, h * 0.16)), sw = Math.round(w * 0.86), cy = kbTop + h - sh - 6 * U;
-      rrect(cx - sw / 2, cy, sw, sh, Math.min(kr, sh / 2)); ctx.fillStyle = PC_COLOR[m % 12]; ctx.fill();
-      if (o.labels !== 'none'){ ctx.fillStyle = '#182335'; ctx.font = '800 ' + Math.round(Math.min(24 * U, w * 0.24)) + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(noteName(m), cx, cy + sh / 2 + 1); }
+      rrect(cx - sw / 2, cy, sw, sh, Math.min(kr, sh / 2)); ctx.fillStyle = colOf(m); ctx.fill();
+      if (cue.names){ ctx.fillStyle = '#182335'; ctx.font = '800 ' + Math.round(Math.min(24 * U, w * 0.24)) + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(noteName(m), cx, cy + sh / 2 + 1); }
     }
   };
   for (let m = LO; m <= HI; m++) if (!isBlack(m)) drawKey(m);

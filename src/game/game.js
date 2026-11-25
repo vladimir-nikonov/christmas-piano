@@ -1,8 +1,8 @@
 // Game session: timing, judging played notes, results; the main animation loop.
 
 import { tone, tick } from '../audio/synth.js';
-import { LEVELS } from '../core/levels.js';
-import { PC_COLOR } from '../core/music.js';
+import { LEVELS, cuesFor } from '../core/levels.js';
+import { noteColor } from '../core/music.js';
 import { SONGS, songKey, bestKey } from '../core/songs.js';
 import { HIST_MAX, save, P, opts, dev, prog, partFor } from '../data/storage.js';
 import { E, S, dispatch, is, flow, view as state, paused } from '../core/flow.js';
@@ -37,9 +37,13 @@ export function startGame(demo){
         hits:0, perfect:0, finished:false, waiting:false, resumeIn:0, resumeBeat:null,
         minTempo: o.tempo };
   $('#micPill').hidden = demo || !!dev().touch;
+  // The hands switch only where the level still shows the hand.
+  $('#btnHands').hidden = !demo && !L.cues.hand;
   updateHud(); updateHandsBtn(); requestWake();
 }
 export const nextUnhit = () => G.notes.find(n => !n.hit && !n.missed);
+// The hit flash follows the level's colour cue, so Diamond stays in one colour.
+const hitCol = m => noteColor(m, cuesFor(G.level, opts(), G.demo).colors);
 const same = (a, b) => opts().anyOct ? (a % 12) === (b % 12) : a === b;
 export const keyFor = m => (m >= LO && m <= HI) ? m : LO + ((m % 12) + 12) % 12;
 
@@ -62,7 +66,7 @@ export function onPlayed(midi, atMs, source){
 const GRADE = { perfect:{ icon:'check', size:60 }, good:{ icon:'check', size:50 }, ok:{ icon:'check', size:44 } };
 function registerHit(n, grade){
   n.hit = true; n.grade = grade; G.hits++; if (grade === 'perfect') G.perfect++;
-  const km = keyFor(n.midi), k = keys[km], col = PC_COLOR[n.midi % 12];
+  const km = keyFor(n.midi), k = keys[km], col = hitCol(n.midi);
   fx.keyFlash[km] = { c: col, at: performance.now() };
   burst(k.x + k.w / 2, hitY, col, grade === 'perfect' ? 20 : 12);
   const gr = GRADE[grade];
@@ -148,8 +152,8 @@ function step(ts){
     }
     if (G.time < 0){ const b = Math.floor(G.time / G.beat); if (b !== G.lastTickBeat && -b <= G.meter){ G.lastTickBeat = b; tick(-b === G.meter); } }
     if (G.demo){
-      for (const n of G.notes) if (!n.hit && G.time >= n.t){ n.hit = true; tone(n.midi, n.d); fx.keyFlash[n.midi] = { c: PC_COLOR[n.midi % 12], at: performance.now() };
-        burst(keys[n.midi].x + keys[n.midi].w / 2, hitY, PC_COLOR[n.midi % 12], 8); updateHud(); }
+      for (const n of G.notes) if (!n.hit && G.time >= n.t){ n.hit = true; tone(n.midi, n.d); fx.keyFlash[n.midi] = { c: hitCol(n.midi), at: performance.now() };
+        burst(keys[n.midi].x + keys[n.midi].w / 2, hitY, hitCol(n.midi), 8); updateHud(); }
     } else if (!G.wait){
       for (const n of G.notes) if (!n.hit && !n.missed && G.time > n.t + G.tol + dev().latency / 1000){ n.missed = true; updateHud(); }
     }

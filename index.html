@@ -95,7 +95,7 @@
   </div>
 </div>
 
-<!-- New player wizard: 1) how the game looks and speaks (language + theme), 2) avatar and name, 3) a short how-to-play intro that can be skipped.
+<!-- New player wizard: 1) how the game looks and speaks (language + theme), 2) avatar and name, 3) the first note to play (it can be skipped).
      A panel over the theme picture, like the popups; Back sits on the panel's top-left corner. -->
 <div class="screen" id="newp" hidden>
   <div class="panel popp newpp">
@@ -112,8 +112,7 @@
       <button class="b primary go" id="btnNewOk" data-ta="next" data-icon="next"></button>
     </div>
     <div class="wiz intro" id="step3" hidden>
-      <div class="islide" aria-live="polite"><div class="ipic" id="introPic"></div><h2 id="introTitle"></h2><p id="introText"></p></div>
-      <div class="idots" id="introDots"></div>
+      <div class="islide"><div id="firstNote"></div><p data-t="introFall"></p></div>
       <div class="btnrow">
         <button class="b skip" id="btnIntroSkip"><span data-t="introSkip"></span></button>
         <button class="b primary go" id="btnIntroNext" data-ta="next" data-icon="next"></button>

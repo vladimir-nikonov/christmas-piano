@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SONGS, SONG_KEYS, PART_KEYS, bestKey } from '../../src/core/songs.js';
-import { LEVELS } from '../../src/core/levels.js';
+import { LEVELS, cuesFor } from '../../src/core/levels.js';
 import { I18N, LANGS } from '../../src/i18n/index.js';
 import { NOTE_NATIVE, PC_COLOR } from '../../src/core/music.js';
 
@@ -32,12 +32,29 @@ test('best-score keys stay compatible with saved progress', () => {
   assert.equal(bestKey('birthday', 2, 'full'), 'birthday:2:full');
 });
 
-test('levels get faster and stricter', () => {
+test('levels never get easier, and every level adds one new step', () => {
+  const cueCount = L => Object.values(L.cues).filter(Boolean).length;
+  const len = L => ['short', 'half', 'full'].indexOf(L.part);
   for (let i = 1; i < LEVELS.length; i++) {
-    assert.ok(LEVELS[i].pct > LEVELS[i - 1].pct);
-    if (LEVELS[i - 1].tol != null) assert.ok(LEVELS[i].tol < LEVELS[i - 1].tol);
+    const a = LEVELS[i - 1], b = LEVELS[i];
+    assert.ok(b.pct >= a.pct, 'not slower');
+    assert.ok(!b.wait || a.wait, 'waiting only at the start');
+    if (a.tol != null) assert.ok(b.tol < a.tol, 'stricter timing');
+    assert.ok(Object.keys(b.cues).every(k => a.cues[k] || !b.cues[k]), 'a faded cue does not come back');
+    // One new step: fewer cues, longer song, the notes stop waiting, or faster.
+    assert.ok(cueCount(b) < cueCount(a) || len(b) > len(a) || (a.wait && !b.wait) || b.pct > a.pct, 'level ' + i + ' adds a step');
   }
   assert.equal(LEVELS[0].wait, true);
+  assert.deepEqual(LEVELS[0].cues, { hand: true, key: true, names: true, colors: true }, 'wood shows every cue');
+  assert.equal(Object.values(LEVELS.at(-1).cues).some(Boolean), false, 'diamond shows only the notes');
+});
+
+test('the options can hide a cue but never bring back one the level faded', () => {
+  const o = { hands: true, hint: true, labels: 'native' };
+  assert.deepEqual(cuesFor(0, o), { hand: true, key: true, names: true, colors: true });
+  assert.deepEqual(cuesFor(4, o), { hand: false, key: false, names: false, colors: false });
+  assert.deepEqual(cuesFor(0, { hands: false, hint: false, labels: 'none' }), { hand: false, key: false, names: false, colors: true });
+  assert.deepEqual(cuesFor(4, o, true), { hand: true, key: true, names: true, colors: true }, 'the demo shows every cue');
 });
 
 test('every UI string exists in all five languages', () => {

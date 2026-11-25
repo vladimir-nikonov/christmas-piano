@@ -1,12 +1,28 @@
 // Difficulty levels. Pure data.
-
-// Levels: % of the song's original tempo and timing window (seconds).
-// Even the first level stays at 70% or more so the tune is still recognisable.
+//
+// Each level teaches one new skill, and the help fades as the child climbs:
+//   Wood     waits for each note, the start of the song, every cue (hand and finger, lit key, note names, colours)
+//   Stone    waits for each note, the whole song, no hand
+//   Iron     notes keep moving (timed), slow, half the song, the lit key and colours
+//   Gold     timed, faster, the whole song, colours only
+//   Diamond  timed at the original tempo, the whole song, only the notes
+// pct: % of the song's original tempo (70% or more, so the tune stays recognisable).
+// tol: timing window in seconds on timed levels (null on waiting levels).
 // part: how much of the song the level plays by default (a parent can change it per song and level).
+// cues: the help the level shows. hand = fingering hand on the key, key = the next key lights up,
+// names = note names on the notes and keys, colours = each note in its own colour (otherwise one neutral colour).
 export const LEVELS = [
-  { mat:'wood',    name:'Wood',    wait:true,  pct:70,  tol:null, part:'short' },
-  { mat:'stone',   name:'Stone',   wait:false, pct:78,  tol:0.50, part:'half' },
-  { mat:'iron',    name:'Iron',    wait:false, pct:86,  tol:0.35, part:'full' },
-  { mat:'gold',    name:'Gold',    wait:false, pct:93,  tol:0.25, part:'full' },
-  { mat:'diamond', name:'Diamond', wait:false, pct:100, tol:0.18, part:'full' }
+  { mat:'wood',    name:'Wood',    wait:true,  pct:70,  tol:null, part:'short', cues:{ hand:true,  key:true,  names:true,  colors:true } },
+  { mat:'stone',   name:'Stone',   wait:true,  pct:70,  tol:null, part:'full',  cues:{ hand:false, key:true,  names:true,  colors:true } },
+  { mat:'iron',    name:'Iron',    wait:false, pct:70,  tol:0.50, part:'half',  cues:{ hand:false, key:true,  names:false, colors:true } },
+  { mat:'gold',    name:'Gold',    wait:false, pct:85,  tol:0.35, part:'full',  cues:{ hand:false, key:false, names:false, colors:true } },
+  { mat:'diamond', name:'Diamond', wait:false, pct:100, tol:0.25, part:'full',  cues:{ hand:false, key:false, names:false, colors:false } }
 ];
+const ALL = Object.freeze({ hand:true, key:true, names:true, colors:true });
+// The cues shown right now. The level decides; the player's options can only hide a cue, never bring back one the
+// level has faded (labels 'none' hides names, hint off hides the lit key, hands off hides the hand).
+// The listen-only demo and home (no level running) show every cue the options allow.
+export function cuesFor(level, o, demo){
+  const c = !demo && LEVELS[level] ? LEVELS[level].cues : ALL;
+  return { hand: c.hand && o.hands !== false, key: c.key && !!o.hint, names: c.names && o.labels !== 'none', colors: c.colors };
+}

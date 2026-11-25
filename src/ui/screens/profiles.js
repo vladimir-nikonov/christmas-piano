@@ -9,7 +9,7 @@ import { px, invalidateBg } from '../canvas.js';
 import { icon } from '../icons.js';
 import { updateQuick, setLang } from '../lang.js';
 import { flagSVG } from '../flags.js';
-import { INTRO } from '../intro.js';
+import { mountFirstNote } from '../intro.js';
 import { goHome } from './home.js';
 import { THEMES, THEME_KEYS } from '../theme-data.js';
 import { applyTheme, themePreview } from '../theme.js';
@@ -54,9 +54,8 @@ function deletePlayer(id){
   if (!db.profiles.length){ goHome(); return; }
   applyTheme(P().theme); invalidateBg(); updateQuick(); renderProfiles();
 }
-// New player wizard: 1) language and theme, 2) avatar and name (the player is created here), 3) the how-to-play intro.
+// New player wizard: 1) language and theme, 2) avatar and name (the player is created here), 3) the first note to play.
 export let pickAv = 0, pickTheme = 'pixel', wizAt = 1;
-let introAt = 0;
 export function openNewProfile(){
   if (!dispatch(E.NEW_PLAYER)) return;
   const used = new Set(db.profiles.map(p => p.avatar));
@@ -88,35 +87,34 @@ export function wizStep(n){
       b.onclick = () => { pickAv = i; press(box, b); box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; box.appendChild(b); });
   } else renderIntro();
 }
+// The first note: Skip until it is played, then the big "Let's play" button (it goes home, nothing starts by itself).
+let unmountIntro = null;
 function renderIntro(){
-  const [tk, xk, pic] = INTRO[introAt], last = introAt === INTRO.length - 1;
-  $('#introPic').innerHTML = pic();
-  $('#introTitle').textContent = tx(tk); $('#introText').textContent = tx(xk);
-  $('#introDots').innerHTML = INTRO.map((_, i) => '<i class="' + (i === introAt ? 'on' : '') + '"></i>').join('');
-  $('#btnIntroSkip').hidden = last;
-  const go = $('#btnIntroNext');
-  go.innerHTML = last ? icon('play', { fill: true }) + '<span></span>' : icon('next');
-  if (last) go.querySelector('span').textContent = tx('introGo');
-  go.classList.toggle('wide', last);
-  go.setAttribute('aria-label', last ? tx('introGo') : tx('next'));
+  if (unmountIntro) unmountIntro();
+  const go = $('#btnIntroNext'), skip = $('#btnIntroSkip');
+  go.innerHTML = icon('play', { fill: true }) + '<span></span>'; go.querySelector('span').textContent = tx('introGo');
+  go.classList.add('wide'); go.setAttribute('aria-label', tx('introGo'));
+  go.hidden = true; skip.hidden = false;
+  unmountIntro = mountFirstNote($('#firstNote'), () => { skip.hidden = true; go.hidden = false; });
 }
+function leaveIntro(){ if (unmountIntro){ unmountIntro(); unmountIntro = null; } goHome(); }
 // The intro again on its own (from parent settings), for the current player; it ends on home like the first time.
 export function openIntro(){
   const p = P(); if (!p || !dispatch(E.NEW_PLAYER)) return false;
   pickTheme = p.theme; applyTheme(p.theme); updateQuick();
-  introAt = 0; wizStep(3); return true;
+  wizStep(3); return true;
 }
 $('#btnLookNext').onclick = () => wizStep(2);
 $('#newName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnNewOk').click(); });
 $('#btnNewOk').onclick = () => {
   const p = { id: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1e4), name: $('#newName').value.trim(), avatar: pickAv, theme: pickTheme, lang: LANG, level:0, streak:0, prog: freshProg(), best:{}, hist:{}, top:{}, sel:{ level:0, part:'short' }, opts: Object.assign({}, DEF_OPTS) };
   db.profiles.push(p); db.current = p.id; save();
-  $('#newName').blur(); introAt = 0; wizStep(3);
+  $('#newName').blur(); wizStep(3);
 };
-$('#btnIntroNext').onclick = () => { if (introAt < INTRO.length - 1){ introAt++; renderIntro(); } else goHome(); };
-$('#btnIntroSkip').onclick = () => goHome();
+$('#btnIntroNext').onclick = leaveIntro;
+$('#btnIntroSkip').onclick = leaveIntro;
 // Back: intro -> home (the player already exists), name -> look, look -> player list
-$('#btnNewBack').onclick = () => { if (wizAt === 3) goHome(); else if (wizAt === 2) wizStep(1); else { if (P()) applyTheme(P().theme); openProfiles(); } };
+$('#btnNewBack').onclick = () => { if (wizAt === 3) leaveIntro(); else if (wizAt === 2) wizStep(1); else { if (P()) applyTheme(P().theme); openProfiles(); } };
 $('#btnWho').onclick = openProfiles;
 // Spatial: the player list expands from the avatar. The capture listener reads the avatar's place before the
 // handler hides home; the second listener runs after it and animates only if the list really opened.
