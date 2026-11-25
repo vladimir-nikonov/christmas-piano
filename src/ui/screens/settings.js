@@ -14,7 +14,7 @@ import { icon } from '../icons.js';
 import { setScreenInput } from '../inputmode.js';
 import { setLang } from '../lang.js';
 import { goHome } from './home.js';
-import { openMe } from './profiles.js';
+import { openMe, openIntro } from './profiles.js';
 
 /* Parent settings: a panel over home (the navigation state Settings) */
 const bindRange = (id, out, get, set, fmt) => { const el = $(id); el.value = get(); $(out).textContent = fmt(+el.value); el.oninput = () => { set(+el.value); $(out).textContent = fmt(+el.value); save(); }; };
@@ -145,5 +145,6 @@ $('#btnWipeYes').onclick = async () => {
 };
 // The child's page belongs to the player chosen in the panel, who then also becomes the one playing.
 $('#btnKidPage').onclick = () => { const p = sp(); if (p && db.current !== p.id){ db.current = p.id; save(); } openMe(); };
+$('#btnIntro').onclick = () => { const p = sp(); if (p && db.current !== p.id){ db.current = p.id; save(); } openIntro(); };
 $('#btnSettings').onclick = () => { if (openSettings()) $('#settings').scrollTop = 0; };
 $('#btnSetClose').onclick = goHome;

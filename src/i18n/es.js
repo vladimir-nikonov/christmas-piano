@@ -147,4 +147,7 @@ export default {
   introPlay: "Toca un piano de verdad: la tableta escucha. O pulsa las teclas en la pantalla.",
   introStarsT: "Gana estrellas",
   introStars: "Toca limpio para ganar hasta tres estrellas y abrir nuevos niveles.",
+  sIntro: "Introducción",
+  sIntroBtn: "Ver la introducción otra vez",
+  sIntroHelp: "Las diapositivas de «cómo jugar» del primer inicio.",
 };

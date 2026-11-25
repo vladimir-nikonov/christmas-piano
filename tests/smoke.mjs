@@ -134,6 +134,17 @@ try {
   assert.ok((await page.locator('#homeHint').textContent()).length > 3);
   assert.equal(await page.locator('#homeHint .hp svg').count(), 1, 'the ▶ in the text is the Play icon');
 
+  log('parent settings: show the intro again, it ends on home');
+  await page.click('#btnSettings');
+  await visible('#settings');
+  await page.click('#btnIntro');
+  await visible('#step3');
+  assert.equal(await page.isHidden('#settings'), true);
+  assert.equal(await page.isHidden('#btnNewBack'), true);
+  await page.click('#btnIntroSkip');
+  await visible('#home');
+  assert.equal(await sn(() => window.__sn.db.profiles.length), 1);
+
   log('home: one primary button, the current level is marked and selected');
   assert.equal(await page.locator('#home .b.primary:visible').count(), 1);   // the hidden mic state has its own Try again
   assert.equal(await page.locator('#levels .tile.cur').count(), 1);

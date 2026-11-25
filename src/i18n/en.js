@@ -147,4 +147,7 @@ export default {
   introPlay: "Play on a real piano — the tablet listens. Or tap the keys on the screen.",
   introStarsT: "Collect stars",
   introStars: "Play cleanly to get up to three stars and open new levels.",
+  sIntro: "Intro",
+  sIntroBtn: "Show the intro again",
+  sIntroHelp: "The short how-to-play slides from the first start.",
 };

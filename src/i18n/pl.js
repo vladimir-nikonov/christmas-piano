@@ -147,4 +147,7 @@ export default {
   introPlay: "Graj na prawdziwym pianinie — tablet słucha. Albo dotykaj klawiszy na ekranie.",
   introStarsT: "Zbieraj gwiazdki",
   introStars: "Graj czysto, by zdobyć do trzech gwiazdek i otwierać nowe poziomy.",
+  sIntro: "Wprowadzenie",
+  sIntroBtn: "Pokaż wprowadzenie jeszcze raz",
+  sIntroHelp: "Krótkie slajdy „jak grać” z pierwszego uruchomienia.",
 };

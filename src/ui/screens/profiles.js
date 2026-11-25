@@ -75,6 +75,12 @@ function renderIntro(){
   go.classList.toggle('wide', last);
   go.setAttribute('aria-label', last ? tx('introGo') : tx('next'));
 }
+// The intro again on its own (from parent settings), for the current player; it ends on home like the first time.
+export function openIntro(){
+  const p = P(); if (!p || !dispatch(E.NEW_PLAYER)) return false;
+  pickTheme = p.theme; applyTheme(p.theme); updateQuick();
+  introAt = 0; wizStep(3); return true;
+}
 $('#btnLookNext').onclick = () => wizStep(2);
 $('#newName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnNewOk').click(); });
 $('#btnNewOk').onclick = () => {
