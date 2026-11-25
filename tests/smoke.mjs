@@ -292,6 +292,13 @@ try {
     await page.click('#btnQuit');
     await visible('#home');
   }
+  log('the Home button in the game HUD goes home in one tap, without the pause menu');
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => window.__sn.state === 'playing');
+  await page.click('#btnHudHome');
+  await visible('#home');
+  assert.equal(await sn(() => window.__sn.state), 'home');
+  assert.equal(await page.locator('#pause').isVisible(), false, 'the pause menu does not stay open');
   await page.waitForTimeout(100);
   assert.ok(await sn(() => history.length) <= histLen + 1, 'history entries do not accumulate');
   assert.equal(await sn(() => !!(history.state && history.state.sn)), false, 'no trap entry left on the home screen');

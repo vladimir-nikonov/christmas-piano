@@ -236,6 +236,12 @@ $('#btnPause').onclick = () => { if (is(S.PREVIEW)){ if (!can(E.HOME)) return; G
 $('#btnResume').onclick = () => { resumeGame(); };
 $('#btnRestart').onclick = () => { if (dispatch(E.REPLAY)) startGame(false); };
 $('#btnQuit').onclick = () => { if (is(S.PAUSED)) goHome(); };
+// Home straight from the game screen: a running game pauses first, then leaves through the same Paused -> Home path
+// as the pause menu; the listen-only preview just ends. Ignored while the game screen is still sliding in.
+$('#btnHudHome').onclick = () => {
+  if (is(S.PREVIEW)){ if (!can(E.HOME)) return; G.finished = true; goHome(); return; }
+  if (is(S.PAUSED) || pauseGame()) goHome();
+};
 $('#btnHome').onclick = goHome;
 // Replay / Next act only while the results are shown (the machine is in Results or LevelUp): a second tap would
 // otherwise read the game the first tap just started (Next would skip a level) or restart it.
