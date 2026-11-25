@@ -63,13 +63,22 @@ test('per-song progress is clamped and p.level is the highest song level', () =>
   assert.deepEqual(freshProg(), Object.fromEntries(SONG_KEYS.map(k => [k, { level: 0, streak: 0 }])));
 });
 
-test('levels open one by one only when the parent asks, per song', () => {
+test('levels open one by one by default, per song; a parent can open them all', () => {
   const [p] = normalizeDB({ profiles: [{ id: 'a', sel: { song: 'birthday', level: 0, part: 'short' }, prog: { jingle: { level: 3 }, birthday: { level: 1 } } }] }).profiles;
   assert.equal(prog(p).level, 1, 'selected song');
-  assert.equal(unlocked(p, 4), true, 'all levels open by default');
-  p.opts.lockLevels = true;
-  assert.equal(unlocked(p, 2), false);
+  assert.equal(unlocked(p, 2), false, 'locked by default');
   assert.equal(unlocked(p, 2, 'jingle'), true);
+  p.opts.lockLevels = false;
+  assert.equal(unlocked(p, 4), true, 'all open when the parent turns the locks off');
+});
+
+test('profiles saved before the lock default get the locks once; a later parent choice is kept', () => {
+  const [old] = normalizeDB({ profiles: [{ id: 'a', opts: { lockLevels: false, tempo: 90 } }] }).profiles;
+  assert.equal(old.opts.lockLevels, true);
+  assert.equal(old.opts.tempo, 90);
+  old.opts.lockLevels = false;
+  const [again] = normalizeDB({ profiles: [old] }).profiles;
+  assert.equal(again.opts.lockLevels, false);
 });
 
 test('song length: each level has a default, a parent override is kept per song and level', () => {

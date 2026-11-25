@@ -7,7 +7,9 @@ import { THEMES } from '../ui/theme-data.js';
 
 /* ================= Storage: per-child profiles + device settings ================= */
 const DB_KEY = 'snezhnye-noty-v2';
-export const DEF_OPTS = { tempo:100, tolMs:0, labels:'native', anyOct:true, hint:true, hands:true, lockLevels:false };
+// lockLevels: levels open one by one (on by default). lockV marks profiles that already got that default, so a
+// parent who later turns the locks off keeps that choice; profiles saved before it get the locks once.
+export const DEF_OPTS = { tempo:100, tolMs:0, labels:'native', anyOct:true, hint:true, hands:true, lockLevels:true, lockV:1 };
 export const DEF_DEV = { latency:80, sens:5, touch:false };
 // Primary store: IndexedDB (db 'snezhnye-noty', store 'kv', key 'db'). localStorage[DB_KEY] is the legacy
 // store, migrated once on first run and used as a fallback when IndexedDB is unavailable or a write fails.
@@ -19,7 +21,7 @@ export function normalizeDB(d){
   const r = freshDB();
   if (d && typeof d === 'object'){ Object.assign(r, d); r.device = Object.assign({}, DEF_DEV, d.device); }
   r.profiles = Array.isArray(r.profiles) ? r.profiles.filter(p => p && typeof p === 'object' && typeof p.id === 'string' && p.id) : [];
-  r.profiles.forEach(p => { p.theme = THEMES[p.theme] ? p.theme : 'pixel'; p.opts = Object.assign({}, DEF_OPTS, p.opts); if (p.opts.labels === 'ru') p.opts.labels = 'native'; if (p.opts.labels === 'en') p.opts.labels = 'letters'; delete p.opts.unlockAll; p.sel = p.sel || { level:0, part:'short' }; p.best = p.best || {};
+  r.profiles.forEach(p => { p.theme = THEMES[p.theme] ? p.theme : 'pixel'; const lockOnce = !(p.opts && p.opts.lockV); p.opts = Object.assign({}, DEF_OPTS, p.opts); if (lockOnce){ p.opts.lockLevels = true; p.opts.lockV = 1; } if (p.opts.labels === 'ru') p.opts.labels = 'native'; if (p.opts.labels === 'en') p.opts.labels = 'letters'; delete p.opts.unlockAll; p.sel = p.sel || { level:0, part:'short' }; p.best = p.best || {};
     p.hist = normHist(p.hist); p.top = (p.top && typeof p.top === 'object' && !Array.isArray(p.top)) ? p.top : {};
     Object.keys(p.hist).forEach(k => { p.top[k] = Math.max(+p.top[k] || 0, ...p.hist[k].map(e => e.pct)); });
     p.name = typeof p.name === 'string' ? p.name : ''; p.level = Math.max(0, Math.floor(+p.level) || 0); p.streak = +p.streak || 0; p.avatar = Math.max(0, Math.floor(+p.avatar) || 0); p.len = normLen(p.len); normProg(p); });
