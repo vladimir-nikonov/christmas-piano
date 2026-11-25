@@ -411,6 +411,8 @@ body.paused #stage{filter:brightness(.55) saturate(.8)}
 .row select,.row input[type=text]{background:var(--bg);color:var(--text);border:2px solid var(--border);border-radius:min(calc(var(--radius) * .5),10px);padding:8px;font:inherit;font-weight:700}
 .row input[type=checkbox]{width:28px;height:28px;accent-color:var(--accent)}
 .txtbtn{font-size:14px;padding:8px 14px;border-radius:min(var(--radius),12px)}
+a.linkbtn{font-weight:800;color:inherit;text-decoration:none;justify-self:end;cursor:pointer}
+a.linkbtn:focus-visible{outline:4px solid var(--reward);outline-offset:3px}
 .txtbtn.danger{background:#6d2430;border-color:#a04050}
 .sheet h3.dangerhead{color:#e06070;margin-top:28px}
 .row.dangerzone{border:2px solid #a04050;border-radius:min(calc(var(--radius) * .5),10px);padding:10px 12px}

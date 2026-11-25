@@ -449,6 +449,10 @@ try {
   log('back up to a file and restore from it');
   await page.click('#btnSettings');
   await visible('#settings');
+  log('parent settings offer the printable key stickers as a PDF');
+  const [sdl] = await Promise.all([page.waitForEvent('download'), page.click('#lnkStickers')]);
+  assert.equal(sdl.suggestedFilename(), 'key-stickers.pdf');
+  assert.equal((await readFile(await sdl.path())).subarray(0, 5).toString(), '%PDF-');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#btnBackup')]);
   const file = join(await mkdtemp(join(tmpdir(), 'sn-smoke-')), dl.suggestedFilename());
   await dl.saveAs(file);
