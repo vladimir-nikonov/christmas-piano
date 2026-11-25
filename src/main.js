@@ -12,6 +12,7 @@ import { focus, drawn, handHint } from './ui/render.js';
 import { translateDom } from './ui/lang.js';
 import { renderHome, goHome } from './ui/screens/home.js';
 import { renderProfiles, wizAt, wizStep, renderMe } from './ui/screens/profiles.js';
+import { renderParty } from './ui/screens/party.js';
 import { showSplash } from './ui/splash.js';
 import { restoreCamera } from './ui/camwin.js';
 import { getCard, isRecording } from './record/recorder.js';
@@ -38,7 +39,7 @@ if (pageBuild && pageBuild !== BUILD){
 
 // Resize / rotation: recompute canvas and re-render screens whose pixel sizes depend on U
 let rsT = 0;
-function onResize(){ layout(); clearTimeout(rsT); rsT = setTimeout(() => { if (state === 'home') renderHome(); else if (state === 'profiles') renderProfiles(); else if (state === 'newp') wizStep(wizAt); else if (state === 'me') renderMe(); }, 120); }
+function onResize(){ layout(); clearTimeout(rsT); rsT = setTimeout(() => { if (state === 'home') renderHome(); else if (state === 'profiles') renderProfiles(); else if (state === 'newp') wizStep(wizAt); else if (state === 'me') renderMe(); else if (state === 'party') renderParty(); }, 120); }
 addEventListener('resize', onResize);
 if (window.visualViewport) visualViewport.addEventListener('resize', onResize);
 

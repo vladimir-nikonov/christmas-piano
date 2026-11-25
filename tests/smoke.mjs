@@ -107,6 +107,8 @@ try {
   const waitAtNextNote = () => page.waitForFunction(() => { const g = window.__sn.game, n = g && g.notes.find(n => !n.hit && !n.missed);
     return !!(n && g.waiting && g.time >= n.t); }, null, { timeout: 15000 });
   const checkLayout = (...sels) => checkLayoutOn(page, sels);
+  const waitAtNote = pg => pg.waitForFunction(() => { const g = window.__sn.game, n = g && g.notes.find(n => !n.hit && !n.missed);
+    return !!(n && g.waiting && g.time >= n.t); }, null, { timeout: 15000 });
 
   log('first launch opens the new player wizard');
   await page.goto(url);
@@ -799,6 +801,138 @@ try {
     assert.equal(m.flakes, 0, 'no flakes');
     assert.ok(m.glows > 0, 'a hit shows a static glow instead');
     await rctx.close();
+  }
+
+  log('together: team picker, a new player from it, the drawn order, turns of three tries, the team bank, a round, fireworks');
+  {
+    const pctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await pctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+    const pp = await pctx.newPage();
+    pp.on('pageerror', e => errors.push('[' + step + '] pageerror: ' + e.message));
+    pp.on('console', m => { if (m.type() === 'error') errors.push('[' + step + '] console: ' + m.text()); });
+    const nav = () => pp.evaluate(() => window.__sn.nav);
+    const body = () => pp.locator('#ptyBody').innerText();
+    await pp.goto(url);
+    // Two players
+    for (const [name, theme] of [['Ann', 0], ['Bob', 1]]){
+      if (name === 'Bob'){ await pp.click('#btnWho'); await pp.click('#ptiles .ptile.add'); }
+      await pp.locator('#themePick .tcard').nth(theme).click();
+      await pp.click('#btnLookNext'); await pp.fill('#newName', name); await pp.click('#btnNewOk'); await pp.click('#btnIntroSkip');
+      await pp.locator('#home').waitFor({ state: 'visible' });
+    }
+    const host = await pp.evaluate(() => window.__sn.db.current);
+    await pp.click('#btnParty');
+    assert.equal(await nav(), 'partySetup');
+    assert.equal(await pp.locator('#ptyBody .ptytile[aria-pressed="true"]').count(), 2, 'every player is picked at first');
+    log('together: a new player made from the team picker comes back picked');
+    await pp.click('#ptyBody .ptytile.add');
+    assert.equal(await nav(), 'newPlayer');
+    await pp.click('#btnLookNext'); await pp.fill('#newName', 'Cy'); await pp.click('#btnNewOk'); await pp.click('#btnIntroSkip');
+    assert.equal(await nav(), 'partySetup');
+    assert.equal(await pp.locator('#ptyBody .ptytile[aria-pressed="true"]').count(), 3);
+    assert.equal(await pp.evaluate(() => window.__sn.db.current), host, 'the setup speaks for the player who opened it');
+    await checkLayoutOn(pp, ['#party']);
+    log('together: fewer than two players cannot start');
+    await pp.locator('#ptyBody .ptytile').nth(2).click();
+    await pp.locator('#ptyBody .ptytile').nth(1).click();
+    assert.equal(await pp.locator('#ptyBody [data-a="draw"]').isDisabled(), true);
+    await pp.locator('#ptyBody .ptytile').nth(1).click();
+    await pp.click('#ptyBody [data-a="rounds"][data-r="2"]');
+    assert.match(await body(), /4 turns/);
+    await pp.click('#ptyBody [data-a="draw"]');
+    assert.equal(await nav(), 'partyDraw');
+    await pp.locator('#ptyBody [data-a="go"]').waitFor({ state: 'visible' });
+    await pp.waitForFunction(() => window.getComputedStyle(document.querySelector('#ptyBody [data-a="go"]')).visibility === 'visible');
+    const order = await pp.locator('#ptyBody .ptyslot .nm').allInnerTexts();
+    assert.deepEqual([...order].sort(), ['Ann', 'Bob']);
+    await pp.click('#ptyBody [data-a="go"]');
+    assert.equal(await nav(), 'partyTurn');
+    assert.equal(await pp.locator('#ptyTitle').textContent(), order[0], 'the first drawn player gets the tablet');
+    assert.equal(await pp.evaluate(() => window.__sn.db.profiles.find(p => p.id === window.__sn.db.current).name), order[0]);
+    await checkLayoutOn(pp, ['#party']);
+    // One try: the first one is played note by note, the others end at once with a given share of notes played
+    const finishTry = frac => pp.evaluate(f => { const g = window.__sn.game;
+      g.notes.forEach((n, i) => { if (n.hit || n.missed) return; if (i / g.notes.length < f){ n.hit = true; g.hits++; } else n.missed = true; });
+      g.time = g.end + 1; g.waiting = false; }, frac);
+    // The test browser has no microphone: the first Play shows the microphone hint, and Play on the screen starts
+    // the try; Play does not ask again after that.
+    const startTry = async start => {
+      await pp.click('#ptyBody [data-a="' + start + '"]');
+      await pp.waitForFunction(() => window.__sn.state === 'playing' || !!document.querySelector('#ptyBody [data-a="touch"]'));
+      if (await pp.locator('#ptyBody [data-a="touch"]').count()) await pp.click('#ptyBody [data-a="touch"]');
+      await pp.waitForFunction(() => window.__sn.state === 'playing');
+    };
+    const playTry = async (frac, start) => {
+      await startTry(start);
+      await finishTry(frac);
+      await pp.waitForFunction(() => window.__sn.nav === 'partyResult');
+    };
+    log('together: a paused try left with Home does not count; the same player gets the tablet again');
+    await startTry('play');
+    await pp.click('#btnHudHome');
+    assert.equal(await nav(), 'partyTurn');
+    assert.equal(await pp.locator('#ptyTitle').textContent(), order[0]);
+    log('together: the first try is played note by note');
+    await startTry('play');
+    await waitAtNote(pp);
+    const notes = await pp.evaluate(() => window.__sn.game.notes.length);
+    for (let i = 0; i < notes; i++){ await waitAtNote(pp); await pp.evaluate(() => { const n = window.__sn.game.notes.find(n => !n.hit && !n.missed); window.__sn.onPlayed(n.midi); }); }
+    await pp.waitForFunction(() => window.__sn.nav === 'partyResult');
+    assert.match(await body(), /Try 1 of 3[\s\S]*100%/i);
+    assert.match(await body(), /New level opened: Stone/, 'a level opened in a party try is kept and said');
+    await checkLayoutOn(pp, ['#party']);
+    await playTry(0, 'again');
+    assert.match(await body(), /Counted so far: 100% \+ 0% = 100%/);
+    await playTry(1, 'again');
+    assert.match(await body(), /\+200%/, 'the two best of three tries count');
+    assert.equal(await pp.locator('#ptyBody .ptytries .off').count(), 1);
+    assert.match(await body(), new RegExp('Pass the tablet to ' + order[1]));
+    await checkLayoutOn(pp, ['#party']);
+    log('together: the turn passes on by itself');
+    await pp.waitForFunction(() => window.__sn.nav === 'partyTurn', null, { timeout: 10000 });
+    assert.equal(await pp.locator('#ptyTitle').textContent(), order[1]);
+    await playTry(0, 'play'); await playTry(0, 'again'); await playTry(1, 'again');
+    assert.match(await body(), /\+100%/);
+    await pp.click('#ptyBody [data-a="pass"]');
+    assert.equal(await nav(), 'partyRound');
+    assert.match(await body(), /collected 300% this round/);
+    assert.match(await body(), /300% of 800%/);
+    await checkLayoutOn(pp, ['#party']);
+    await pp.click('#ptyBody [data-a="nextRound"]');
+    assert.equal(await pp.locator('#ptyTitle').textContent(), order[0], 'round 2 keeps the drawn order');
+    assert.match(await body(), /Round 2 of 2/);
+    for (let t = 0; t < 2; t++){
+      await playTry(1, 'play'); await playTry(1, 'again'); await playTry(1, 'again');
+      if (t === 0){ await pp.click('#ptyBody [data-a="pass"]'); assert.equal(await nav(), 'partyTurn'); }
+    }
+    assert.match(await body(), /That was the last turn/);
+    await pp.click('#ptyBody [data-a="pass"]');
+    assert.equal(await nav(), 'partyFinal');
+    log('together: 700 of 800 = 88%, big fireworks for the whole team');
+    assert.match(await body(), /Big fireworks![\s\S]*88%/);
+    assert.equal(await pp.locator('#ptyBody .ptyteam svg').count(), 2);
+    await checkLayoutOn(pp, ['#party']);
+    log('together: each player kept their own results; home comes back to the player who opened Together');
+    assert.deepEqual(await pp.evaluate(() => ['Ann', 'Bob'].map(n => Object.values(window.__sn.db.profiles.find(p => p.name === n).hist).reduce((t, h) => t + h.length, 0))), [6, 6]);
+    await pp.click('#ptyBody [data-a="home"]');
+    assert.equal(await nav(), 'home');
+    assert.equal(await pp.evaluate(() => window.__sn.db.current), host);
+    log('together: stopping early judges the turns played; Back closes the setup');
+    await pp.click('#btnParty');
+    await pp.click('#ptyBody [data-a="draw"]');
+    await pp.locator('#ptyBody [data-a="go"]').waitFor({ state: 'visible' });
+    await pp.waitForFunction(() => window.getComputedStyle(document.querySelector('#ptyBody [data-a="go"]')).visibility === 'visible');
+    await pp.click('#ptyBody [data-a="go"]');
+    await playTry(1, 'play'); await playTry(0, 'again'); await playTry(0, 'again');
+    await pp.click('#ptyBody [data-a="pass"]');
+    await pp.click('#btnPartyClose');
+    assert.equal(await nav(), 'partyFinal');
+    assert.match(await body(), /Fireworks![\s\S]*50%[\s\S]*turns you played/);
+    await pp.click('#ptyBody [data-a="more"]');
+    assert.equal(await nav(), 'partySetup');
+    await pp.goBack();
+    await pp.waitForFunction(() => window.__sn.nav === 'home');
+    await pctx.close();
   }
 
   log('microphone: a played E4 is heard and counted');

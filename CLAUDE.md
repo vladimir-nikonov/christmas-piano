@@ -16,7 +16,7 @@ src/input/               microphone and touch input; both call onPlayed(midi, at
 src/audio/               sound output: tones and metronome
 src/record/              video-card recorder: game canvas + camera window + sound into one video file
 src/ui/                  canvas drawing, themes, icons, art, language picker; nav.js maps the navigation state to screens
-src/ui/screens/          home, players, results, parent settings
+src/ui/screens/          home, players, results, parent settings, Together (party) mode
 src/i18n/                UI strings, one file per language
 src/platform/            browser APIs that differ per platform (wake lock)
 src/print/               printable files offered in parent settings; key-stickers.pdf is built by scripts/key-stickers.mjs from the note colours and names in src/core/music.js

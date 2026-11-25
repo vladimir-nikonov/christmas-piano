@@ -50,7 +50,7 @@
 
 <div class="screen" id="home" hidden>
   <div class="homeworld" aria-hidden="true"></div>
-  <div class="corner l"><button class="b who" id="btnWho" data-ta="who"></button></div>
+  <div class="corner l"><button class="b who" id="btnWho" data-ta="who"></button><button class="b ico" id="btnParty" data-ta="together" data-icon="team"></button></div>
   <div class="corner r">
     <button class="b ico qlang" data-ta="language"></button>
     <button class="b ico qtheme" data-ta="theme"></button>
@@ -87,6 +87,17 @@
         <p class="michint" id="micHint" data-t="micDenied"></p>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Together (party) mode: one panel over the theme picture whose content follows the party state (src/ui/screens/party.js):
+     pick the team, the drawn order, the hand-over screen, a try's result, the end of a round, the team's fireworks.
+     The cross closes the setup, or stops the party (fireworks for what was collected) once it has started. -->
+<div class="screen" id="party" hidden>
+  <canvas class="ptyfw" id="ptyFw" aria-hidden="true"></canvas>
+  <div class="panel popp partyp" role="dialog" aria-labelledby="ptyTitle">
+    <button class="b ico x" id="btnPartyClose" data-ta="close" data-icon="cross"></button>
+    <div class="ptybody" id="ptyBody"></div>
   </div>
 </div>
 

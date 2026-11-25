@@ -29,3 +29,22 @@ stateDiagram-v2
     LevelUp --> Results: Reward shown
     Results --> Countdown: Continue or replay
     Results --> Home
+    Home --> PartySetup: Together
+    PartySetup --> Home: Close
+    PartySetup --> Profiles: New player
+    Profiles --> PartySetup: Player created
+    PartySetup --> PartyDraw: Draw the order
+    PartyDraw --> Home: Close
+    PartyDraw --> PartyTurn: Order shown
+    PartyTurn --> Countdown: Play
+    Playing --> PartyResult: Party try finished
+    Paused --> PartyTurn: Leave the try
+    PartyResult --> Countdown: Next try
+    PartyResult --> PartyTurn: Next player
+    PartyResult --> PartyRound: Round over
+    PartyResult --> PartyFinal: Party over
+    PartyRound --> PartyTurn: Next round
+    PartyRound --> PartyFinal: Stop
+    PartyTurn --> PartyFinal: Stop
+    PartyFinal --> Home
+    PartyFinal --> PartySetup: Play together again

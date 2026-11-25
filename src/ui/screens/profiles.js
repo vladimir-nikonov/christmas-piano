@@ -44,7 +44,7 @@ export function renderProfiles(){
     acts.append(ed, del); card.append(b, acts); box.appendChild(card);
   });
   const add = document.createElement('button'); add.className = 'b ptile add'; add.setAttribute('aria-label', tx('newPlayer'));
-  add.innerHTML = icon('plus'); add.onclick = openNewProfile; box.appendChild(add);
+  add.innerHTML = icon('plus'); add.onclick = () => openNewProfile(); box.appendChild(add);
 }
 // Removes a player; the list stays open, or the new player wizard starts when nobody is left.
 function deletePlayer(id){
@@ -55,9 +55,13 @@ function deletePlayer(id){
   applyTheme(P().theme); invalidateBg(); updateQuick(); renderProfiles();
 }
 // New player wizard: 1) language and theme, 2) avatar and name (the player is created here), 3) the first note to play.
+// back(created): where the wizard ends when it was opened from another screen (Together's team picker): called
+// with true after the player was made, with false when Back leaves the first step. Without it the wizard ends on home.
 export let pickAv = 0, pickTheme = 'pixel', wizAt = 1;
-export function openNewProfile(){
+let wizBack = null;
+export function openNewProfile(back){
   if (!dispatch(E.NEW_PLAYER)) return;
+  wizBack = typeof back === 'function' ? back : null;
   const used = new Set(db.profiles.map(p => p.avatar));
   pickAv = AVATARS.findIndex((_, i) => !used.has(i)); if (pickAv < 0) pickAv = 0;
   pickTheme = 'pixel'; applyTheme(pickTheme);
@@ -97,11 +101,11 @@ function renderIntro(){
   go.hidden = true; skip.hidden = false;
   unmountIntro = mountFirstNote($('#firstNote'), () => { skip.hidden = true; go.hidden = false; });
 }
-function leaveIntro(){ if (unmountIntro){ unmountIntro(); unmountIntro = null; } goHome(); }
+function leaveIntro(){ if (unmountIntro){ unmountIntro(); unmountIntro = null; } const b = wizBack; wizBack = null; if (b) b(true); else goHome(); }
 // The intro again on its own (from parent settings), for the current player; it ends on home like the first time.
 export function openIntro(){
   const p = P(); if (!p || !dispatch(E.NEW_PLAYER)) return false;
-  pickTheme = p.theme; applyTheme(p.theme); updateQuick();
+  wizBack = null; pickTheme = p.theme; applyTheme(p.theme); updateQuick();
   wizStep(3); return true;
 }
 $('#btnLookNext').onclick = () => wizStep(2);
@@ -114,7 +118,7 @@ $('#btnNewOk').onclick = () => {
 $('#btnIntroNext').onclick = leaveIntro;
 $('#btnIntroSkip').onclick = leaveIntro;
 // Back: intro -> home (the player already exists), name -> look, look -> player list
-$('#btnNewBack').onclick = () => { if (wizAt === 3) leaveIntro(); else if (wizAt === 2) wizStep(1); else { if (P()) applyTheme(P().theme); openProfiles(); } };
+$('#btnNewBack').onclick = () => { if (wizAt === 3) leaveIntro(); else if (wizAt === 2) wizStep(1); else { if (P()) applyTheme(P().theme); const b = wizBack; wizBack = null; if (b) b(false); else openProfiles(); } };
 $('#btnWho').onclick = openProfiles;
 // Spatial: the player list expands from the avatar. The capture listener reads the avatar's place before the
 // handler hides home; the second listener runs after it and animates only if the list really opened.

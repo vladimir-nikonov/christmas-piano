@@ -14,6 +14,7 @@ import { reducedMotion } from '../ui/motion.js';
 import { draw } from '../ui/render.js';
 import { goHome } from '../ui/screens/home.js';
 import { showResults } from '../ui/screens/results.js';
+import { partyOn, partyTry } from '../ui/screens/party.js';
 import { TH } from '../ui/theme.js';
 import { noteResult } from '../record/recorder.js';
 import { updateHandsBtn } from '../ui/hands.js';
@@ -114,7 +115,9 @@ function updateHud(){
 function finish(){
   if (G.finished) return; G.finished = true;
   if (G.demo){ goHome(); return; }
-  dispatch(E.FINISH);
+  // A party try goes to the party's result screen (src/ui/screens/party.js); the player's own progress is saved as usual.
+  const party = partyOn();
+  dispatch(E.FINISH, { party });
   const p = P(), total = G.notes.length, o = p.opts;
   const metric = G.wait ? Math.round(G.notes.filter(n => n.hit && !n.wrong).length / total * 100) : Math.round(G.hits / total * 100);
   const stars = starsFor(metric);
@@ -133,6 +136,7 @@ function finish(){
   G.levelUp = levelUp;   // home reads it to open the new level there too
   save();
   noteResult({ name: p.name, song: SONGS[G.song].title(), stars, metric });
+  if (party){ partyTry({ metric, levelUp, level: pr.level }); return; }
   showResults({ p, pr, song: G.song, level: G.level, metric, stars, levelUp });
   if (levelUp) dispatch(E.LEVEL_UP);
 }

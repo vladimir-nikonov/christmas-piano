@@ -534,3 +534,92 @@ a.linkbtn:focus-visible{outline:4px solid var(--reward);outline-offset:3px}
 .vcmsg{margin:0;min-height:1.3em;font-size:calc(18*var(--u));opacity:.85;text-align:center}
 @media (prefers-reduced-motion: reduce){ #btnRec.live,.qvcard:not([hidden]){animation:none} }
 #home .corner.media{top:calc(14px + env(safe-area-inset-top,0px) + 76*var(--u));flex-direction:column}
+
+/* Together (party) mode: one panel over the theme picture; its content follows the party state (src/ui/screens/party.js) */
+#party{background:linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.18)),var(--world,var(--bg)) center/cover no-repeat;z-index:30;padding-top:calc(44*var(--u) + env(safe-area-inset-top,0px))}
+#party .panel{margin:auto 0;position:relative;z-index:1;gap:calc(14*var(--u))}
+.ptyfw{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+.ptybody{display:flex;flex-direction:column;align-items:center;gap:calc(16*var(--u));width:100%}
+.ptybody .poph{margin:0}
+.ptybody .eyebrow{font-size:calc(20*var(--u));letter-spacing:.1em;text-transform:uppercase;color:var(--reward);font-weight:800;text-align:center}
+.ptyhint{margin:0;font-size:calc(20*var(--u));text-align:center;opacity:.9;max-width:36em}
+.ptygo{display:flex;align-items:center;gap:calc(12*var(--u));padding:calc(14*var(--u)) calc(30*var(--u));min-height:calc(76*var(--u));font-size:calc(28*var(--u))}
+.ptygo svg{width:calc(34*var(--u));height:calc(34*var(--u))}
+.ptygo[disabled]{opacity:.45;cursor:default}
+.ptybtns{display:flex;gap:calc(16*var(--u));align-items:center;justify-content:center;flex-wrap:wrap}
+/* Setup: player tiles (tap to add or remove), song and rounds */
+.ptytiles{display:flex;flex-wrap:wrap;justify-content:center;gap:calc(14*var(--u))}
+.ptytile{position:relative;display:flex;flex-direction:column;align-items:center;gap:calc(6*var(--u));padding:calc(12*var(--u)) calc(14*var(--u));width:calc(140*var(--u));opacity:.6}
+.ptytile[aria-pressed="true"]{opacity:1;outline:calc(4*var(--u)) solid var(--reward);outline-offset:calc(2*var(--u))}
+.ptytile .nm{font-size:calc(20*var(--u));max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ptytile .lv svg{width:calc(28*var(--u));height:calc(28*var(--u))}
+.ptytile .tick{position:absolute;top:calc(-12*var(--u));right:calc(-12*var(--u));width:calc(36*var(--u));height:calc(36*var(--u));border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center}
+.ptytile .tick svg{width:calc(22*var(--u));height:calc(22*var(--u))}
+.ptytile.add{opacity:1;justify-content:center;border-style:dashed}
+.ptytile.add svg{width:calc(48*var(--u));height:calc(48*var(--u))}
+.ptyrow{display:flex;flex-wrap:wrap;gap:calc(12*var(--u));align-items:center;justify-content:center}
+.ptyrow .lbl{font-size:calc(22*var(--u));font-weight:800}
+.ptyrow .chip svg{width:calc(26*var(--u));height:calc(26*var(--u))}
+.ptyrow .rnd{width:calc(64*var(--u));justify-content:center;font-size:calc(28*var(--u))}
+/* Draw: the order appears one player at a time */
+.ptyslots{display:flex;flex-wrap:wrap;justify-content:center;gap:calc(22*var(--u))}
+.ptyslot{display:flex;flex-direction:column;align-items:center;gap:calc(8*var(--u));min-width:calc(120*var(--u))}
+.ptyslot .n{font-size:calc(30*var(--u));font-weight:900;color:var(--pc)}
+.ptyslot .nm{font-size:calc(22*var(--u));font-weight:800}
+.ptyslot .ph{width:calc(110*var(--u));height:calc(110*var(--u));display:grid;place-items:center;font-size:calc(50*var(--u));font-weight:900;border:2px dashed var(--border);border-radius:var(--radius)}
+.ptyslot.on svg.av{animation:ptypop .45s cubic-bezier(.3,1.6,.5,1) both;box-shadow:0 0 0 calc(5*var(--u)) var(--pc)}
+@keyframes ptypop{from{transform:scale(.3) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
+/* Hand-over */
+.ptypill{font-size:calc(20*var(--u));font-weight:800;background:color-mix(in srgb, var(--bg) 60%, transparent);padding:calc(6*var(--u)) calc(16*var(--u));border-radius:calc(30*var(--u))}
+.ptyhand{display:flex;flex-direction:column;align-items:center;gap:calc(6*var(--u))}
+.ptyhand .who{margin:0;font-size:calc(48*var(--u));font-weight:900;color:var(--reward);text-shadow:0 calc(3*var(--u)) 0 var(--accent-dark)}
+.ptylvl{display:flex;align-items:center;gap:calc(10*var(--u));font-size:calc(20*var(--u));font-weight:700}
+.ptylvl .blk svg{width:calc(32*var(--u));height:calc(32*var(--u))}
+.ptyplay{width:calc(220*var(--u));height:calc(100*var(--u));display:grid;place-items:center}
+.ptyplay svg{width:calc(54*var(--u));height:calc(54*var(--u))}
+.ptydots{display:flex;gap:calc(10*var(--u))}
+.ptydots i{width:calc(22*var(--u));height:calc(22*var(--u));border-radius:50%;border:calc(3*var(--u)) solid var(--border)}
+.ptydots i.on{background:var(--accent);border-color:var(--accent)}
+.ptydots i.now{border-color:var(--accent)}
+.ptymic{display:flex;flex-direction:column;align-items:center;gap:calc(10*var(--u))}
+.ptymic p{margin:0;font-size:calc(19*var(--u));text-align:center;max-width:32em}
+.ptyqueue{display:flex;gap:calc(12*var(--u));align-items:center;flex-wrap:wrap;justify-content:center}
+.ptyqueue .q{display:flex;align-items:center;gap:calc(6*var(--u));opacity:.55}
+.ptyqueue .q svg.av{box-shadow:0 0 0 calc(3*var(--u)) var(--pc)}
+.ptyqueue .q.cur,.ptyqueue .q.done{opacity:1}
+.ptyqueue .q b{font-size:calc(18*var(--u));color:var(--reward)}
+/* Team bank: one bar, each player's share in their colour, star marks where bigger fireworks start */
+.ptymeter{width:min(calc(760*var(--u)),100%);display:flex;flex-direction:column;gap:calc(8*var(--u))}
+.ptymeter .top{display:flex;justify-content:space-between;align-items:baseline;gap:calc(12*var(--u));font-size:calc(20*var(--u))}
+.ptymeter .top b{font-size:calc(26*var(--u));font-variant-numeric:tabular-nums}
+.ptymeter .track{position:relative;height:calc(30*var(--u));margin-top:calc(14*var(--u))}
+.ptymeter .fill{display:flex;height:100%;border-radius:calc(15*var(--u));overflow:hidden;background:color-mix(in srgb, var(--bg) 70%, transparent);box-shadow:inset 0 0 0 2px var(--border)}
+.ptymeter .fill i{height:100%;flex:none}
+.ptymeter .fill i.new{animation:ptygrow 1s ease-out both}
+@keyframes ptygrow{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}
+.ptymeter .mk{position:absolute;top:calc(-22*var(--u));transform:translateX(-50%);color:var(--border)}
+.ptymeter .mk svg{width:calc(22*var(--u));height:calc(22*var(--u))}
+.ptymeter .mk::after{content:"";position:absolute;left:50%;top:calc(22*var(--u));width:2px;height:calc(30*var(--u));background:currentColor;transform:translateX(-50%);opacity:.7}
+.ptymeter .mk.hit{color:var(--reward)}
+.ptymeter .leg{display:flex;flex-wrap:wrap;gap:calc(8*var(--u)) calc(18*var(--u));font-size:calc(18*var(--u))}
+.ptymeter .leg i{display:inline-block;width:calc(14*var(--u));height:calc(14*var(--u));border-radius:50%;margin-right:calc(6*var(--u));vertical-align:middle}
+/* Result of a try / of a turn */
+.ptybig{font-size:calc(80*var(--u));font-weight:900;line-height:1;color:var(--reward);font-variant-numeric:tabular-nums;animation:ptypop .45s cubic-bezier(.3,1.6,.5,1) both}
+.ptynew{margin:0;display:flex;align-items:center;gap:calc(8*var(--u));font-size:calc(22*var(--u));font-weight:800;color:var(--reward)}
+.ptynew svg{width:calc(26*var(--u));height:calc(26*var(--u))}
+.ptytries{display:flex;gap:calc(12*var(--u))}
+.ptytries div{display:flex;flex-direction:column;align-items:center;padding:calc(8*var(--u)) calc(16*var(--u));border-radius:var(--radius);background:color-mix(in srgb, var(--bg) 55%, transparent);font-size:calc(16*var(--u))}
+.ptytries b{font-size:calc(30*var(--u))}
+.ptytries .on{outline:calc(3*var(--u)) solid var(--reward)}
+.ptytries .off{opacity:.55}
+.ptybar{width:min(calc(420*var(--u)),100%);height:calc(8*var(--u));border-radius:calc(4*var(--u));overflow:hidden;background:color-mix(in srgb, var(--bg) 60%, transparent)}
+.ptybar i{display:block;height:100%;background:var(--accent);animation:ptybar linear both}
+@keyframes ptybar{from{width:0}to{width:100%}}
+/* Fireworks */
+.ptyaward{margin:0;font-size:calc(56*var(--u));font-weight:900;text-align:center;color:var(--reward);text-shadow:0 calc(4*var(--u)) 0 var(--accent-dark)}
+.ptyteam{display:flex;gap:calc(14*var(--u));flex-wrap:wrap;justify-content:center}
+.ptyteam svg.av{animation:ptyhop .8s ease-in-out infinite alternate}
+.ptyteam svg.av:nth-child(2){animation-delay:.15s}.ptyteam svg.av:nth-child(3){animation-delay:.3s}.ptyteam svg.av:nth-child(4){animation-delay:.45s}.ptyteam svg.av:nth-child(5){animation-delay:.6s}.ptyteam svg.av:nth-child(6){animation-delay:.75s}
+@keyframes ptyhop{from{transform:translateY(0)}to{transform:translateY(calc(-14*var(--u)))}}
+.ptymsg{margin:0;font-size:calc(26*var(--u));font-weight:800;text-align:center}
+@media (prefers-reduced-motion: reduce){ .ptyslot.on svg.av,.ptybig,.ptyteam svg.av,.ptymeter .fill i.new{animation:none} .ptybar{display:none} }

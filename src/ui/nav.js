@@ -14,6 +14,7 @@ function screensFor(s){
     case S.PLAYING: case S.WAITING: return ['#hud'];
     case S.PAUSED: return ['#hud', '#pause'];                         // the game stays frozen under the pause
     case S.RESULTS: case S.LEVEL_UP: return ['#results'];
+    case S.PARTY_SETUP: case S.PARTY_DRAW: case S.PARTY_TURN: case S.PARTY_RESULT: case S.PARTY_ROUND: case S.PARTY_FINAL: return ['#party'];
     default: return null;                                            // boot: leave the page as it is
   }
 }

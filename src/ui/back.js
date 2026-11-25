@@ -1,6 +1,6 @@
 // System Back button (Android tablet): keeps one "trap" history entry while anything other than the plain
 // home screen is open, so Back acts inside the app instead of leaving the page.
-//   game -> pause, paused game -> home, overlays (quick picker, settings, profiles, child's page, wizard, results) -> close,
+//   game -> pause, paused game -> home (in a party: the hand-over screen), Together -> its cross, overlays (quick picker, settings, profiles, child's page, wizard, results) -> close,
 //   plain home -> default browser behaviour (there is no trap entry to pop).
 // At most one trap entry exists: it is pushed when a context opens and consumed with history.back() when the app
 // returns home through its own buttons. The popstate caused by that history.back() is ignored, so there are no loops.
@@ -45,6 +45,8 @@ function onBack(){
     case S.PREVIEW: click('#btnPause'); break;
     case S.ME: click('#btnMeBack'); break;
     case S.NEW_PLAYER: click('#btnNewBack'); break;
+    // Together: close the setup or the draw, stop a party in progress (to its fireworks), leave the fireworks
+    case S.PARTY_SETUP: case S.PARTY_DRAW: case S.PARTY_TURN: case S.PARTY_ROUND: case S.PARTY_FINAL: click('#btnPartyClose'); break;
   }
 }
 addEventListener('popstate', () => {

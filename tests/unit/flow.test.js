@@ -25,9 +25,17 @@ const AT = {
   LevelUp: [E.HOME, TOUCH, E.ENTERED, E.GO, E.FINISH, E.LEVEL_UP],
 };
 AT.Paused = [...AT.Playing, E.PAUSE];
+AT.PartySetup = [E.HOME, E.PARTY];
+AT.PartyDraw = [...AT.PartySetup, E.DRAW];
+AT.PartyTurn = [...AT.PartyDraw, E.TURN];
+AT.PartyPlaying = [...AT.PartyTurn, E.PLAY, E.GO];
+AT.PartyResult = [...AT.PartyPlaying, [E.FINISH, { party: true }]];
+AT.PartyRound = [...AT.PartyResult, E.ROUND];
+AT.PartyFinal = [...AT.PartyTurn, E.FINAL];
 // Diagram state -> machine states it stands for (Profiles covers the player list, the wizard and the child's page).
 const GROUP = { Profiles: [S.PROFILES, S.NEW_PLAYER, S.ME], Boot: [S.BOOT], Home: [S.HOME], Settings: [S.SETTINGS], Preview: [S.PREVIEW],
-  MicSetup: [S.MIC_SETUP], Countdown: [S.COUNTDOWN], Playing: [S.PLAYING], Waiting: [S.WAITING], Paused: [S.PAUSED], Results: [S.RESULTS], LevelUp: [S.LEVEL_UP] };
+  MicSetup: [S.MIC_SETUP], Countdown: [S.COUNTDOWN], Playing: [S.PLAYING], Waiting: [S.WAITING], Paused: [S.PAUSED], Results: [S.RESULTS], LevelUp: [S.LEVEL_UP],
+  PartySetup: [S.PARTY_SETUP], PartyDraw: [S.PARTY_DRAW], PartyTurn: [S.PARTY_TURN], PartyResult: [S.PARTY_RESULT], PartyRound: [S.PARTY_ROUND], PartyFinal: [S.PARTY_FINAL] };
 
 // One or more ways to take each edge of navigation.mmd: [start steps, event(s) taken on the edge].
 const EDGES = {
@@ -58,6 +66,25 @@ const EDGES = {
   'LevelUp->Results': [[AT.LevelUp, [E.REWARD_DONE]]],
   'Results->Countdown': [[AT.Results, [E.REPLAY]], [AT.Results, [E.NEXT]]],
   'Results->Home': [[AT.Results, [E.HOME]]],
+  'Home->PartySetup': [[AT.Home, [E.PARTY]]],
+  'PartySetup->Home': [[AT.PartySetup, [E.HOME]]],
+  'PartySetup->Profiles': [[AT.PartySetup, [E.NEW_PLAYER]]],
+  'Profiles->PartySetup': [[[...AT.PartySetup, E.NEW_PLAYER], [E.PARTY]]],
+  'PartySetup->PartyDraw': [[AT.PartySetup, [E.DRAW]]],
+  'PartyDraw->Home': [[AT.PartyDraw, [E.HOME]]],
+  'PartyDraw->PartyTurn': [[AT.PartyDraw, [E.TURN]]],
+  'PartyTurn->Countdown': [[AT.PartyTurn, [E.PLAY]]],
+  'Playing->PartyResult': [[AT.PartyPlaying, [[E.FINISH, { party: true }]]]],
+  'Paused->PartyTurn': [[[...AT.PartyPlaying, E.PAUSE], [E.TURN]]],
+  'PartyResult->Countdown': [[AT.PartyResult, [E.REPLAY]]],
+  'PartyResult->PartyTurn': [[AT.PartyResult, [E.TURN]]],
+  'PartyResult->PartyRound': [[AT.PartyResult, [E.ROUND]]],
+  'PartyResult->PartyFinal': [[AT.PartyResult, [E.FINAL]]],
+  'PartyRound->PartyTurn': [[AT.PartyRound, [E.TURN]]],
+  'PartyRound->PartyFinal': [[AT.PartyRound, [E.FINAL]]],
+  'PartyTurn->PartyFinal': [[AT.PartyTurn, [E.FINAL]]],
+  'PartyFinal->Home': [[AT.PartyFinal, [E.HOME]]],
+  'PartyFinal->PartySetup': [[AT.PartyFinal, [E.PARTY]]],
 };
 
 const diagram = readFileSync(new URL('../../docs/ux/navigation.mmd', import.meta.url), 'utf8')
@@ -193,4 +220,20 @@ test('the older state strings stay as a derived view', () => {
   assert.equal(v(AT.Profiles), 'profiles');
   assert.equal(v([E.NEW_PLAYER]), 'newp');
   assert.equal(v([E.HOME, E.ME]), 'me');
+  assert.equal(v(AT.PartyTurn), 'party');
+  assert.equal(v(AT.PartyPlaying), 'playing');
+  assert.equal(v(AT.PartyResult), 'party');
+});
+
+test('party: a finished game without the party flag still goes to the ordinary results', () => {
+  const f = run(AT.PartyPlaying);
+  assert.ok(f.dispatch(E.FINISH));
+  assert.equal(f.state.name, S.RESULTS);
+});
+
+test('party: Play on the hand-over screen starts the count-in at once, a second tap is a no-op', () => {
+  const f = run(AT.PartyTurn);
+  assert.ok(f.dispatch(E.PLAY, { mic: true }));
+  assert.deepEqual([f.state.name, f.state.data.entering], [S.COUNTDOWN, false]);
+  assert.equal(f.dispatch(E.PLAY, { mic: true }), false);
 });

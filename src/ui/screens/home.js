@@ -16,6 +16,7 @@ import { px } from '../canvas.js';
 import { icon } from '../icons.js';
 import { syncLang, updateQuick } from '../lang.js';
 import { openNewProfile } from './profiles.js';
+import { leaveTry } from './party.js';
 import { updateBackupNag } from './settings.js';
 import { applyTheme } from '../theme.js';
 import { entryTiming, entryFrames, entryFx, dropLayer, zoomOutFrames, fxLayer, unlockFx, calm } from '../themefx.js';
@@ -68,8 +69,10 @@ function drawBeam(){
 }
 if (window.ResizeObserver) new ResizeObserver(() => drawBeam()).observe($('.pathbox'));
 // Home from anywhere that has a way home (player chosen, close, exit, end of the demo, results); otherwise ignored.
+// Inside a party, Home from the paused game leaves only the try (see leaveTry).
 // Without any player it opens the new player wizard instead.
 export function goHome(){
+  if (leaveTry()) return true; // a paused party try: back to the party's hand-over screen, not home
   if (!db.profiles.length){ if (!can(E.NEW_PLAYER)) return false; setGame(null); syncLang(); openNewProfile(); return true; }
   if (!can(E.HOME)) return false;
   const from = HOME_FROM[flow.state.name], g = G;
