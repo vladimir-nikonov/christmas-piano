@@ -265,9 +265,9 @@ export function syncSpeed(){
   $('#hudSpd').hidden = is(S.PREVIEW);
 }
 const speedTo = pct => { if (P() && setSpeed(pct)) syncSpeed(); };
-const speedAt = y => { // the knob's centre follows the finger; the track spans the whole range
-  const r = spdRail.querySelector('.spdtrack').getBoundingClientRect();
-  speedTo(SPEED.min + Math.max(0, Math.min(1, (r.bottom - y) / r.height)) * (SPEED.max - SPEED.min));
+const speedAt = y => { // the knob's centre follows the finger; it travels the track minus half a knob at each end
+  const r = spdRail.querySelector('.spdtrack').getBoundingClientRect(), k = spdRail.querySelector('.spdknob').offsetHeight / 2;
+  speedTo(SPEED.min + Math.max(0, Math.min(1, (r.bottom - k - y) / (r.height - 2 * k))) * (SPEED.max - SPEED.min));
 };
 spdRail.onpointerdown = e => {
   e.preventDefault(); spdRail.setPointerCapture(e.pointerId); spdRail.classList.add('drag'); speedAt(e.clientY);
