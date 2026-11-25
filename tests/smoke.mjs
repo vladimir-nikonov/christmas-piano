@@ -353,6 +353,9 @@ try {
   await page.waitForTimeout(400);
   assert.equal(await sn(() => window.__gum), 1, 'one microphone request');
   assert.equal(await sn(() => window.__sn.game === window.__g1), true, 'one game');
+  const tapAt = await sn(() => performance.now());
+  { const p = await sn(() => window.__sn.keyPoint(60)); await page.mouse.click(p.x, p.y); }
+  assert.ok(await sn(() => window.__sn.fx.heardKey[60] || 0) > tapAt, 'a screen tap plays a key in microphone mode too');
   await sn(() => window.dispatchEvent(new Event('blur')));
   await visible('#pause');
   await page.click('#btnResume');
