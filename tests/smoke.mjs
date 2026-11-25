@@ -456,7 +456,8 @@ try {
   await page.locator('#home .qtheme').click();
   await visible('#popThemes');
   assert.equal(await sn(() => document.querySelector('#popLangs').hidden), true, 'the theme picker shows no languages');
-  assert.equal(await page.locator('#popThemes button svg.pv svg.av').count(), 12, 'theme cards show the splash mascots');
+  assert.deepEqual(await sn(() => [...document.querySelectorAll('#popThemes button svg.pv')].map(s => s.getAttribute('class'))),
+    ['pv pv-pixel', 'pv pv-plastic', 'pv pv-winter', 'pv pv-anime'], 'theme cards show the theme world pictures');
   await page.locator('#popThemes button').nth(2).click();
   assert.equal(await sn(() => document.documentElement.dataset.theme), await sn(() => window.__sn.db.profiles[0].theme));
   assert.notEqual(await sn(() => window.__sn.db.profiles[0].theme), 'pixel');

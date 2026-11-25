@@ -149,7 +149,7 @@ svg.off{color:var(--border)}
 @media (prefers-reduced-motion: no-preference){ .ipv .inote{animation:ifall 1.6s ease-in infinite} }
 @keyframes ifall{from{transform:translateY(-12px)}to{transform:translateY(12px)}}
 .tcard{padding:0;overflow:hidden;display:flex;flex-direction:column;align-items:stretch;text-align:left}
-.tcard .pv{display:block;width:100%;height:auto;aspect-ratio:16/10}
+.tcard .pv{display:block;width:100%;height:auto;aspect-ratio:24/17}
 .tcard .nm{padding:calc(12*var(--u)) calc(14*var(--u));font-size:calc(20*var(--u))}
 .tcard[aria-pressed="true"]{outline:calc(5*var(--u)) solid var(--reward);outline-offset:calc(4*var(--u))}
 
@@ -297,6 +297,8 @@ body.paused #stage{filter:brightness(.55) saturate(.8)}
 .minipick.th svg{width:64px;height:40px;border-radius:4px}
 
 /* Child's own page: name, avatar, theme (icons, big targets) */
+/* Player setup screens cover the game canvas: no piano keys behind the theme pictures */
+#newp,#profiles,#me{background:var(--bg)}
 #me{justify-content:flex-start;padding-top:calc(96*var(--u) + env(safe-area-inset-top,0px))}
 .mehead{display:flex;align-items:center;gap:calc(18*var(--u));flex-wrap:wrap;justify-content:center}
 .mehead .av{display:block}
@@ -326,7 +328,7 @@ body.paused #stage{filter:brightness(.55) saturate(.8)}
 
 /* Quick language / theme switch */
 .qlang svg.flag{width:calc(40*var(--u));height:calc(27*var(--u));border-radius:calc(4*var(--u));box-shadow:0 0 0 1px rgba(0,0,0,.25)}
-.qtheme svg.pv{width:calc(40*var(--u));height:calc(25*var(--u));border-radius:calc(4*var(--u))}
+.qtheme svg.pv{width:calc(40*var(--u));height:calc(28*var(--u));border-radius:calc(4*var(--u))}
 .popp{width:min(calc(960*var(--u)),100%);position:relative;padding-top:calc(30*var(--u))}
 .popp .x{position:absolute;top:calc(-26*var(--u));right:calc(-18*var(--u))}
 .langs{display:flex;flex-wrap:wrap;gap:calc(12*var(--u));justify-content:center}
