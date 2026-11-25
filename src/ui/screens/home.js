@@ -252,16 +252,34 @@ function syncPlayback(s){
   $('#hudCtl .qinput').hidden = !p;
 }
 flow.subscribe(syncPlayback); syncPlayback(flow.state);
-// Playback speed column on the right: + / − step the speed by 0.05× and apply it to the running song at once
-// (saved per player, the same value as Tempo in parent settings). Not shown in the listen-only preview.
+// Playback speed slider on the right: drag up for faster, down for slower, in steps of 0.05×; it applies to the
+// running song at once (saved per player, the same value as Playback speed in parent settings). Arrow keys work too.
+// Not shown in the listen-only preview.
+const spdRail = $('#spdRail'), spdFrac = v => (v - SPEED.min) / (SPEED.max - SPEED.min);
 export function syncSpeed(){
   const v = P() ? P().opts.tempo : 100;
   $('#spdVal').textContent = fmtSpeed(v);
-  $('#btnFaster').disabled = v >= SPEED.max; $('#btnSlower').disabled = v <= SPEED.min;
+  spdRail.style.setProperty('--f', spdFrac(v)); spdRail.style.setProperty('--one', spdFrac(100));
+  spdRail.setAttribute('aria-valuemin', SPEED.min); spdRail.setAttribute('aria-valuemax', SPEED.max);
+  spdRail.setAttribute('aria-valuenow', v); spdRail.setAttribute('aria-valuetext', fmtSpeed(v));
   $('#hudSpd').hidden = is(S.PREVIEW);
 }
-$('#btnFaster').onclick = () => { setSpeed(P().opts.tempo + SPEED.step); syncSpeed(); };
-$('#btnSlower').onclick = () => { setSpeed(P().opts.tempo - SPEED.step); syncSpeed(); };
+const speedTo = pct => { if (P() && setSpeed(pct)) syncSpeed(); };
+const speedAt = y => { // the knob's centre follows the finger; the track spans the whole range
+  const r = spdRail.querySelector('.spdtrack').getBoundingClientRect();
+  speedTo(SPEED.min + Math.max(0, Math.min(1, (r.bottom - y) / r.height)) * (SPEED.max - SPEED.min));
+};
+spdRail.onpointerdown = e => {
+  e.preventDefault(); spdRail.setPointerCapture(e.pointerId); spdRail.classList.add('drag'); speedAt(e.clientY);
+};
+spdRail.onpointermove = e => { if (spdRail.hasPointerCapture(e.pointerId)) speedAt(e.clientY); };
+spdRail.onpointerup = spdRail.onpointercancel = () => spdRail.classList.remove('drag');
+spdRail.onkeydown = e => {
+  const d = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[e.key];
+  if (d) speedTo(P().opts.tempo + d * SPEED.step);
+  else if (e.key === 'Home') speedTo(SPEED.min); else if (e.key === 'End') speedTo(SPEED.max); else return;
+  e.preventDefault();
+};
 flow.subscribe(syncSpeed);
 // Home straight from the game screen: a running game pauses first, then leaves through the same Paused -> Home path;
 // the listen-only preview just ends. Ignored while the game screen is still sliding in.

@@ -493,20 +493,33 @@ try {
   await page.waitForFunction(() => window.__sn.game.time > 0.3);
   await page.click('#btnPause');
   await waitPaused();
-  // Playback speed column on the right: − slows the running song in place (same beat, longer beats), + brings it back
-  assert.equal(await page.locator('#hudSpd').isVisible(), true, 'speed column in the game');
+  // Playback speed slider on the right: down slows the running song in place (same beat, longer beats), up brings it back
+  assert.equal(await page.locator('#hudSpd').isVisible(), true, 'speed slider in the game');
   const pos = () => sn(() => { const g = window.__sn.game; return { beat: g.beat, at: g.time / g.beat, tempo: window.__sn.db.profiles[0].opts.tempo }; });
   const s0 = await pos(), shown = v => new RegExp('^' + String(v / 100).replace('.', '[.,]') + '×$');
   assert.match(await page.locator('#spdVal').textContent(), shown(s0.tempo), 'the speed reads like a video player (1.3×)');
-  await page.click('#btnSlower');
+  await page.focus('#spdRail');
+  await page.keyboard.press('ArrowDown');
   const s1 = await pos();
-  assert.equal(s1.tempo, s0.tempo - 5, 'slower steps 0.05×');
+  assert.equal(s1.tempo, s0.tempo - 5, 'one step down is 0.05× slower');
   assert.match(await page.locator('#spdVal').textContent(), shown(s1.tempo));
+  assert.equal(await page.getAttribute('#spdRail', 'aria-valuenow'), String(s1.tempo));
   assert.ok(Math.abs(s1.beat - s0.beat * s0.tempo / s1.tempo) < 1e-9, 'beats get longer');
   assert.ok(Math.abs(s1.at - s0.at) < 1e-9, 'the song keeps its place');
-  await page.click('#btnFaster');
+  await page.keyboard.press('ArrowUp');
   assert.equal((await pos()).tempo, s0.tempo);
-  assert.equal(await sn(() => window.__sn.game.minTempo), s1.tempo, 'the slowest speed of the run is kept for the level-up rule');
+  // Dragging the knob: to the bottom of the track is 0.5×, to the middle snaps to a 0.05× step, to the top is 1.3×
+  const tr = await page.locator('#spdRail .spdtrack').boundingBox(), x = tr.x + tr.width / 2;
+  await page.mouse.move(x, tr.y + tr.height * 0.5); await page.mouse.down();
+  assert.equal((await pos()).tempo, 90, 'the middle of the track is 0.9×');
+  await page.mouse.move(x, tr.y + tr.height + 40, { steps: 4 });
+  assert.equal((await pos()).tempo, 50, 'dragged past the bottom: 0.5×');
+  await page.mouse.move(x, tr.y - 40, { steps: 4 }); await page.mouse.up();
+  assert.equal((await pos()).tempo, 130, 'dragged past the top: 1.3×');
+  assert.match(await page.locator('#spdVal').textContent(), shown(130));
+  assert.equal(await sn(() => window.__sn.game.minTempo), 50, 'the slowest speed of the run is kept for the level-up rule');
+  if (s0.tempo !== 130){ await page.focus('#spdRail'); for (let i = 0; i < (130 - s0.tempo) / 5; i++) await page.keyboard.press('ArrowDown'); }
+  assert.equal((await pos()).tempo, s0.tempo);
   const snap = () => sn(() => { const g = window.__sn.game; return { time: g.time, score: g.score, missed: g.notes.filter(n => n.missed).length }; });
   const before = await snap();
   await page.waitForTimeout(300);

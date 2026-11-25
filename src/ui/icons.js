@@ -4,10 +4,10 @@ import { PACK_ICONS } from './pack-art.js';
 
 // Icons the app needs that the theme art pack does not have yet (same format: 24x24, one stroked path).
 // eye: the home Listen button, which plays the song by itself so the kid can watch and hear it first.
-// minus / speed: the playback speed column in the game (slower, and the speedometer next to 1×).
+// rabbit / turtle: the fast (top) and slow (bottom) ends of the playback speed slider in the game.
 const APP_ICONS = {
-  minus: 'M3 12H21',
-  speed: 'M3 18A9 9 0 1 1 21 18M12 15L17 9M12 15A1 1 0 1 0 12.01 15',
+  rabbit: 'M15 19.5H7Q3 19.5 3 15.5Q3 11.5 8 11.5Q11 11.5 13.2 12.8M12 19.5Q12.5 16.5 14.6 14.2M13.1 11A3.4 3.4 0 1 0 19.9 11A3.4 3.4 0 1 0 13.1 11M15.2 7.9Q14 2 15.8 2Q17.3 2.4 16.9 7.7M18.2 8.3Q20 2.8 21.5 3.6Q22.2 5 19.4 8.8M17.9 10.6H17.91M3.2 14Q1.3 13.4 1.6 15.6',
+  turtle: 'M2.5 16A7.5 6.5 0 0 1 17.5 16ZM6.5 16L8.5 11H11.5L13.5 16M16.5 13.5Q18 11 20.5 11.5Q22.5 12.5 21 14.5Q19.5 16 17.5 16M5 16V19H7.5V16M12.5 16V19H15V16M2.5 16L1 17.2M20 13H20.01',
   eye: 'M2 12Q12 3 22 12Q12 21 2 12Z M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5 M12 11.2A0.8 0.8 0 1 0 12 12.8A0.8 0.8 0 1 0 12 11.2'
 };
 // Icon paths from the theme art pack (24x24, one stroked path each; caps, joins and width come from the theme)
