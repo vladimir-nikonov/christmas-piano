@@ -98,7 +98,7 @@ $('#btnWho').onclick = openProfiles;
 let whoRect = null;
 $('#btnWho').addEventListener('click', e => { whoRect = e.currentTarget.getBoundingClientRect(); }, true);
 $('#btnWho').addEventListener('click', () => { const r = whoRect; whoRect = null; if (!$('#profiles').hidden) expandFrom($('#profiles .panel'), r); });
-// Close the player list: the cross or a tap on the dimmed home around it.
+// Close the player list: the cross or a tap on the picture around it.
 $('#btnProfClose').onclick = goHome;
 $('#profiles').addEventListener('click', e => { if (e.target.id === 'profiles') goHome(); });
 

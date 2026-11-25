@@ -12,6 +12,12 @@ export function applyTheme(key){
   document.documentElement.dataset.theme = THEMES[key] ? key : 'pixel';
   const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = TH.bg;
   invalidateBg();
+  setWorld(THK);
+}
+// The theme's world picture as a page-wide CSS image (--world): popups show it behind them instead of the screen they were opened from.
+function setWorld(key){
+  const svg = THEME_WORLDS[key].replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"');
+  document.documentElement.style.setProperty('--world', 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")');
 }
 // Preview of a theme for the picker: the artist's picture of the theme's world, as inline SVG.
 // Ids get a per-copy suffix: the same picture can be on the page twice, and a gradient referenced from a hidden copy would not paint.

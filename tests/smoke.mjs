@@ -447,7 +447,8 @@ try {
   await visible('#home');
   await page.click('#btnWho');
   await visible('#profiles');
-  assert.ok(await page.locator('#home').isVisible(), 'the player list is a popup over home');
+  assert.ok(await page.locator('#home').isHidden(), 'the player list shows the theme picture behind it, not home');
+  assert.match(await sn(() => window.getComputedStyle(document.getElementById('profiles')).backgroundImage), /data:image\/svg/);
   await page.click('#btnProfClose');
   await page.locator('#profiles').waitFor({ state: 'hidden' });
   await page.click('#btnMe');
