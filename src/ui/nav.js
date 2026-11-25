@@ -9,7 +9,7 @@ function screensFor(s){
     case S.NEW_PLAYER: return ['#newp'];
     case S.ME: return ['#me'];
     case S.HOME: case S.MIC_SETUP: return ['#home'];
-    case S.SETTINGS: return ['#home', '#settings'];                    // a panel over home
+    case S.SETTINGS: return ['#settings'];                             // a panel over the theme picture (CSS)
     case S.COUNTDOWN: case S.PREVIEW: return [s.data.entering ? '#home' : '#hud']; // home stays during the entry transition
     case S.PLAYING: case S.WAITING: return ['#hud'];
     case S.PAUSED: return ['#hud', '#pause'];                         // the game stays frozen under the pause

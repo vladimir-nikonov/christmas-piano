@@ -303,7 +303,7 @@ body.paused #stage{filter:brightness(.55) saturate(.8)}
 #home{isolation:isolate}
 #home .homeworld{position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(color-mix(in srgb, var(--bg) 30%, transparent), color-mix(in srgb, var(--bg) 30%, transparent)), var(--world,var(--bg)) center / cover no-repeat}
 /* Player list and child's page: popups like the quick picker, over the theme's world picture */
-#profiles,#me,#pop{background:linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.18)),var(--world,var(--bg)) center/cover no-repeat}
+#profiles,#me,#pop,#settings{background:linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.18)),var(--world,var(--bg)) center/cover no-repeat}
 #profiles,#me{z-index:30;padding-top:calc(44*var(--u) + env(safe-area-inset-top,0px))}
 #profiles .panel,#me .panel{margin:auto 0}
 #profiles .grid{width:100%}
