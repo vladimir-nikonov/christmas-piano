@@ -69,18 +69,27 @@
 
 <div class="screen" id="profiles" hidden><div class="grid" id="ptiles"></div></div>
 
+<!-- New player wizard: 1) how the game looks and speaks (language + theme), 2) avatar and name, 3) a short how-to-play intro that can be skipped -->
 <div class="screen" id="newp" hidden>
   <div class="corner l"><button class="b ico" id="btnNewBack" data-ta="back" data-icon="back"></button></div>
-  <div class="corner r"><button class="b ico qlang" data-ta="language"></button></div>
-  <div class="steps"><i id="st1" class="on"></i><i id="st2"></i></div>
+  <div class="steps"><i id="st1" class="on"></i><i id="st2"></i><i id="st3"></i></div>
   <div class="wiz" id="step1">
-    <div class="avpick" id="avpick"></div>
-    <input class="name-in" id="newName" type="text" maxlength="14" data-tp="name" data-ta="name" autocomplete="off">
-    <button class="b primary go" id="btnStep2" data-ta="next" data-icon="next"></button>
+    <div class="langpick" id="langPick" role="group" data-ta="language"></div>
+    <div class="themes" id="themePick" role="group" data-ta="theme"></div>
+    <button class="b primary go" id="btnLookNext" data-ta="next" data-icon="next"></button>
   </div>
   <div class="wiz" id="step2" hidden>
-    <div class="themes" id="themePick"></div>
-    <button class="b primary go" id="btnNewOk" data-ta="done" data-icon="check"></button>
+    <div class="avpick" id="avpick"></div>
+    <input class="name-in" id="newName" type="text" maxlength="14" data-tp="name" data-ta="name" autocomplete="off">
+    <button class="b primary go" id="btnNewOk" data-ta="next" data-icon="next"></button>
+  </div>
+  <div class="wiz intro" id="step3" hidden>
+    <div class="islide" aria-live="polite"><div class="ipic" id="introPic"></div><h2 id="introTitle"></h2><p id="introText"></p></div>
+    <div class="idots" id="introDots"></div>
+    <div class="btnrow">
+      <button class="b skip" id="btnIntroSkip"><span data-t="introSkip"></span></button>
+      <button class="b primary go" id="btnIntroNext" data-ta="next" data-icon="next"></button>
+    </div>
   </div>
 </div>
 

@@ -100,11 +100,28 @@ try {
   await visible('#newp');
   assert.equal(await sn(() => window.__sn.db.profiles.length), 0);
 
-  log('create a player');
+  log('create a player: language and theme, then avatar and name, then the intro');
+  await visible('#step1');
+  assert.equal(await page.locator('#langPick button').count(), 5);
+  assert.equal(await page.locator('#themePick .tcard').count(), 4);
+  assert.equal(await page.isHidden('#newName'), true);
+  await page.click('#langPick button[lang="pl"]');
+  assert.equal(await sn(() => window.__sn.lang), 'pl');
+  await page.click('#langPick button[lang="en"]');
+  await page.click('#themePick .tcard >> nth=2');
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'winter');
+  await page.click('#themePick .tcard >> nth=0');
+  await page.click('#btnLookNext');
+  await visible('#step2');
   await page.fill('#newName', 'Tester');
-  await page.click('#btnStep2');
-  await visible('#themePick');
   await page.click('#btnNewOk');
+  await visible('#step3');
+  assert.equal(await sn(() => window.__sn.nav), 'newPlayer');
+  assert.equal(await page.locator('#introDots i').count(), 3);
+  await page.click('#btnIntroNext');
+  await page.click('#btnIntroNext');
+  assert.equal(await page.isHidden('#btnIntroSkip'), true);
+  await page.click('#btnIntroNext');
   await visible('#home');
   assert.equal(await sn(() => window.__sn.db.profiles[0].name), 'Tester');
   assert.equal(await page.locator('#btnWho .nm').textContent(), 'Tester');
@@ -479,9 +496,10 @@ try {
 
   log('danger zone: erase all players and achievements, with a confirmation');
   // Seed only complete players: a bare { id, name } in the live database makes the next canvas frame throw.
+  await page.click('#btnLookNext');
   await page.fill('#newName', 'Ann');
-  await page.click('#btnStep2');
   await page.click('#btnNewOk');
+  await page.click('#btnIntroSkip');
   await visible('#home');
   await sn(() => { const d = window.__sn.db; d.profiles.push(Object.assign(structuredClone(d.profiles[0]), { id: 'w2', name: 'Bob' })); d.device.latency = 200; return window.__sn.save(); });
   await page.click('#btnSettings');
@@ -521,9 +539,10 @@ try {
     dp.on('console', m => { if (m.type() === 'error') errors.push('[' + step + '] console: ' + m.text()); });
     const dsn = (fn, arg) => dp.evaluate(fn, arg);
     await dp.goto(url);
+    await dp.click('#btnLookNext');
     await dp.fill('#newName', 'NoMic');
-    await dp.click('#btnStep2');
     await dp.click('#btnNewOk');
+    await dp.click('#btnIntroSkip');
     await dp.locator('#home').waitFor({ state: 'visible' });
     await dp.click('#btnPlay');
     await dp.locator('#micErr').waitFor({ state: 'visible', timeout: 5000 });
@@ -582,9 +601,10 @@ try {
     const tp = await tctx.newPage();
     tp.on('pageerror', e => errors.push('pageerror: ' + e.message));
     await tp.goto(url);
+    await tp.click('#btnLookNext');
     await tp.fill('#newName', 'Themes');
-    await tp.click('#btnStep2');
     await tp.click('#btnNewOk');
+    await tp.click('#btnIntroSkip');
     await tp.locator('#home').waitFor({ state: 'visible' });
     await tp.click('#btnSettings');
     await tp.check('#sTouch');
@@ -613,9 +633,10 @@ try {
     const rp = await rctx.newPage();
     rp.on('pageerror', e => errors.push('[' + step + '] pageerror: ' + e.message));
     await rp.goto(url);
+    await rp.click('#btnLookNext');
     await rp.fill('#newName', 'Calm');
-    await rp.click('#btnStep2');
     await rp.click('#btnNewOk');
+    await rp.click('#btnIntroSkip');
     await rp.locator('#home').waitFor({ state: 'visible' });
     assert.equal(await rp.evaluate(() => window.__sn.reducedMotion), true);
     // Collect what the canvas draws over a number of frames.
@@ -647,9 +668,10 @@ try {
     mp.on('pageerror', e => errors.push('[' + step + '] pageerror: ' + e.message));
     await mp.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
     await mp.goto(url);
+    await mp.click('#btnLookNext');
     await mp.fill('#newName', 'Mic');
-    await mp.click('#btnStep2');
     await mp.click('#btnNewOk');
+    await mp.click('#btnIntroSkip');
     await mp.click('#btnPlay');
     await mp.waitForFunction(() => window.__sn.state === 'playing');
     await mp.waitForFunction(() => window.__sn.game.notes[0].hit, null, { timeout: 20000 });

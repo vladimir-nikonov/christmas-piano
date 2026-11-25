@@ -139,4 +139,12 @@ export default {
   restoreQ: 'Players in the file: {n} ({names}){date}. Replace all players on this device with them?',
   restoreDate: ', backup from {d}',
   tapToStart: 'Tap to start',
+  introSkip: "Skip",
+  introGo: "Let's play",
+  introFallT: "Notes fall to the keys",
+  introFall: "Play the key when its note reaches the line.",
+  introPlayT: "Your piano or the screen",
+  introPlay: "Play on a real piano — the tablet listens. Or tap the keys on the screen.",
+  introStarsT: "Collect stars",
+  introStars: "Play cleanly to get up to three stars and open new levels.",
 };

@@ -139,4 +139,12 @@ export default {
   restoreQ: 'Graczy w pliku: {n} ({names}){date}. Zastąpić nimi wszystkich graczy na tym urządzeniu?',
   restoreDate: ', kopia z {d}',
   tapToStart: 'Dotknij, aby zacząć',
+  introSkip: "Pomiń",
+  introGo: "Gramy!",
+  introFallT: "Nuty spadają na klawisze",
+  introFall: "Zagraj klawisz, gdy jego nuta dotknie linii.",
+  introPlayT: "Twoje pianino albo ekran",
+  introPlay: "Graj na prawdziwym pianinie — tablet słucha. Albo dotykaj klawiszy na ekranie.",
+  introStarsT: "Zbieraj gwiazdki",
+  introStars: "Graj czysto, by zdobyć do trzech gwiazdek i otwierać nowe poziomy.",
 };

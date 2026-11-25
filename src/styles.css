@@ -132,6 +132,20 @@ svg.off{color:var(--border)}
   .tile .blk{width:calc(min(96px * 1, 15vw));height:calc(min(96px * 1, 15vw))}
   .tile .lock{top:calc(10*var(--u));height:calc(min(96px, 15vw))}
 }
+/* Wizard step 1 (languages) and step 3 (how-to-play intro) */
+.langpick{display:flex;flex-wrap:wrap;justify-content:center;gap:calc(12*var(--u))}
+.lchip .nm{font-weight:800}
+.islide{display:flex;flex-direction:column;align-items:center;gap:calc(10*var(--u));text-align:center;max-width:calc(760*var(--u))}
+.ipic .ipv{display:block;width:calc(480*var(--u));max-width:80vw;height:auto;border-radius:calc(14*var(--u))}
+.islide h2{margin:calc(8*var(--u)) 0 0;font-size:calc(36*var(--u));font-weight:900}
+.islide p{margin:0;font-size:calc(24*var(--u));opacity:.85;line-height:1.3}
+.idots{display:flex;gap:calc(10*var(--u))}
+.idots i{width:calc(14*var(--u));height:calc(14*var(--u));border-radius:50%;background:var(--border)}
+.idots i.on{background:var(--accent)}
+.b.skip{height:calc(96*var(--u));padding:0 calc(28*var(--u));font-size:calc(24*var(--u));font-weight:800;color:var(--text)}
+#btnIntroNext.wide{width:auto;display:flex;gap:calc(12*var(--u));padding:0 calc(32*var(--u));font-size:calc(28*var(--u));font-weight:900}
+@media (prefers-reduced-motion: no-preference){ .ipv .inote{animation:ifall 1.6s ease-in infinite} }
+@keyframes ifall{from{transform:translateY(-12px)}to{transform:translateY(12px)}}
 .tcard{padding:0;overflow:hidden;display:flex;flex-direction:column;align-items:stretch;text-align:left}
 .tcard .pv{display:block;width:100%;height:auto;aspect-ratio:16/10}
 .tcard .nm{padding:calc(12*var(--u)) calc(14*var(--u));font-size:calc(20*var(--u))}

@@ -139,4 +139,12 @@ export default {
   restoreQ: 'Jugadores en el archivo: {n} ({names}){date}. ¿Reemplazar con ellos a todos los jugadores de este dispositivo?',
   restoreDate: ', copia del {d}',
   tapToStart: 'Toca para empezar',
+  introSkip: "Saltar",
+  introGo: "¡A jugar!",
+  introFallT: "Las notas caen a las teclas",
+  introFall: "Toca la tecla cuando su nota llegue a la línea.",
+  introPlayT: "Tu piano o la pantalla",
+  introPlay: "Toca un piano de verdad: la tableta escucha. O pulsa las teclas en la pantalla.",
+  introStarsT: "Gana estrellas",
+  introStars: "Toca limpio para ganar hasta tres estrellas y abrir nuevos niveles.",
 };
