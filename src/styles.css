@@ -66,13 +66,10 @@ svg.off{color:var(--border)}
 .pips{display:flex;gap:calc(6*var(--u))}
 .pips i{width:calc(26*var(--u));height:calc(12*var(--u));background:var(--bg);border:2px solid var(--border);border-radius:calc(var(--radius) * .3)}
 .pips i.on{background:var(--accent);border-color:var(--accent-dark)}
-.tile[aria-pressed="true"]{outline:calc(4*var(--u)) solid var(--text);outline-offset:calc(3*var(--u));animation:bob 1.2s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(calc(-5*var(--u)))}}
-/* Current level (the one the child is working on): a ring and a soft glow that pulses, plus a marker above the tile,
-   so it does not rely on colour alone. The selected tile keeps its outline and bob. */
-/* The current level keeps a still ring; only the selected tile moves, so the pulse follows the pick */
-.tile.cur{box-shadow:var(--bevel),0 calc(5*var(--u)) 0 var(--accent-dark),0 0 0 calc(4*var(--u)) var(--reward)}
-.tile.cur[aria-pressed="true"]{animation:bob 1.2s ease-in-out infinite,curglow 1.8s ease-in-out infinite}
+/* The selected level: a ring, a soft pulsing glow and a marker above the tile, so it does not rely on colour alone.
+   The marker follows the child's pick; the current level (the one being worked on) is the tile with progress pips. */
+.tile[aria-pressed="true"]{box-shadow:var(--bevel),0 calc(5*var(--u)) 0 var(--accent-dark),0 0 0 calc(4*var(--u)) var(--reward);animation:bob 1.2s ease-in-out infinite,curglow 1.8s ease-in-out infinite}
 @keyframes curglow{50%{box-shadow:var(--bevel),0 calc(5*var(--u)) 0 var(--accent-dark),0 0 0 calc(4*var(--u)) var(--reward),0 0 calc(28*var(--u)) calc(8*var(--u)) color-mix(in srgb, var(--reward) 70%, transparent)}}
 .tile .curmark{position:absolute;top:calc(-22*var(--u));left:50%;width:calc(34*var(--u));height:calc(34*var(--u));margin-left:calc(-17*var(--u));
   display:grid;place-items:center;border-radius:50%;background:var(--reward);color:var(--accent-dark);border:2px solid var(--accent-dark);z-index:1}

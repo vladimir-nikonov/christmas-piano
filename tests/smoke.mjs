@@ -159,6 +159,8 @@ try {
   const moving = i => sn(i => document.querySelectorAll('#levels .tile')[i].getAnimations().some(a => a.playState === 'running' && a.animationName), i);
   assert.equal(await moving(1), true, 'the picked level pulses');
   assert.equal(await moving(0), false, 'the current level, no longer picked, stops pulsing');
+  assert.equal(await page.locator('#levels .curmark').count(), 1, 'one marker above the levels');
+  assert.equal(await page.locator('#levels .tile').nth(1).locator('.curmark').count(), 1, 'the marker moves to the picked level');
   assert.equal(await hint(), 'hAhead', 'a level above the current one is called harder');
   await page.locator('#songs button').nth(1).click();
   assert.equal(await sn(() => window.__sn.db.profiles[0].sel.song), 'birthday');
