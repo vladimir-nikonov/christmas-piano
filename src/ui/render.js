@@ -141,20 +141,59 @@ function laneGlow(now){
   ctx.fillRect(k.x, hitY * 0.35, lw, hitY * 0.65); ctx.fillRect(k.x + k.w - lw, hitY * 0.35, lw, hitY * 0.65);
   ctx.globalAlpha = 1;
 }
-// Evaporation of a played note: the head swells, lifts and fades to white; on the first frame it lets off
-// a few puffs of vapour in its colour (none with reduced motion: then it only fades).
+// Evaporation of a played note, in the style of the theme (TH.fx). The parts it leaves behind carry evap: true.
+//   squares (Pixel):   the block crumbles into its own pixels, which jump and fall in steps;
+//   bubbles (Buddies): it inflates like a balloon and pops into bubbles;
+//   snow (Winter):     it frosts over, melts down and lets off snowflakes that drift up;
+//   ring (Anime):      it flashes, collapses into a twinkling star and throws sparkles up.
+// Reduced motion: in every theme the block only fades in place, with no parts.
 const EVAP_MS = 380;
+const rnd = (a, b) => a + Math.random() * (b - a);
 function evaporate(n, k, yt, yb, e, rad){
   const col = colOf(n.midi), w0 = Math.round(Math.min(115 * U, k.w * (k.black ? 0.9 : 0.82))), h0 = Math.min(yb - yt, 56 * U);
-  const cx = k.x + k.w / 2, cy = yb - h0 / 2 - (reducedMotion ? 0 : e * 26 * U), sc = reducedMotion ? 1 : 1 + 0.35 * e;
-  const w = w0 * sc, h = h0 * sc * (1 - 0.4 * e);
-  if (!n.vapour){ n.vapour = true;
-    if (!reducedMotion) for (let i = 0; i < 9; i++){ const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2, v = (60 + Math.random() * 90) * U;
-      fx.parts.push({ kind:'vapour', x: cx + (Math.random() - 0.5) * w0 * 0.8, y: yb - h0 * Math.random(), vx: Math.cos(a) * v, vy: Math.sin(a) * v,
-        c: col, life: 0.45 + Math.random() * 0.25, age: 0, r: (8 + Math.random() * 8) * U }); }
+  const cx = k.x + k.w / 2, cy0 = yb - h0 / 2, x0 = cx - w0 / 2, y0 = yb - h0, kind = TH.fx;
+  const part = p => fx.parts.push({ age: 0, evap: true, c: col, ...p });
+  if (reducedMotion){ ctx.globalAlpha = 1 - e; noteBlock(x0, y0, w0, h0, col, rad); ctx.globalAlpha = 1; return; }
+  const first = !n.evap; n.evap = true;
+  if (kind === 'squares'){
+    if (first){ const cols = 6, cell = w0 / cols, rows = Math.max(2, Math.round(h0 / cell));
+      for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++)
+        part({ kind:'pixbit', x: x0 + i * cell, y: y0 + j * h0 / rows, s: Math.ceil(cell), vx: (i - (cols - 1) / 2) * 34 * U + rnd(-20, 20) * U,
+          vy: -rnd(80, 220) * U, c: (i + j) % 3 ? col : '#FFFFFF', life: rnd(0.4, 0.65) }); }
+    return; // the pixels are the block now
   }
-  ctx.globalAlpha = 1 - e; ctx.shadowColor = col; ctx.shadowBlur = 24 * U;
-  noteBlock(cx - w / 2, cy - h / 2, w, h, col, rad); ctx.shadowBlur = 0;
+  if (kind === 'bubbles'){
+    const POP = 0.4;
+    if (e < POP){ const sc = 1 + 0.35 * e / POP, w = w0 * sc, h = h0 * sc;
+      ctx.shadowColor = col; ctx.shadowBlur = 24 * U; noteBlock(cx - w / 2, cy0 - h / 2, w, h, col, Math.min(h / 2, rad * sc * 1.4)); ctx.shadowBlur = 0; return; }
+    if (!n.popped){ n.popped = true;
+      part({ kind:'pop', x: cx, y: cy0, life: 0.3, r: w0 * 0.45 });
+      for (let i = 0; i < 8; i++){ const a = rnd(-Math.PI, 0), v = rnd(70, 180) * U;
+        part({ kind:'bubbles', x: cx + rnd(-0.4, 0.4) * w0, y: cy0 + rnd(-0.3, 0.3) * h0, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rnd(0.45, 0.7), r: rnd(4, 9) * U }); } }
+    return;
+  }
+  if (kind === 'snow'){
+    if (first) for (let i = 0; i < 10; i++)
+      part({ kind:'flake', x: x0 + rnd(0.1, 0.9) * w0, y: y0 + rnd(0, 1) * h0, vx: rnd(-40, 40) * U, vy: -rnd(40, 110) * U, rot: rnd(0, 3), spin: rnd(-3, 3), life: rnd(0.6, 0.9), r: rnd(5, 10) * U });
+    const h = h0 * (1 - 0.7 * e), w = w0 * (1 - 0.15 * e); // melts down onto the line
+    ctx.globalAlpha = 1 - e; noteBlock(cx - w / 2, yb - h, w, h, col, rad);
+    ctx.globalAlpha = (1 - e) * Math.min(1, e * 3); rrect(cx - w / 2, yb - h, w, h, rad); ctx.fillStyle = '#E6FBFF'; ctx.fill();
+    ctx.globalAlpha = 1; return;
+  }
+  if (kind === 'ring'){
+    if (first) for (let i = 0; i < 9; i++)
+      part({ kind:'twinkle', x: x0 + rnd(0, 1) * w0, y: y0 + rnd(0, 1) * h0, vx: rnd(-60, 60) * U, vy: -rnd(90, 200) * U, life: rnd(0.45, 0.75), r: rnd(5, 10) * U,
+        c: i % 3 === 0 ? TH.reward : i % 3 === 1 ? '#FFFFFF' : col });
+    const sc = 1 - e, w = w0 * sc, h = h0 * sc; // collapses into its centre while a star opens there
+    if (w > 2 && h > 2){ ctx.globalAlpha = 1 - e * 0.5; ctx.shadowColor = col; ctx.shadowBlur = 28 * U; noteBlock(cx - w / 2, cy0 - h / 2, w, h, col, rad * sc);
+      ctx.shadowBlur = 0; ctx.globalAlpha = Math.min(1, e * 3) * (1 - e); rrect(cx - w / 2, cy0 - h / 2, w, h, rad * sc); ctx.fillStyle = '#FFFFFF'; ctx.fill(); }
+    ctx.globalAlpha = 1; sparkle(cx, cy0, 34 * U * Math.sin(Math.PI * e), '#FFFFFF'); return;
+  }
+  // Any other theme: the block swells, lifts and fades into puffs of vapour.
+  if (first) for (let i = 0; i < 9; i++){ const a = -Math.PI / 2 + rnd(-1.1, 1.1), v = rnd(60, 150) * U;
+    part({ kind:'vapour', x: cx + rnd(-0.4, 0.4) * w0, y: yb - h0 * Math.random(), vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rnd(0.45, 0.7), r: rnd(8, 16) * U }); }
+  const sc = 1 + 0.35 * e, w = w0 * sc, h = h0 * sc * (1 - 0.4 * e), cy = cy0 - e * 26 * U;
+  ctx.globalAlpha = 1 - e; noteBlock(cx - w / 2, cy - h / 2, w, h, col, rad);
   ctx.globalAlpha = (1 - e) * Math.min(1, e * 2.5); rrect(cx - w / 2, cy - h / 2, w, h, rad); ctx.fillStyle = '#FFFFFF'; ctx.fill();
   ctx.globalAlpha = 1;
 }
@@ -233,6 +272,13 @@ export function draw(now, dt){
     if (p.kind === 'vapour'){ p.vx *= 0.94; p.vy -= 60 * dt * U; p.x += p.vx * dt; p.y += p.vy * dt; const r = p.r * (1 + 1.6 * t);
       ctx.globalAlpha = (1 - t) * 0.55; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7); ctx.fill();
       ctx.globalAlpha = (1 - t) * 0.5; ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(p.x - r * 0.25, p.y - r * 0.25, r * 0.45, 0, 7); ctx.fill(); continue; }
+    if (p.kind === 'pixbit'){ p.vy += 700 * dt * U; p.x += p.vx * dt; p.y += p.vy * dt; const q = Math.ceil((1 - t) * 3) / 3, sz = Math.round(p.s * (t < 0.5 ? 1 : 0.5));
+      ctx.globalAlpha = q; ctx.fillStyle = p.c; ctx.fillRect(Math.round(p.x / 2) * 2, Math.round(p.y / 2) * 2, sz, sz); continue; }
+    if (p.kind === 'flake'){ p.vy *= 0.97; p.x += (p.vx + Math.sin(p.age * 7 + p.rot) * 30 * U) * dt; p.y += p.vy * dt; p.rot += p.spin * dt;
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.8 * U; ctx.beginPath();
+      for (let j = 0; j < 3; j++){ const an = p.rot + j * Math.PI / 3; ctx.moveTo(p.x - Math.cos(an) * p.r, p.y - Math.sin(an) * p.r); ctx.lineTo(p.x + Math.cos(an) * p.r, p.y + Math.sin(an) * p.r); }
+      ctx.stroke(); continue; }
+    if (p.kind === 'twinkle'){ p.vx *= 0.95; p.vy *= 0.95; p.x += p.vx * dt; p.y += p.vy * dt; sparkle(p.x, p.y, p.r * (0.6 + 0.4 * Math.abs(Math.sin(p.age * 18))), p.c); continue; }
     if (p.kind === 'star'){ p.vy += 260 * dt * U; p.x += p.vx * dt; p.y += p.vy * dt; sparkle(p.x, p.y, p.r * (1 - t * 0.5), Math.floor(p.age * 12) % 2 ? '#fff' : TH.reward); continue; }
     if (p.kind === 'bubbles') p.vy -= 200 * dt * U; else p.vy += 420 * dt * U;
     p.x += p.vx * dt; p.y += p.vy * dt;
