@@ -237,16 +237,32 @@ function drawHand(cx, top, s, hand, finger, col){
   ctx.fillStyle = '#182335'; ctx.font = '900 ' + Math.round(s * 0.3) + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(finger, cx - s / 2 + (hand === 'L' ? 45 : 55) * k, top + 85 * k);
 }
-function fingerHint(m, midi, x, top, w, h, now){
+// The hand and its L/R mark, centred at cx in the band top..top+h; s is the hand width (same on every key).
+function fingerHint(m, midi, cx, top, h, s, tag){
   const f = G && fingerFor(G.song, midi); if (!f) return;
   handHint.key = m; handHint.hand = f.hand; handHint.finger = f.finger;
-  const tag = Math.round(Math.min(22 * U, w * 0.3)), s = Math.min(w * 0.82, (h - tag - 2 * U) / 1.2, 150 * U);
-  const bob = reducedMotion ? 0 : Math.sin(now * 5) * 2 * U, cx = x + w / 2, ht = top + (h - s * 1.2 - tag) / 2 + bob;
+  const gap = 3 * U, ht = top + (h - s * 1.2 - gap - tag) / 2;
   drawHand(cx, ht, s, f.hand, f.finger, PC_COLOR[midi % 12]);
-  const ty = ht + s * 1.2 + tag / 2 + 2 * U, tw = tag * 1.3;
+  const ty = ht + s * 1.2 + gap + tag / 2, tw = tag * 1.3;
   rrect(cx - tw / 2, ty - tag / 2, tw, tag, tag / 2); ctx.fillStyle = '#182335'; ctx.fill();
   ctx.fillStyle = '#FFFFFF'; ctx.font = '900 ' + Math.round(tag * 0.72) + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(tx(f.hand === 'L' ? 'handL' : 'handR'), cx, ty + 1);
+}
+// Where the hand fits on key m without covering a neighbour key, the note label or the letter: the band (top, h) and
+// the centre cx. White keys: the column between the black neighbours above their lower edge, so the hand is no wider
+// than that column; it stays centred on the key. The size is the same on every key: whatever fits the tightest place.
+function handFit(m, letters){
+  const k = keys[m], wh = kbH - 8 * U, bh = Math.round(kbH * 0.58), top0 = kbTop + 2;
+  const sh = Math.round(Math.min(30 * U, wh * 0.16)), pad = 6 * U, lt = letters ? 26 * U : pad;
+  const white = { top: top0 + lt, bot: kbTop + wh - sh - 6 * U - pad }, black = { top: top0 + pad, bot: top0 + bh - lt };
+  const kw = keys[LO].w, bw = keys[LO + 1].w, gap = 3 * U;
+  const tagOf = s => Math.round(Math.min(20 * U, s * 0.34));
+  const fitH = band => s => s * 1.2 + gap + tagOf(s) <= band.bot - band.top;
+  const side = 3 * U; // the drawing has its own margin inside its box; this keeps the outline off the neighbours
+  let s = Math.min(kw - bw - 2 * side, bw - 2 * side, 150 * U); // narrowest white column; black key width
+  while (s > 8 && !(fitH(white)(s) && fitH(black)(s))) s -= 1;
+  const band = k.black ? black : white;
+  return { cx: k.x + k.w / 2, top: band.top, h: band.bot - band.top, s, tag: tagOf(s) };
 }
 // Key colours and surface details per theme
 const KEY_COLORS = {
@@ -296,10 +312,7 @@ function drawKeyboard(now){
     if (fx.heardKey[m] && nowMs - fx.heardKey[m] < 160 && !fa){ ctx.fillStyle = 'rgba(120,140,220,.4)'; ctx.fillRect(x, kbTop, w, h + 2); }
     if (fa){ ctx.globalAlpha = fa; ctx.fillStyle = fl.c; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
     ctx.restore();
-    if (m === handKey){ // space between the top decor and the note label (white) or the letter (black); drawn over the black keys
-      const t0 = kbTop + 2 + (k.black ? 4 : 8) * U, t1 = kbTop + 2 + h - (k.black ? 22 * U : Math.round(Math.min(30 * U, h * 0.16)) + 8 * U);
-      hand = () => fingerHint(m, hn.midi, x, t0, w, t1 - t0, now);
-    }
+    if (m === handKey){ const hf = handFit(m, !!fx.kbLetters); hand = () => fingerHint(m, hn.midi, hf.cx, hf.top, hf.h, hf.s, hf.tag); }
     if (m === fk){ const lw = (4 + 1.5 * pulse(now, 6) * fp + 3 * focus.nudge) * U; rrect(x + lw / 2, kbTop + 2 + lw / 2, w - lw, h - lw, kr); ctx.strokeStyle = FOCUS_EDGE; ctx.lineWidth = lw; ctx.stroke(); }
     if (sd){ ctx.globalAlpha = sd; rrect(x + 1.5 * U, kbTop + 2 + 1.5 * U, w - 3 * U, h - 3 * U, kr); ctx.strokeStyle = NEUTRAL; ctx.lineWidth = 3 * U; ctx.stroke(); ctx.globalAlpha = 1; }
     // Once the computer keyboard is used, show which letter plays each key.
