@@ -7,7 +7,7 @@ import { SONGS, songKey, bestKey } from '../core/songs.js';
 import { HIST_MAX, save, P, opts, dev, prog, partFor } from '../data/storage.js';
 import { E, S, dispatch, is, flow, view as state, paused } from '../core/flow.js';
 import { $ } from '../dom.js';
-import { micFrame } from '../input/mic.js';
+import { micFrame, micNode } from '../input/mic.js';
 import { requestWake } from '../platform/wake.js';
 import { U, LO, HI, keys, hitY } from '../ui/canvas.js';
 import { reducedMotion } from '../ui/motion.js';
@@ -36,7 +36,7 @@ export function startGame(demo){
         time: -Math.max(look, S.meter * beat) - 0.4, lastTickBeat: null, end: notes[notes.length - 1].t + notes[notes.length - 1].d + 0.8,
         hits:0, perfect:0, finished:false, waiting:false, resumeIn:0, resumeBeat:null,
         minTempo: o.tempo };
-  $('#micPill').hidden = demo || !!dev().touch;
+  $('#micPill').hidden = demo || !micNode(); // shown while the microphone listens
   // The hands switch only where the level still shows the hand.
   $('#btnHands').hidden = !demo && !L.cues.hand;
   updateHud(); updateHandsBtn(); requestWake();

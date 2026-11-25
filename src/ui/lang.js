@@ -11,7 +11,6 @@ import { renderHome } from './screens/home.js';
 import { renderProfiles, pickTheme, wizAt, wizStep, renderMe } from './screens/profiles.js';
 import { renderSettings } from './screens/settings.js';
 import { THEMES, THEME_KEYS } from './theme-data.js';
-import { updateInputMode } from './inputmode.js';
 import { updateHandsBtn } from './hands.js';
 import { updateCamera } from './camwin.js';
 import { updateRec } from './screens/vcard.js';
@@ -44,7 +43,6 @@ export function updateQuick(){
   document.querySelectorAll('.qlang').forEach(b => { b.innerHTML = flagSVG(L.id); });
   const p = P(), th = state === 'newp' ? pickTheme : (p ? p.theme : 'pixel');
   document.querySelectorAll('.qtheme').forEach(b => b.innerHTML = themePreview(th));
-  updateInputMode();
   updateHandsBtn();
   updateCamera();
   updateRec();

@@ -2,9 +2,9 @@
 
 import { tone } from '../audio/synth.js';
 import { midiForCode } from '../core/keymap.js';
-import { dev } from '../data/storage.js';
 import { $ } from '../dom.js';
 import { state, paused, fx, onPlayed } from '../game/game.js';
+import { quietMic } from './mic.js';
 
 const typing = el => el && (el.isContentEditable || /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName));
 document.addEventListener('keydown', e => {
@@ -15,7 +15,7 @@ document.addEventListener('keydown', e => {
   e.preventDefault();
   if (e.repeat) return;
   fx.kbLetters = true;
-  // With the microphone on, the speaker tone would be heard again as a second note.
-  if (dev().touch) tone(m, 0.4);
-  onPlayed(m, performance.now(), 'key');
+  // The speaker tone would be heard again as a second note: quiet the microphone for a moment.
+  const at = performance.now(); quietMic(m, at); tone(m, 0.4);
+  onPlayed(m, at, 'key');
 });

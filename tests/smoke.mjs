@@ -64,8 +64,18 @@ async function checkLayoutOn(pg, sels){
   await pg.waitForTimeout(250);
 }
 
+// Play always asks for the microphone. Contexts that do not test the microphone get a silent one, so it is granted
+// at once and hears nothing; taps and keys still count.
+const silentMic = c => c.addInitScript(() => {
+  navigator.mediaDevices.getUserMedia = async () => {
+    const stream = new window.AudioContext().createMediaStreamDestination().stream;
+    window.__silentTrack = stream.getAudioTracks()[0]; return stream;
+  };
+});
+
 try {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, acceptDownloads: true });
+  await silentMic(ctx);
   // Web fonts are not needed for the test; answer with empty CSS so the run works offline.
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
   const page = await ctx.newPage();
@@ -186,12 +196,8 @@ try {
   assert.equal(await sn(() => window.__sn.db.profiles[0].sel.level), 0);
   await sn(() => { window.__sn.db.profiles[0].prog.birthday.level = 0; return window.__sn.save(); });
 
-  log('parent settings: count screen taps');
-  await page.click('#btnSettings');
-  await visible('#settings');
-  await page.check('#sTouch');
-  await page.click('#btnSetClose');
-  assert.equal(await sn(() => window.__sn.db.device.touch), true);
+  log('no input mode to pick: no switch on home or in parent settings');
+  assert.equal(await page.locator('.qinput, #sTouch').count(), 0);
 
   log('home: no separate length row; every level tile shows its default length');
   assert.equal(await page.locator('#parts').count(), 0);
@@ -306,7 +312,7 @@ try {
   assert.equal(await sn(() => window.__sn.game.notes[0].grade), 'good');
 
   log('play notes with the computer keyboard and with screen taps');
-  assert.ok(await page.locator('#micPill').isHidden(), 'no microphone status in screen mode');
+  assert.ok(await page.locator('#micPill').isVisible(), 'the microphone listens while taps and keys count too');
   const codeFor = m => Object.keys(KEY_CODES).find(c => KEY_CODES[c] === m);
   for (let i = 1; i <= 4; i++){
     await waitAtNextNote();
@@ -318,24 +324,19 @@ try {
   assert.equal(await page.locator('#hud .qfull svg').count(), 1, 'full-screen button in the game HUD');
   await page.keyboard.press('Escape');
   await waitPaused();
-  log('paused: no popup, the left column turns Pause into Resume and adds Restart and the input mode');
+  log('paused: no popup, the left column turns Pause into Resume and adds Restart');
   assert.equal(await page.locator('#pause').count(), 0, 'no pause popup');
   assert.equal(await sn(() => document.body.classList.contains('paused')), true, 'the frozen field dims');
   assert.equal(await page.getAttribute('#btnPause', 'data-ta'), 'resume');
   assert.ok(await page.locator('#btnPause.primary').isVisible(), 'Resume is the primary button');
   assert.deepEqual(await sn(() => [...document.querySelectorAll('#hudCtl button')].filter(b => !b.hidden).map(b => b.id || b.className)),
-    ['btnPause', 'btnRestart', 'b ico qinput'], 'paused column: resume, restart, input mode');
+    ['btnPause', 'btnRestart'], 'paused column: resume, restart');
   const homeBox = await sn(() => { const r = document.getElementById('btnHudHome').getBoundingClientRect(); return { left: r.left, top: r.top, bottom: r.bottom }; });
   assert.ok(homeBox.left < 40 && homeBox.top < 40, 'Home sits in the top-left corner of the game screen');
   assert.ok(await sn(() => document.querySelector('#hudCtl button:not([hidden])').getBoundingClientRect().top) >= homeBox.bottom, 'the playback column starts under Home');
   const col = await sn(() => [...document.querySelectorAll('#hudCtl button:not([hidden])')].map(b => b.getBoundingClientRect()).map(r => [Math.round(r.left + r.width / 2), Math.round(r.top)]));
   assert.ok(col.every(([x]) => x === col[0][0] && x < 120), 'the controls stand in one column on the left edge');
   assert.ok(col.every(([, y], i) => !i || y > col[i - 1][1]), 'the column runs top to bottom');
-  log('switch to the microphone from the paused HUD and back');
-  await page.locator('#hud .qinput').click();
-  assert.equal(await sn(() => window.__sn.db.device.touch), false);
-  await page.locator('#hud .qinput').click();
-  assert.equal(await sn(() => window.__sn.db.device.touch), true);
   await page.click('#btnPause');
   await page.waitForFunction(() => window.__sn.nav !== 'paused');
   assert.equal(await page.getAttribute('#btnPause', 'data-ta'), 'pause', 'the button turns back into Pause');
@@ -394,9 +395,8 @@ try {
   assert.equal(await sn(() => !!(history.state && history.state.sn)), false, 'no trap entry left on the home screen');
 
   log('double-tapping Play while the microphone is asked starts one game; blur and mic loss pause');
-  await page.click('#btnSettings');
-  await page.uncheck('#sTouch');
-  await page.click('#btnSetClose');
+  // The silent microphone from the earlier games is still open: end it, so Play has to ask again.
+  await sn(() => window.__silentTrack.dispatchEvent(new Event('ended')));
   await sn(() => {
     window.__gum = 0;
     navigator.mediaDevices.getUserMedia = () => {
@@ -423,9 +423,6 @@ try {
   await waitPaused();
   await page.click('#btnHudHome');
   await visible('#home');
-  await page.click('#btnSettings');
-  await page.check('#sTouch');
-  await page.click('#btnSetClose');
 
   log('switch language from the quick picker');
   await page.locator('#home .qlang').click();
@@ -705,15 +702,23 @@ try {
     await dp.waitForTimeout(150);
     assert.equal(await dsn(() => window.__gumCalls), calls + 1);
 
-    log('microphone denied: play with screen taps');
+    log('microphone denied: play on the screen; the next Play does not ask again');
     await dp.click('#btnMicTouch');
     await dp.waitForFunction(() => window.__sn.state === 'playing');
-    assert.equal(await dsn(() => window.__sn.db.device.touch), true);
     assert.ok(await dp.locator('#micErr').isHidden());
+    assert.ok(await dp.locator('#micPill').isHidden(), 'no microphone status without a microphone');
     await dp.click('#btnPause');
     await dp.click('#btnHudHome');
     await dp.locator('#home').waitFor({ state: 'visible' });
-    await dsn(() => { window.__sn.db.device.touch = false; return window.__sn.save(); });
+    const asked = await dsn(() => window.__gumCalls);
+    await dp.click('#btnPlay');
+    await dp.waitForFunction(() => window.__sn.state === 'playing');
+    assert.equal(await dsn(() => window.__gumCalls), asked, 'the microphone is not asked again this session');
+    await dp.click('#btnPause');
+    await dp.click('#btnHudHome');
+    await dp.locator('#home').waitFor({ state: 'visible' });
+    // A grant in the browser makes Play use the microphone again.
+    await dsn(() => { window.__perm.state = 'granted'; window.__perm.dispatchEvent(new Event('change')); window.__perm.state = 'denied'; });
 
     log('microphone allowed later: the error clears and Try again starts the game');
     await dsn(() => { window.__micMode = 'NotAllowedError'; });
@@ -734,6 +739,7 @@ try {
   log('every theme: the themed entry (particles, opening ring) starts the game and leaves nothing over the notes');
   {
     const tctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await silentMic(tctx);
     await tctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
     const tp = await tctx.newPage();
     tp.on('pageerror', e => errors.push('pageerror: ' + e.message));
@@ -743,9 +749,6 @@ try {
     await tp.click('#btnNewOk');
     await tp.click('#btnIntroSkip');
     await tp.locator('#home').waitFor({ state: 'visible' });
-    await tp.click('#btnSettings');
-    await tp.check('#sTouch');
-    await tp.click('#btnSetClose');
     for (const th of ['pixel', 'plastic', 'winter', 'anime']){
       await tp.evaluate(t => { window.__sn.db.profiles[0].theme = t; }, th);
       await tp.locator('#songs button').nth(0).click(); // re-renders home in that theme
@@ -766,6 +769,7 @@ try {
   log('reduced motion: no falling decor and no particles on the canvas');
   {
     const rctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+    await silentMic(rctx);
     await rctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
     const rp = await rctx.newPage();
     rp.on('pageerror', e => errors.push('[' + step + '] pageerror: ' + e.message));
@@ -781,9 +785,6 @@ try {
       const f = () => { const d = window.__sn.drawn; for (const k in m) m[k] = Math.max(m[k], d[k]); if (performance.now() - t0 < ms) window.requestAnimationFrame(f); else res(m); };
       window.requestAnimationFrame(f); }), ms);
     assert.equal((await watch(300)).flakes, 0);
-    await rp.click('#btnSettings');
-    await rp.check('#sTouch');
-    await rp.click('#btnSetClose');
     await rp.click('#btnPlay');
     assert.equal(await rp.locator('.tfx, .tp, .tr').count(), 0, 'reduced motion: no entry particles or ring');
     await rp.waitForFunction(() => { const g = window.__sn.game, n = g && g.notes.find(n => !n.hit && !n.missed); return !!(n && g.waiting && g.time >= n.t); }, null, { timeout: 15000 });
@@ -813,6 +814,13 @@ try {
     await mp.waitForFunction(() => window.__sn.state === 'playing');
     await mp.waitForFunction(() => window.__sn.game.notes[0].hit, null, { timeout: 20000 });
     assert.equal(await mp.locator('#heard').textContent(), 'E');
+
+    log('microphone: a screen tap quiets it for a moment, then the piano is heard again');
+    { const p = await mp.evaluate(() => window.__sn.keyPoint(60)); await mp.mouse.click(p.x, p.y); }
+    assert.equal(await mp.evaluate(() => window.__sn.micQuiet), true, 'the tap quiets the microphone');
+    await mp.waitForFunction(() => !window.__sn.micQuiet, null, { timeout: 2000 });
+    await mp.evaluate(() => { document.querySelector('#heard').textContent = '?'; });
+    await mp.waitForFunction(() => document.querySelector('#heard').textContent !== '?', null, { timeout: 3000 });
 
     log('camera: the self-view window opens from the HUD, moves, resizes, remembers and closes');
     await mp.click('#hud .qcam');

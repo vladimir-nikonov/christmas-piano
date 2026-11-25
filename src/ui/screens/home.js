@@ -3,7 +3,7 @@
 import { audio } from '../../audio/synth.js';
 import { LEVELS } from '../../core/levels.js';
 import { SONGS, SONG_KEYS, songKey, PART_KEYS } from '../../core/songs.js';
-import { db, save, P, dev, prog, unlocked, partFor } from '../../data/storage.js';
+import { db, save, P, prog, unlocked, partFor } from '../../data/storage.js';
 import { E, S, dispatch, can, is, flow } from '../../core/flow.js';
 import { homeHint } from '../../core/hint.js';
 import { $ } from '../../dom.js';
@@ -17,7 +17,6 @@ import { icon } from '../icons.js';
 import { syncLang, updateQuick } from '../lang.js';
 import { openNewProfile } from './profiles.js';
 import { updateBackupNag } from './settings.js';
-import { setScreenInput } from '../inputmode.js';
 import { applyTheme } from '../theme.js';
 import { entryTiming, entryFrames, entryFx, dropLayer, zoomOutFrames, fxLayer, unlockFx, calm } from '../themefx.js';
 
@@ -202,12 +201,16 @@ function showMicState(kind){
 const hideMicState = () => { $('#micErr').hidden = true; $('#homeCard').classList.remove('mic'); };
 // Permission granted in the browser (e.g. from the site settings): clear the error, the next Play starts at once.
 // The machine leaves the mic state for plain home (ignored while a request is still open).
-watchMicPermission(st => { if (st === 'granted'){ hideMicState(); dispatch(E.CANCEL); } });
+watchMicPermission(st => { if (st === 'granted'){ micSkipped = false; hideMicState(); dispatch(E.CANCEL); } });
+// The player chose to play without the microphone after it failed: Play stops asking until the page reloads or the
+// browser grants the microphone, so a tablet without a piano is not shown the same error before every game.
+let micSkipped = false;
 // Play: the machine goes to MicSetup while the microphone is asked, so a second tap during the permission prompt is
 // ignored; a result that arrives after the child went elsewhere (e.g. Listen) is ignored as well.
 async function playWithMic(){
-  // Screen and keyboard mode never asks for the microphone: a tablet without a piano needs no permission.
-  const mic = !dev().touch;
+  // There is no input mode to pick: the microphone always listens for a real piano, and screen taps and the
+  // computer keyboard always count too (each one quiets the microphone for a moment, see quietMic).
+  const mic = !micSkipped;
   if (!dispatch(E.PLAY, { mic })) return;
   audio(); hideMicState();
   if (mic){
@@ -219,8 +222,8 @@ async function playWithMic(){
 }
 $('#btnPlay').onclick = playWithMic;
 $('#btnMicRetry').onclick = playWithMic;
-// Play without the microphone: count screen taps on this device (the parent setting) and start.
-$('#btnMicTouch').onclick = () => { audio(); if (!dispatch(E.PLAY, { mic: false })) return; setScreenInput(true); hideMicState(); enterGame(false); };
+// Play without the microphone: screen taps and the keyboard work as always; the microphone is not asked again this session.
+$('#btnMicTouch').onclick = () => { audio(); if (!dispatch(E.PLAY, { mic: false })) return; micSkipped = true; hideMicState(); enterGame(false); };
 $('#btnListen').onclick = () => { audio(); if (dispatch(E.LISTEN)) enterGame(true); };
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
 const toggleFull = () => {
@@ -257,7 +260,7 @@ $('#btnPause').onclick = () => {
   if (is(S.PAUSED)) resumeGame(); else pauseGame();
 };
 $('#btnRestart').onclick = () => { if (dispatch(E.REPLAY)) startGame(false); };
-// The column follows the state: Pause + Home while the game runs; Resume (big, primary) + Restart + input mode + Home
+// The column follows the state: Pause + Home while the game runs; Resume (big, primary) + Restart + Home
 // while it is paused. The frozen field dims under it.
 function syncPlayback(s){
   const p = s.name === S.PAUSED, b = $('#btnPause');
@@ -267,7 +270,6 @@ function syncPlayback(s){
   b.setAttribute('aria-label', tx(b.dataset.ta));
   b.innerHTML = icon(p ? 'play' : 'pause', { fill: p });
   $('#btnRestart').hidden = !p;
-  $('#hudCtl .qinput').hidden = !p;
 }
 flow.subscribe(syncPlayback); syncPlayback(flow.state);
 // Playback speed slider on the right: drag up for faster, down for slower, in steps of 0.05×; it applies to the

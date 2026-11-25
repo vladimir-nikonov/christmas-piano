@@ -52,6 +52,17 @@ export async function watchMicPermission(cb){
   } catch(e){ /* microphone is not a known permission name in this browser */ }
 }
 const trk = { held:null, cand:null, candN:0, candAt:0, attackAt:-1, lastEmit:0, hist:[] };
+// Screen taps and the computer keyboard sound the note from the speaker. The microphone would hear that tone as a
+// second note, so each tap or key quiets note detection for a moment; the level meter keeps moving. The tapped note
+// is taken as already held, so the fading tail of the tone does not count once the microphone listens again.
+// A real piano played afterwards is picked up again without anything to switch.
+let quietUntil = 0;
+export const QUIET_MS = 700;
+export const micQuiet = () => performance.now() < quietUntil;
+export function quietMic(midi, atMs = performance.now()){
+  quietUntil = Math.max(quietUntil, atMs + QUIET_MS);
+  trk.held = midi; trk.cand = null; trk.candN = 0; trk.attackAt = -1; trk.lastEmit = atMs;
+}
 let micBarsLvl = -1;
 // Calls emit(midi, atMs, 'mic') for every new note it hears.
 export function micFrame(nowMs, emit){
@@ -61,6 +72,7 @@ export function micFrame(nowMs, emit){
   const rms = Math.sqrt(s / 1024);
   const lv = Math.min(4, Math.floor(rms * 60)); if (lv !== micBarsLvl){ micBarsLvl = lv; document.querySelectorAll('#micbars i').forEach((b, i) => { b.className = i < lv ? 'on' : ''; b.style.height = (25 + i * 25) + '%'; }); }
   if (nowMs < mic.calibUntil){ mic.calib.push(rms); return; }
+  if (nowMs < quietUntil){ trk.hist.length = 0; return; }
   if (mic.calib.length){ const c = mic.calib.sort((a, b) => a - b); noiseFloor = Math.max(0.002, c[Math.floor(c.length / 2)]); mic.calib = []; }
   const sensMul = 1 + (10 - dev().sens) * 0.7;
   const floor = Math.max(noiseFloor * 1.1 * sensMul, 0.003 * sensMul);

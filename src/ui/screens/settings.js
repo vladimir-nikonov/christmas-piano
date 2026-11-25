@@ -11,7 +11,6 @@ import { LANGS, LANG, tx, fmtDate, fmtSpeed } from '../../i18n/index.js';
 import { resetHeard } from '../../input/mic.js';
 import { avatarSVG, blockSVG, sheetSVG } from '../art.js';
 import { starsHTML } from '../progress.js';
-import { setScreenInput } from '../inputmode.js';
 import { setLang } from '../lang.js';
 import { goHome } from './home.js';
 import { openMe, openIntro } from './profiles.js';
@@ -36,7 +35,6 @@ export function renderSettings(){
   lg.value = LANG; lg.onchange = e => setLang(e.target.value);
   $('#sLabels').value = p.opts.labels; $('#sLabels').onchange = e => { p.opts.labels = e.target.value; resetHeard(); save(); };
   [['#sHint','hint'],['#sOct','anyOct'],['#sLock','lockLevels']].forEach(([id, k]) => { $(id).checked = !!p.opts[k]; $(id).onchange = e => { p.opts[k] = e.target.checked; save(); }; });
-  $('#sTouch').checked = dev().touch; $('#sTouch').onchange = e => setScreenInput(e.target.checked);
   armButton('#btnReset', tx('sReset'), () => { p.level = 0; p.streak = 0; p.prog = freshProg(); p.best = {}; p.hist = {}; p.top = {}; p.sel.level = 0; save(); });
   armButton('#btnDelete', tx('sDelete'), () => { db.profiles = db.profiles.filter(x => x.id !== p.id); if (!db.profiles.some(x => x.id === db.current)) db.current = db.profiles[0] ? db.profiles[0].id : null; save(); goHome(); });
   renderBackupInfo(); $('#restoreAsk').hidden = true; $('#wipeAsk').hidden = true;

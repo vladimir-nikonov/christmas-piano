@@ -10,6 +10,7 @@ const DB_KEY = 'snezhnye-noty-v2';
 // lockLevels: levels open one by one (on by default). lockV marks profiles that already got that default, so a
 // parent who later turns the locks off keeps that choice; profiles saved before it get the locks once.
 export const DEF_OPTS = { tempo:100, tolMs:0, labels:'native', anyOct:true, hint:true, hands:true, lockLevels:true, lockV:1 };
+// touch: the old input-mode switch; no longer read (all inputs work at once), kept so old records and backups stay as they are.
 export const DEF_DEV = { latency:80, sens:5, touch:false };
 // Primary store: IndexedDB (db 'snezhnye-noty', store 'kv', key 'db'). localStorage[DB_KEY] is the legacy
 // store, migrated once on first run and used as a fallback when IndexedDB is unavailable or a write fails.
