@@ -196,8 +196,10 @@ const MIC_HINT = { denied:'micDenied', missing:'micMissing', busy:'micBusy', oth
 function showMicState(kind){
   const h = $('#micHint'); h.dataset.t = MIC_HINT[kind] || MIC_HINT.other; h.textContent = tx(h.dataset.t);
   $('#micErr').dataset.kind = kind; $('#micErr').hidden = false;
+  // The mic state says what to do, so the hint line steps aside and home still fits without scrolling
+  $('#homeCard').classList.add('mic');
 }
-const hideMicState = () => { $('#micErr').hidden = true; };
+const hideMicState = () => { $('#micErr').hidden = true; $('#homeCard').classList.remove('mic'); };
 // Permission granted in the browser (e.g. from the site settings): clear the error, the next Play starts at once.
 // The machine leaves the mic state for plain home (ignored while a request is still open).
 watchMicPermission(st => { if (st === 'granted'){ hideMicState(); dispatch(E.CANCEL); } });

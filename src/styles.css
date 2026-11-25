@@ -95,8 +95,9 @@ svg.off{color:var(--border)}
 .cnbeam .edge{fill:none;stroke:var(--cn);stroke-opacity:.55;stroke-width:calc(2*var(--u));stroke-linecap:round}
 .levels,.levelxp{position:relative;z-index:1}
 /* The gauge row: the selected level's block, the gauge, the next level's block (grey while locked) or a star on the top level */
-.levelxp{display:flex;align-items:flex-start;gap:calc(16*var(--u));width:min(calc(620*var(--u)),100%);padding-bottom:calc(40*var(--u))}
+.levelxp{display:flex;align-items:flex-start;gap:calc(16*var(--u));width:min(calc(620*var(--u)),100%);padding-bottom:calc(34*var(--u))}
 .levelxp[hidden]{display:none}
+.homecard.mic #homeHint{display:none}
 .xpend{flex:none;width:calc(48*var(--u));height:calc(48*var(--u));margin-top:calc(-11*var(--u))}
 .xpend svg{display:block;width:100%;height:100%}
 .xpend svg.i{color:var(--reward)}
