@@ -42,9 +42,9 @@ const unlessEntering = f => (d, p, s) => d.entering ? null : f(d, p, s);
 // state -> event -> target state name | state | (data, payload, state) => state | name | null (guard failed)
 export const TABLE = Object.freeze({
   [S.BOOT]: { [E.HOME]: S.HOME, [E.NEW_PLAYER]: S.NEW_PLAYER },
-  [S.PROFILES]: { [E.HOME]: S.HOME, [E.NEW_PLAYER]: S.NEW_PLAYER },
+  [S.PROFILES]: { [E.HOME]: S.HOME, [E.NEW_PLAYER]: S.NEW_PLAYER, [E.ME]: S.ME },
   [S.NEW_PLAYER]: { [E.HOME]: S.HOME, [E.PROFILES]: S.PROFILES },
-  [S.ME]: { [E.HOME]: S.HOME },
+  [S.ME]: { [E.HOME]: S.HOME, [E.PROFILES]: S.PROFILES },
   [S.HOME]: { ...fromHome },
   [S.SETTINGS]: { [E.HOME]: S.HOME, [E.ME]: S.ME, [E.NEW_PLAYER]: S.NEW_PLAYER },
   // The mic state lives on home, so home's buttons keep working; Play again (Try again) only once the request is over.

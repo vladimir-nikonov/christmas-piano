@@ -1,7 +1,7 @@
 // Player list, new player wizard and the child's own page.
 
 import { DEF_OPTS, db, save, P, freshProg } from '../../data/storage.js';
-import { E, dispatch } from '../../core/flow.js';
+import { E, S, dispatch, is } from '../../core/flow.js';
 import { $ } from '../../dom.js';
 import { LANGS, LANG, tx } from '../../i18n/index.js';
 import { AVATARS, avatarSVG, blockSVG } from '../art.js';
@@ -24,10 +24,35 @@ export function renderProfiles(){
     b.innerHTML = avatarSVG(p.avatar, px(96), p.theme) + '<span class="nm"></span><span class="meta"><span style="display:block;width:' + px(28) + 'px;height:' + px(28) + 'px;border-radius:3px;overflow:hidden">' + blockSVG(p.level, p.theme) + '</span></span>';
     b.querySelector('.nm').textContent = p.name || ' ';
     b.onclick = () => { db.current = p.id; save(); goHome(); };
-    box.appendChild(b);
+    // Edit opens the child's page for this player; Delete asks with a second tap (the button turns red) within 3 s.
+    const card = document.createElement('div'); card.className = 'pcard';
+    const acts = document.createElement('div'); acts.className = 'pacts';
+    const nm = p.name || tx('noName');
+    const ed = document.createElement('button'); ed.className = 'b ico pedit'; ed.setAttribute('aria-label', tx('myPage') + ': ' + nm);
+    ed.innerHTML = icon('pencil'); ed.onclick = () => { db.current = p.id; save(); openMe(); };
+    const del = document.createElement('button'); del.className = 'b ico pdel'; del.setAttribute('aria-label', tx('sDelete') + ': ' + nm);
+    del.innerHTML = icon('trash');
+    let tm = 0;
+    del.onclick = () => {
+      if (!del.classList.contains('armed')){
+        del.classList.add('armed'); del.setAttribute('aria-label', tx('sConfirm'));
+        tm = setTimeout(() => { del.classList.remove('armed'); del.setAttribute('aria-label', tx('sDelete') + ': ' + nm); }, 3000);
+        return;
+      }
+      clearTimeout(tm); deletePlayer(p.id);
+    };
+    acts.append(ed, del); card.append(b, acts); box.appendChild(card);
   });
   const add = document.createElement('button'); add.className = 'b ptile add'; add.setAttribute('aria-label', tx('newPlayer'));
   add.innerHTML = icon('plus'); add.onclick = openNewProfile; box.appendChild(add);
+}
+// Removes a player; the list stays open, or the new player wizard starts when nobody is left.
+function deletePlayer(id){
+  db.profiles = db.profiles.filter(x => x.id !== id);
+  if (!db.profiles.some(x => x.id === db.current)) db.current = db.profiles[0] ? db.profiles[0].id : null;
+  save();
+  if (!db.profiles.length){ goHome(); return; }
+  applyTheme(P().theme); invalidateBg(); updateQuick(); renderProfiles();
 }
 // New player wizard: 1) language and theme, 2) avatar and name (the player is created here), 3) the how-to-play intro.
 export let pickAv = 0, pickTheme = 'pixel', wizAt = 1;
@@ -102,8 +127,10 @@ $('#btnWho').addEventListener('click', () => { const r = whoRect; whoRect = null
 $('#btnProfClose').onclick = goHome;
 $('#profiles').addEventListener('click', e => { if (e.target.id === 'profiles') goHome(); });
 
-/* Child's own page: name, avatar, theme. Saved on every tap. */
-export function openMe(){ if (!dispatch(E.ME)) return; renderMe(); updateQuick(); }
+/* Child's own page: name, avatar, theme. Saved on every tap. Opened from the player list it closes back to the list. */
+let meFromList = false;
+export function openMe(){ const fromList = is(S.PROFILES); if (!dispatch(E.ME)) return; meFromList = fromList; applyTheme(P().theme); renderMe(); updateQuick(); }
+function closeMe(){ if (meFromList && dispatch(E.PROFILES)){ meFromList = false; renderProfiles(); return; } meFromList = false; goHome(); }
 export function renderMe(){
   const p = P(); if (!p) return;
   $('#meAv').innerHTML = avatarSVG(p.avatar, px(96), p.theme);
@@ -118,8 +145,7 @@ export function renderMe(){
     b.innerHTML = themePreview(k) + '<span class="nm"></span>'; b.querySelector('.nm').textContent = t.name;
     b.onclick = () => { p.theme = k; save(); applyTheme(k); invalidateBg(); updateQuick(); renderMe(); }; box.appendChild(b); });
 }
-$('#btnMe').onclick = openMe;
-$('#btnMeBack').onclick = goHome;
-$('#btnMeOk').onclick = goHome;
-$('#me').addEventListener('click', e => { if (e.target.id === 'me') goHome(); });
+$('#btnMeBack').onclick = closeMe;
+$('#btnMeOk').onclick = closeMe;
+$('#me').addEventListener('click', e => { if (e.target.id === 'me') closeMe(); });
 $('#meName').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });

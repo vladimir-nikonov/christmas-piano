@@ -15,6 +15,7 @@
 
 <div id="hud" hidden>
   <div class="hudtop">
+    <button class="b ico" id="btnHudHome" data-ta="home" data-icon="home"></button>
     <div id="prog" data-ta="progress"><i></i></div>
     <div class="pill" id="micPill" data-ta="mic"><span data-icon="mic"></span><span id="micbars"><i></i><i></i><i></i><i></i></span><span id="heard">—</span></div>
     <div class="pill"><span class="rw" data-icon="star" data-fill="1"></span><span id="score">0</span><span id="combo"></span></div>
@@ -22,13 +23,12 @@
     <button class="b ico qcam"></button>
     <button class="b ico qfull" data-ta="full" data-icon="fullscreen"></button>
   </div>
-  <!-- Playback controls: a column on the left edge, like a media player. While the game runs: Pause and Home;
+  <!-- Playback controls: a column on the left edge under Home, like a media player. While the game runs: Pause;
        while it is paused the same button turns into Resume and Restart and the input mode join it. -->
   <div class="hudctl" id="hudCtl">
     <button class="b ico" id="btnPause" data-ta="pause"></button>
     <button class="b ico" id="btnRestart" data-ta="restart" data-icon="retry" hidden></button>
     <button class="b ico qinput" hidden></button>
-    <button class="b ico" id="btnHudHome" data-ta="home" data-icon="home"></button>
   </div>
   <!-- Playback speed: a vertical slider on the right edge, like the speed setting of a video player: a rabbit at
        the top (1.3×), a turtle at the bottom (0.5×), a mark at 1×, the speed written in the knob. It changes the
@@ -51,7 +51,7 @@
 
 <div class="screen" id="home" hidden>
   <div class="homeworld" aria-hidden="true"></div>
-  <div class="corner l"><button class="b who" id="btnWho" data-ta="who"></button><button class="b ico" id="btnMe" data-ta="myPage" data-icon="pencil"></button></div>
+  <div class="corner l"><button class="b who" id="btnWho" data-ta="who"></button></div>
   <div class="corner r">
     <button class="b ico qlang" data-ta="language"></button>
     <button class="b ico qtheme" data-ta="theme"></button>
@@ -86,7 +86,8 @@
   </div>
 </div>
 
-<!-- Player list: a popup over home, like the quick picker; close with the cross, a tap outside or Back -->
+<!-- Player list: a popup over home, like the quick picker; close with the cross, a tap outside or Back.
+     Each player's card has Edit (opens the child's page) and Delete (tap twice). -->
 <div class="screen" id="profiles" hidden>
   <div class="panel popp" role="dialog" aria-labelledby="pTitle">
     <button class="b ico x" id="btnProfClose" data-ta="close" data-icon="cross"></button>
@@ -119,7 +120,7 @@
   </div>
 </div>
 
-<!-- Child's own page: change name, avatar and theme. A popup over home; close with the cross, a tap outside or Back -->
+<!-- Child's own page: change name, avatar and theme. Opened from the player list (or parent settings); close with the cross, a tap outside or Back -->
 <div class="screen" id="me" hidden>
   <div class="panel popp mep" role="dialog" aria-labelledby="meTitle">
     <button class="b ico x" id="btnMeBack" data-ta="close" data-icon="cross"></button>

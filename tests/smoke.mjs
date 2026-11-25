@@ -285,7 +285,10 @@ try {
   assert.equal(await page.getAttribute('#btnPause', 'data-ta'), 'resume');
   assert.ok(await page.locator('#btnPause.primary').isVisible(), 'Resume is the primary button');
   assert.deepEqual(await sn(() => [...document.querySelectorAll('#hudCtl button')].filter(b => !b.hidden).map(b => b.id || b.className)),
-    ['btnPause', 'btnRestart', 'b ico qinput', 'btnHudHome'], 'paused column: resume, restart, input mode, home');
+    ['btnPause', 'btnRestart', 'b ico qinput'], 'paused column: resume, restart, input mode');
+  const homeBox = await sn(() => { const r = document.getElementById('btnHudHome').getBoundingClientRect(); return { left: r.left, top: r.top, bottom: r.bottom }; });
+  assert.ok(homeBox.left < 40 && homeBox.top < 40, 'Home sits in the top-left corner of the game screen');
+  assert.ok(await sn(() => document.querySelector('#hudCtl button:not([hidden])').getBoundingClientRect().top) >= homeBox.bottom, 'the playback column starts under Home');
   const col = await sn(() => [...document.querySelectorAll('#hudCtl button:not([hidden])')].map(b => b.getBoundingClientRect()).map(r => [Math.round(r.left + r.width / 2), Math.round(r.top)]));
   assert.ok(col.every(([x]) => x === col[0][0] && x < 120), 'the controls stand in one column on the left edge');
   assert.ok(col.every(([, y], i) => !i || y > col[i - 1][1]), 'the column runs top to bottom');
@@ -299,7 +302,8 @@ try {
   assert.equal(await page.getAttribute('#btnPause', 'data-ta'), 'pause', 'the button turns back into Pause');
   assert.equal(await sn(() => document.body.classList.contains('paused')), false);
   assert.deepEqual(await sn(() => [...document.querySelectorAll('#hudCtl button')].filter(b => !b.hidden).map(b => b.id)),
-    ['btnPause', 'btnHudHome'], 'running column: pause and home only');
+    ['btnPause'], 'running column: pause only');
+  assert.ok(await page.locator('#btnHudHome').isVisible(), 'Home stays in the corner while the game runs');
   await page.click('#btnPause');
   await waitPaused();
   assert.equal(await page.locator('#hud .qlang, #hud .qtheme').count(), 0, 'no language/theme buttons in the game');
@@ -444,8 +448,9 @@ try {
   log('player list and child page');
   await page.click('#btnWho');
   await visible('#profiles');
-  assert.equal(await page.locator('#ptiles button').count(), 2);
-  await page.locator('#ptiles button').first().click();
+  assert.equal(await page.locator('#ptiles .ptile').count(), 2);
+  assert.equal(await page.locator('#btnMe').count(), 0, 'no edit button on home');
+  await page.locator('#ptiles .ptile').first().click();
   await visible('#home');
   await page.click('#btnWho');
   await visible('#profiles');
@@ -453,14 +458,34 @@ try {
   assert.match(await sn(() => window.getComputedStyle(document.getElementById('profiles')).backgroundImage), /data:image\/svg/);
   await page.click('#btnProfClose');
   await page.locator('#profiles').waitFor({ state: 'hidden' });
-  await page.click('#btnMe');
+  log('edit a player from the list: the child page closes back to the list');
+  await page.click('#btnWho');
+  await visible('#profiles');
+  await page.locator('#ptiles .pedit').first().click();
   await visible('#me');
   await page.click('#btnMeBack');
-  await page.locator('#me').waitFor({ state: 'hidden' });
-  await page.click('#btnMe');
+  await visible('#profiles');
+  await page.locator('#ptiles .pedit').first().click();
   await visible('#me');
   await page.fill('#meName', 'Kid');
   await page.click('#btnMeOk');
+  await visible('#profiles');
+  assert.equal(await page.locator('#ptiles .ptile .nm').first().textContent(), 'Kid');
+  log('delete a player from the list: needs a second tap');
+  await page.click('#btnProfClose');
+  await visible('#home');
+  await sn(() => { const d = window.__sn.db; d.profiles.push(Object.assign(structuredClone(d.profiles[0]), { id: 'del2', name: 'Del' })); return window.__sn.save(); });
+  await page.click('#btnWho');
+  await visible('#profiles');
+  const nBefore = await sn(() => window.__sn.db.profiles.length);
+  assert.equal(nBefore, 2);
+  const del = page.locator('#ptiles .pdel').last();
+  await del.click();
+  assert.equal(await sn(() => window.__sn.db.profiles.length), nBefore, 'the first tap only arms Delete');
+  await del.click();
+  assert.equal(await sn(() => window.__sn.db.profiles.length), nBefore - 1, 'the second tap deletes');
+  await visible('#profiles');
+  await page.locator('#ptiles .ptile').first().click();
   await visible('#home');
   assert.equal(await sn(() => window.__sn.db.profiles[0].name), 'Kid');
 
