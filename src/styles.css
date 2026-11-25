@@ -310,14 +310,16 @@ body.paused #stage{filter:brightness(.55) saturate(.8)}
 
 /* Child's own page: name, avatar, theme (icons, big targets) */
 /* Home and the player setup screens cover the game canvas: no piano keys behind them (the level entry fades this background out) */
-#home,#newp{background:var(--bg)}
+#home{background:var(--bg)}
 /* Home background: the theme's world picture. A child layer, so the level entry fades it out with the rest of home. */
 #home{isolation:isolate}
 #home .homeworld{position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(color-mix(in srgb, var(--bg) 30%, transparent), color-mix(in srgb, var(--bg) 30%, transparent)), var(--world,var(--bg)) center / cover no-repeat}
 /* Player list and child's page: popups like the quick picker, over the theme's world picture */
-#profiles,#me,#pop,#settings{background:linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.18)),var(--world,var(--bg)) center/cover no-repeat}
+#profiles,#me,#pop,#settings,#newp{background:linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.18)),var(--world,var(--bg)) center/cover no-repeat}
 #profiles,#me{z-index:30;padding-top:calc(44*var(--u) + env(safe-area-inset-top,0px))}
-#profiles .panel,#me .panel{margin:auto 0}
+#profiles .panel,#me .panel,#newp .panel{margin:auto 0}
+#newp{padding-top:calc(44*var(--u) + env(safe-area-inset-top,0px))}
+.newpp .back{position:absolute;top:calc(-26*var(--u));left:calc(-18*var(--u))}
 #profiles .grid{width:100%}
 .mep .qlang{position:absolute;top:calc(-26*var(--u));left:calc(-18*var(--u))}
 .mehead{display:flex;align-items:center;gap:calc(18*var(--u));flex-wrap:wrap;justify-content:center}
