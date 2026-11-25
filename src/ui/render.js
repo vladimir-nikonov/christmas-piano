@@ -7,6 +7,7 @@ import { tx } from '../i18n/index.js';
 import { opts } from '../data/storage.js';
 import { state, G, fx, nextUnhit, keyFor } from '../game/game.js';
 import { ctx, W, H, DPR, U, LO, HI, isBlack, keys, kbTop, kbH, hitY, topY, bgCache, setBgCache } from './canvas.js';
+import { HAND_PARTS, HAND_ORDER } from './hand-art.js';
 import { ICON } from './icons.js';
 import { reducedMotion } from './motion.js';
 import { paintScene, drawAmbient, drawHitLine } from './scene.js';
@@ -218,32 +219,23 @@ export function draw(now, dt){
 }
 /* ===== Fingering hint =====
    On the key of the next note (from the moment it appears on the field, before the key lights up), a hand seen from above (right hand: thumb on the left; left hand: mirrored)
-   with the finger to press filled in the note's colour, the finger number on the palm and a short L/R mark. */
-// Finger shapes of a right hand in a 1x1.2 box: [x, top y, bottom y] per finger 2..5; the thumb is a slanted capsule.
-const FINGERS = [[0.36, 0.14, 0.7], [0.54, 0.04, 0.7], [0.72, 0.1, 0.7], [0.9, 0.26, 0.72]];
-const FW = 0.17, THUMB = [0.27, 0.86, 0.06, 0.5];
+   with the finger to press filled in the note's colour, the finger number on the palm and a short L/R mark.
+   The hand drawing is the designer's (src/ui/hand-art.js). */
 // What the hint shows this frame (read by the smoke test).
 export const handHint = { key: null, hand: null, finger: null };
-function capsule(x1, y1, x2, y2, r){
-  const a = Math.atan2(y2 - y1, x2 - x1);
-  ctx.beginPath(); ctx.arc(x1, y1, r, a + Math.PI / 2, a - Math.PI / 2); ctx.arc(x2, y2, r, a - Math.PI / 2, a + Math.PI / 2); ctx.closePath();
-}
+const handPaths = {};
+const handPath = name => handPaths[name] || (handPaths[name] = new Path2D(HAND_PARTS[name]));
+// The designer's hand (src/ui/hand-art.js) at width s from (cx - s/2, top); the finger to press is filled with col.
 function drawHand(cx, top, s, hand, finger, col){
-  ctx.save(); ctx.translate(cx, top); ctx.scale(hand === 'L' ? -s : s, s); ctx.translate(-0.5, 0);
-  const lw = 0.07, part = (i, fill) => {
-    if (i === 0) capsule(THUMB[0], THUMB[1], THUMB[2], THUMB[3], FW / 2);
-    else { const [x, y1, y2] = FINGERS[i - 1]; capsule(x, y1 + FW / 2, x, y2, FW / 2); }
-    ctx.fillStyle = fill; ctx.fill(); ctx.stroke();
-  };
-  ctx.lineJoin = 'round'; ctx.strokeStyle = '#182335'; ctx.lineWidth = lw;
-  for (let i = 0; i < 5; i++) if (i !== finger - 1) part(i, '#FFFFFF');
-  rrect(0.22, 0.56, 0.78, 0.62, 0.2); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.stroke();
-  ctx.lineWidth = lw * 1.6; part(finger - 1, col);
+  const k = s / 100;
+  ctx.save(); ctx.translate(cx - s / 2, top); ctx.scale(k, k);
+  if (hand === 'L'){ ctx.translate(100, 0); ctx.scale(-1, 1); }
+  ctx.lineJoin = ctx.lineCap = 'round'; ctx.strokeStyle = '#182335'; ctx.lineWidth = Math.max(3.5, 2.2 / k); // never thinner than ~2 px
+  HAND_ORDER.forEach((name, i) => { const p = handPath(name); ctx.fillStyle = i === finger - 1 ? col : '#FFFFFF'; ctx.fill(p); ctx.stroke(p); });
   ctx.restore();
   // finger number on the palm (not mirrored)
-  const px = cx + (hand === 'L' ? -1 : 1) * 0.11 * s;
-  ctx.fillStyle = '#182335'; ctx.font = '900 ' + Math.round(s * 0.42) + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(finger, px, top + 0.88 * s);
+  ctx.fillStyle = '#182335'; ctx.font = '900 ' + Math.round(s * 0.3) + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(finger, cx - s / 2 + (hand === 'L' ? 45 : 55) * k, top + 85 * k);
 }
 function fingerHint(m, midi, x, top, w, h, now){
   const f = G && fingerFor(G.song, midi); if (!f) return;
