@@ -1,5 +1,7 @@
 // Spanish UI strings. Every key must exist in all five languages (tests/unit/i18n.test.js).
 export default {
+  handL: 'I', // short mark of the left hand on the fingering hint
+  handR: 'D',
   songBirthday: 'Cumpleaños feliz',
   myPage: 'Mi página',
   sKidHint: 'El niño cambia el nombre, el avatar y el tema en su propia página (botón del lápiz junto al jugador).',

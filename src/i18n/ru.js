@@ -1,5 +1,7 @@
 // Russian UI strings. Every key must exist in all five languages (tests/unit/i18n.test.js).
 export default {
+  handL: 'Л', // short mark of the left hand on the fingering hint
+  handR: 'П',
   songBirthday: 'С днём рождения',
   myPage: 'Моя страница',
   sKidHint: 'Имя, аватар и тему ребёнок меняет на своей странице (кнопка с карандашом рядом с игроком).',

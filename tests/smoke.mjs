@@ -258,6 +258,8 @@ try {
   await waitAtNextNote();
   assert.equal(await sn(() => window.__sn.focus.midi === window.__sn.game.notes[0].midi), true, 'waiting focuses the expected note');
   assert.equal(await sn(() => window.__sn.nav), 'waiting', 'the navigation machine is in Waiting');
+  await page.waitForFunction(() => window.__sn.handHint.key !== null);
+  assert.deepEqual(await sn(() => ({ ...window.__sn.handHint })), { key: 64, hand: 'R', finger: 3 }, 'the lit key shows the right hand, middle finger (Jingle Bells E)');
   await sn(() => { const n = window.__sn.game.notes[0]; window.__sn.onPlayed(n.midi + 2); });
   assert.equal(await sn(() => window.__sn.game.notes[0].wrong), 1);
   assert.equal(await sn(() => window.__sn.fx.pops.some(p => p.icon === 'cross')), false, 'a wrong note shows no cross');

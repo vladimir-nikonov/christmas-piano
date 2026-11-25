@@ -8,7 +8,7 @@ import { detectLang, LANG, useLang } from './i18n/index.js';
 import { layout, invalidateBg, keys, kbTop, kbH, isBlack } from './ui/canvas.js';
 import { reducedMotion } from './ui/motion.js';
 import { hydrateIcons } from './ui/icons.js';
-import { focus, drawn } from './ui/render.js';
+import { focus, drawn, handHint } from './ui/render.js';
 import { translateDom } from './ui/lang.js';
 import { renderHome, goHome } from './ui/screens/home.js';
 import { renderProfiles, wizAt, wizStep, renderMe } from './ui/screens/profiles.js';
@@ -49,7 +49,7 @@ loadDB().catch(() => {}).then(() => { goHome(); restoreCamera(); if (db.profiles
 requestAnimationFrame(frame);
 if (document.fonts) document.fonts.ready.then(() => invalidateBg());
 
-window.__sn = { detectPitch, onPlayed: m => onPlayed(m, performance.now(), 'touch'), get game(){ return G; }, get fx(){ return fx; }, get focus(){ return focus; }, get state(){ return state; }, get nav(){ return flow.state.name; }, get paused(){ return paused; }, get db(){ return db; }, get lang(){ return LANG; }, get storeKind(){ return storeKind; }, get camStream(){ return getCamStream(); }, get recording(){ return isRecording(); }, get card(){ const c = getCard(); return c && { size: c.blob.size, type: c.type, ext: c.ext }; }, loadDB, save,
+window.__sn = { detectPitch, onPlayed: m => onPlayed(m, performance.now(), 'touch'), get game(){ return G; }, get fx(){ return fx; }, get focus(){ return focus; }, get handHint(){ return handHint; }, get state(){ return state; }, get nav(){ return flow.state.name; }, get paused(){ return paused; }, get db(){ return db; }, get lang(){ return LANG; }, get storeKind(){ return storeKind; }, get camStream(){ return getCamStream(); }, get recording(){ return isRecording(); }, get card(){ const c = getCard(); return c && { size: c.blob.size, type: c.type, ext: c.ext }; }, loadDB, save,
   keyPoint: m => ({ x: keys[m].x + keys[m].w / 2, y: kbTop + kbH * (isBlack(m) ? 0.3 : 0.85) }) };
 // Motion state for the smoke test (read-only).
 Object.defineProperties(window.__sn, { reducedMotion: { get: () => reducedMotion }, drawn: { get: () => ({ ...drawn }) } });

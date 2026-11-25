@@ -2,6 +2,8 @@
 
 import { letterFor } from '../core/keymap.js';
 import { PC_COLOR } from '../core/music.js';
+import { fingerFor } from '../core/songs.js';
+import { tx } from '../i18n/index.js';
 import { opts } from '../data/storage.js';
 import { state, G, fx, nextUnhit, keyFor } from '../game/game.js';
 import { ctx, W, H, DPR, U, LO, HI, isBlack, keys, kbTop, kbH, hitY, topY, bgCache, setBgCache } from './canvas.js';
@@ -214,6 +216,46 @@ export function draw(now, dt){
       ctx.fillStyle = TH.accentDark; ctx.fillText(c, W / 2, hitY * 0.5 + 6 * U); ctx.fillStyle = TH.text; ctx.fillText(c, W / 2, hitY * 0.5); }
   }
 }
+/* ===== Fingering hint =====
+   On the key that lights up, a hand seen from above (right hand: thumb on the left; left hand: mirrored)
+   with the finger to press filled in the note's colour, the finger number on the palm and a short L/R mark. */
+// Finger shapes of a right hand in a 1x1.2 box: [x, top y, bottom y] per finger 2..5; the thumb is a slanted capsule.
+const FINGERS = [[0.36, 0.14, 0.7], [0.54, 0.04, 0.7], [0.72, 0.1, 0.7], [0.9, 0.26, 0.72]];
+const FW = 0.17, THUMB = [0.27, 0.86, 0.06, 0.5];
+// What the hint shows this frame (read by the smoke test).
+export const handHint = { key: null, hand: null, finger: null };
+function capsule(x1, y1, x2, y2, r){
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.beginPath(); ctx.arc(x1, y1, r, a + Math.PI / 2, a - Math.PI / 2); ctx.arc(x2, y2, r, a - Math.PI / 2, a + Math.PI / 2); ctx.closePath();
+}
+function drawHand(cx, top, s, hand, finger, col){
+  ctx.save(); ctx.translate(cx, top); ctx.scale(hand === 'L' ? -s : s, s); ctx.translate(-0.5, 0);
+  const lw = 0.07, part = (i, fill) => {
+    if (i === 0) capsule(THUMB[0], THUMB[1], THUMB[2], THUMB[3], FW / 2);
+    else { const [x, y1, y2] = FINGERS[i - 1]; capsule(x, y1 + FW / 2, x, y2, FW / 2); }
+    ctx.fillStyle = fill; ctx.fill(); ctx.stroke();
+  };
+  ctx.lineJoin = 'round'; ctx.strokeStyle = '#182335'; ctx.lineWidth = lw;
+  for (let i = 0; i < 5; i++) if (i !== finger - 1) part(i, '#FFFFFF');
+  rrect(0.22, 0.56, 0.78, 0.62, 0.2); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.stroke();
+  ctx.lineWidth = lw * 1.6; part(finger - 1, col);
+  ctx.restore();
+  // finger number on the palm (not mirrored)
+  const px = cx + (hand === 'L' ? -1 : 1) * 0.11 * s;
+  ctx.fillStyle = '#182335'; ctx.font = '900 ' + Math.round(s * 0.42) + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(finger, px, top + 0.88 * s);
+}
+function fingerHint(m, midi, x, top, w, h, now){
+  const f = G && fingerFor(G.song, midi); if (!f) return;
+  handHint.key = m; handHint.hand = f.hand; handHint.finger = f.finger;
+  const tag = Math.round(Math.min(22 * U, w * 0.3)), s = Math.min(w * 0.82, (h - tag - 2 * U) / 1.2, 150 * U);
+  const bob = reducedMotion ? 0 : Math.sin(now * 5) * 2 * U, cx = x + w / 2, ht = top + (h - s * 1.2 - tag) / 2 + bob;
+  drawHand(cx, ht, s, f.hand, f.finger, PC_COLOR[midi % 12]);
+  const ty = ht + s * 1.2 + tag / 2 + 2 * U, tw = tag * 1.3;
+  rrect(cx - tw / 2, ty - tag / 2, tw, tag, tag / 2); ctx.fillStyle = '#182335'; ctx.fill();
+  ctx.fillStyle = '#FFFFFF'; ctx.font = '900 ' + Math.round(tag * 0.72) + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(tx(f.hand === 'L' ? 'handL' : 'handR'), cx, ty + 1);
+}
 // Key colours and surface details per theme
 const KEY_COLORS = {
   pixel:   { white:['#F5F5FA', '#F5F5FA'], black:['#202435', '#202435'], bed:'rgba(0,0,0,.35)' },
@@ -244,8 +286,9 @@ function keyDecor(x, y, w, h, black, now){
 function drawKeyboard(now){
   const nowMs = performance.now(), o = opts(), kr = Math.min(TH.radius, 12) * U;
   ctx.fillStyle = KEY_COLORS[THK].bed; ctx.fillRect(0, kbTop, W, kbH);
-  let hint = null; const fk = focus.key, fp = focus.waiting ? 1 : 0;
-  if (o.hint && G && state === 'playing'){ const n = nextUnhit(); if (n && n.t - G.time < G.beat * 1.2) hint = keyFor(n.midi); }
+  let hint = null, hintMidi = null; const fk = focus.key, fp = focus.waiting ? 1 : 0;
+  if (o.hint && G && state === 'playing'){ const n = nextUnhit(); if (n && n.t - G.time < G.beat * 1.2){ hint = keyFor(n.midi); hintMidi = n.midi; } }
+  handHint.key = handHint.hand = handHint.finger = null; let hand = null;
   const drawKey = m => {
     const sd = decay(fx.soft[m], SOFT_MS);
     const k = keys[m], h = k.black ? Math.round(kbH * 0.58) : kbH - 8 * U, x = Math.round(k.x + (k.black ? 0 : 2) + wobble(sd)), w = Math.round(k.w - (k.black ? 0 : 4));
@@ -258,6 +301,11 @@ function drawKeyboard(now){
     if (fx.heardKey[m] && nowMs - fx.heardKey[m] < 160 && !fa){ ctx.fillStyle = 'rgba(120,140,220,.4)'; ctx.fillRect(x, kbTop, w, h + 2); }
     if (fa){ ctx.globalAlpha = fa; ctx.fillStyle = fl.c; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
     ctx.restore();
+    if (m === fk || m === hint){ // space between the top decor and the note label (white) or the letter (black); drawn over the black keys
+      const t0 = kbTop + 2 + (k.black ? 4 : 8) * U, t1 = kbTop + 2 + h - (k.black ? 22 * U : Math.round(Math.min(30 * U, h * 0.16)) + 8 * U);
+      const midi = m === fk ? focus.midi : hintMidi;
+      hand = () => fingerHint(m, midi, x, t0, w, t1 - t0, now);
+    }
     if (m === fk){ const lw = (4 + 1.5 * pulse(now, 6) * fp + 3 * focus.nudge) * U; rrect(x + lw / 2, kbTop + 2 + lw / 2, w - lw, h - lw, kr); ctx.strokeStyle = FOCUS_EDGE; ctx.lineWidth = lw; ctx.stroke(); }
     if (sd){ ctx.globalAlpha = sd; rrect(x + 1.5 * U, kbTop + 2 + 1.5 * U, w - 3 * U, h - 3 * U, kr); ctx.strokeStyle = NEUTRAL; ctx.lineWidth = 3 * U; ctx.stroke(); ctx.globalAlpha = 1; }
     // Once the computer keyboard is used, show which letter plays each key.
@@ -271,4 +319,5 @@ function drawKeyboard(now){
   };
   for (let m = LO; m <= HI; m++) if (!isBlack(m)) drawKey(m);
   for (let m = LO; m <= HI; m++) if (isBlack(m)) drawKey(m);
+  if (hand) hand();
 }

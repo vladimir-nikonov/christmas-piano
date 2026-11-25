@@ -1,5 +1,7 @@
 // Polish UI strings. Every key must exist in all five languages (tests/unit/i18n.test.js).
 export default {
+  handL: 'L', // short mark of the left hand on the fingering hint
+  handR: 'P',
   songBirthday: 'Happy Birthday',
   myPage: 'Moja strona',
   sKidHint: 'Imię, awatar i motyw dziecko zmienia na swojej stronie (przycisk z ołówkiem obok gracza).',
