@@ -9,6 +9,7 @@ import { blockSVG } from '../art.js';
 import { xpHTML } from '../progress.js';
 import { W, keys, hitY } from '../canvas.js';
 import { icon } from '../icons.js';
+import { applause } from '../../audio/synth.js';
 import { state, paused } from '../../game/game.js';
 import { unlockFx, flyContent, flight, landFx, moveRight, fadeReset, particles } from '../themefx.js';
 
@@ -46,6 +47,8 @@ export function showResults({ p, pr, song, level, metric, stars, levelUp }){
   // The new level block opens the theme's way (lock crumbles, pops, melts or shatters), with its particles
   if (levelUp) unlockFx(lu.querySelector('.blk'), calm ? null : rewardLayer());
   if (stars && !calm) celebrate();
+  // The hall applauds the player, like at the end of a concert
+  hush = applause(stars);
 }
 // One layer per results visit for the reward effects; clearFly() stops and removes it.
 function rewardLayer(){
@@ -72,7 +75,8 @@ function celebrate(){
     a.oncancel = show;
   });
 }
-function clearFly(){ document.querySelectorAll('#results .flylayer').forEach(l => { l.getAnimations({ subtree: true }).forEach(a => a.cancel()); l.remove(); }); }
+let hush = null;
+function clearFly(){ if (hush){ hush(); hush = null; } document.querySelectorAll('#results .flylayer').forEach(l => { l.getAnimations({ subtree: true }).forEach(a => a.cancel()); l.remove(); }); }
 
 // The primary button runs the chosen action; tapping it also skips the reward, since the results screen closes.
 $('#btnMain').onclick = () => { clearFly(); $($('#btnMain').dataset.go === 'next' ? '#btnNext' : '#btnAgain').click(); };
