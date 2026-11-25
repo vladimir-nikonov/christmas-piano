@@ -1,5 +1,5 @@
 // Input mode of this device: a real piano heard by the microphone, or the screen and computer keyboard.
-// Stored as device.touch (true = no microphone); the quick button on home and in the pause menu switches it.
+// Stored as device.touch (true = no microphone); the quick button on home and in the paused game HUD switches it.
 
 import { dev, save } from '../data/storage.js';
 import { $ } from '../dom.js';

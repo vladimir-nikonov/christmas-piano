@@ -14,14 +14,22 @@
 <canvas id="stage"></canvas>
 
 <div id="hud" hidden>
-  <button class="b ico" id="btnPause" data-ta="pause" data-icon="pause"></button>
-  <button class="b ico" id="btnHudHome" data-ta="home" data-icon="home"></button>
-  <div id="prog" data-ta="progress"><i></i></div>
-  <div class="pill" id="micPill" data-ta="mic"><span data-icon="mic"></span><span id="micbars"><i></i><i></i><i></i><i></i></span><span id="heard">—</span></div>
-  <div class="pill"><span class="rw" data-icon="star" data-fill="1"></span><span id="score">0</span><span id="combo"></span></div>
-  <button class="b ico" id="btnRec"></button>
-  <button class="b ico qcam"></button>
-  <button class="b ico qfull" data-ta="full" data-icon="fullscreen"></button>
+  <div class="hudtop">
+    <div id="prog" data-ta="progress"><i></i></div>
+    <div class="pill" id="micPill" data-ta="mic"><span data-icon="mic"></span><span id="micbars"><i></i><i></i><i></i><i></i></span><span id="heard">—</span></div>
+    <div class="pill"><span class="rw" data-icon="star" data-fill="1"></span><span id="score">0</span><span id="combo"></span></div>
+    <button class="b ico" id="btnRec"></button>
+    <button class="b ico qcam"></button>
+    <button class="b ico qfull" data-ta="full" data-icon="fullscreen"></button>
+  </div>
+  <!-- Playback controls: a column on the left edge, like a media player. While the game runs: Pause and Home;
+       while it is paused the same button turns into Resume and Restart and the input mode join it. -->
+  <div class="hudctl" id="hudCtl">
+    <button class="b ico" id="btnPause" data-ta="pause"></button>
+    <button class="b ico" id="btnRestart" data-ta="restart" data-icon="retry" hidden></button>
+    <button class="b ico qinput" hidden></button>
+    <button class="b ico" id="btnHudHome" data-ta="home" data-icon="home"></button>
+  </div>
 </div>
 
 <!-- Self-view: the player sees themself from the front camera; drag to move, tap to resize -->
@@ -119,15 +127,6 @@
       <button class="b primary wide" id="btnMain" data-ta="again"></button>
     </div>
   </div>
-</div>
-
-<div class="screen" id="pause" hidden>
-  <div class="panel"><div class="btnrow">
-    <button class="b ico" id="btnQuit" data-ta="home" data-icon="home"></button>
-    <button class="b ico" id="btnRestart" data-ta="restart" data-icon="retry"></button>
-    <button class="b primary wide" id="btnResume" data-ta="resume" data-icon="play" data-fill="1"></button>
-  </div>
-  <div class="btnrow"><button class="b ico qinput"></button></div></div>
 </div>
 
 <div class="screen" id="settings" hidden>

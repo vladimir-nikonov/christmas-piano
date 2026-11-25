@@ -73,6 +73,7 @@ try {
   page.on('console', m => { if (m.type() === 'error') errors.push('[' + step + '] console: ' + m.text()); });
   const sn = (fn, arg) => page.evaluate(fn, arg);
   const visible = sel => page.locator(sel).waitFor({ state: 'visible', timeout: 10000 });
+  const waitPaused = () => page.waitForFunction(() => window.__sn.nav === 'paused', null, { timeout: 10000 });
   // Results: exactly one primary button, which action it runs, which secondary icons are shown, and the slot positions.
   const resultsButtons = () => sn(() => {
     const vis = el => !el.hidden && window.getComputedStyle(el).visibility !== 'hidden';
@@ -275,21 +276,34 @@ try {
   }
   assert.equal(await page.locator('#hud .qfull svg').count(), 1, 'full-screen button in the game HUD');
   await page.keyboard.press('Escape');
-  await visible('#pause');
-  log('switch to the microphone from the pause menu and back');
-  await page.locator('#pause .qinput').click();
+  await waitPaused();
+  log('paused: no popup, the left column turns Pause into Resume and adds Restart and the input mode');
+  assert.equal(await page.locator('#pause').count(), 0, 'no pause popup');
+  assert.equal(await sn(() => document.body.classList.contains('paused')), true, 'the frozen field dims');
+  assert.equal(await page.getAttribute('#btnPause', 'data-ta'), 'resume');
+  assert.ok(await page.locator('#btnPause.primary').isVisible(), 'Resume is the primary button');
+  assert.deepEqual(await sn(() => [...document.querySelectorAll('#hudCtl button')].filter(b => !b.hidden).map(b => b.id || b.className)),
+    ['btnPause', 'btnRestart', 'b ico qinput', 'btnHudHome'], 'paused column: resume, restart, input mode, home');
+  const col = await sn(() => [...document.querySelectorAll('#hudCtl button:not([hidden])')].map(b => b.getBoundingClientRect()).map(r => [Math.round(r.left + r.width / 2), Math.round(r.top)]));
+  assert.ok(col.every(([x]) => x === col[0][0] && x < 120), 'the controls stand in one column on the left edge');
+  assert.ok(col.every(([, y], i) => !i || y > col[i - 1][1]), 'the column runs top to bottom');
+  log('switch to the microphone from the paused HUD and back');
+  await page.locator('#hud .qinput').click();
   assert.equal(await sn(() => window.__sn.db.device.touch), false);
-  await page.locator('#pause .qinput').click();
+  await page.locator('#hud .qinput').click();
   assert.equal(await sn(() => window.__sn.db.device.touch), true);
-  await page.click('#btnResume');
   await page.click('#btnPause');
-  await visible('#pause');
-  assert.equal(await page.locator('#pause .qfull').count(), 0, 'full screen lives in the HUD, not the pause menu');
-  assert.equal(await page.locator('#pause .qlang, #pause .qtheme').count(), 0, 'no language/theme buttons in the pause menu');
-  assert.equal(await page.locator('#pause button:visible').count(), 4, 'pause: resume, replay, home and input mode only');
-  log('pause menu and HUD fit every tablet viewport');
-  await checkLayout('#pause', '#hud');
-  await page.click('#btnQuit');
+  await page.waitForFunction(() => window.__sn.nav !== 'paused');
+  assert.equal(await page.getAttribute('#btnPause', 'data-ta'), 'pause', 'the button turns back into Pause');
+  assert.equal(await sn(() => document.body.classList.contains('paused')), false);
+  assert.deepEqual(await sn(() => [...document.querySelectorAll('#hudCtl button')].filter(b => !b.hidden).map(b => b.id)),
+    ['btnPause', 'btnHudHome'], 'running column: pause and home only');
+  await page.click('#btnPause');
+  await waitPaused();
+  assert.equal(await page.locator('#hud .qlang, #hud .qtheme').count(), 0, 'no language/theme buttons in the game');
+  log('paused HUD fits every tablet viewport');
+  await checkLayout('#hud');
+  await page.click('#btnHudHome');
   await visible('#home');
 
   log('system Back: during a game it pauses, in pause it goes home, overlays close');
@@ -297,7 +311,7 @@ try {
   await page.click('#btnPlay');
   await page.waitForFunction(() => window.__sn.state === 'playing');
   await page.goBack();
-  await visible('#pause');
+  await waitPaused();
   assert.equal(await sn(() => window.__sn.paused), true);
   assert.equal(await sn(() => window.__sn.nav), 'paused');
   assert.equal(page.url(), appUrl);
@@ -320,16 +334,16 @@ try {
     await page.click('#btnPlay');
     await page.waitForFunction(() => window.__sn.state === 'playing');
     await page.click('#btnPause');
-    await page.click('#btnQuit');
+    await page.click('#btnHudHome');
     await visible('#home');
   }
-  log('the Home button in the game HUD goes home in one tap, without the pause menu');
+  log('the Home button in the game HUD goes home in one tap');
   await page.click('#btnPlay');
   await page.waitForFunction(() => window.__sn.state === 'playing');
   await page.click('#btnHudHome');
   await visible('#home');
   assert.equal(await sn(() => window.__sn.state), 'home');
-  assert.equal(await page.locator('#pause').isVisible(), false, 'the pause menu does not stay open');
+  assert.equal(await sn(() => document.body.classList.contains('paused')), false, 'the field is not left dimmed');
   await page.waitForTimeout(100);
   assert.ok(await sn(() => history.length) <= histLen + 1, 'history entries do not accumulate');
   assert.equal(await sn(() => !!(history.state && history.state.sn)), false, 'no trap entry left on the home screen');
@@ -357,12 +371,12 @@ try {
   { const p = await sn(() => window.__sn.keyPoint(60)); await page.mouse.click(p.x, p.y); }
   assert.ok(await sn(() => window.__sn.fx.heardKey[60] || 0) > tapAt, 'a screen tap plays a key in microphone mode too');
   await sn(() => window.dispatchEvent(new Event('blur')));
-  await visible('#pause');
-  await page.click('#btnResume');
+  await waitPaused();
+  await page.click('#btnPause');
   assert.equal(await sn(() => window.__sn.paused), false);
   await sn(() => window.__track.dispatchEvent(new Event('ended')));
-  await visible('#pause');
-  await page.click('#btnQuit');
+  await waitPaused();
+  await page.click('#btnHudHome');
   await visible('#home');
   await page.click('#btnSettings');
   await page.check('#sTouch');
@@ -464,18 +478,18 @@ try {
   log('resume on a timed level counts in again and keeps the game');
   await page.waitForFunction(() => window.__sn.game.time > 0.3);
   await page.click('#btnPause');
-  await visible('#pause');
+  await waitPaused();
   const snap = () => sn(() => { const g = window.__sn.game; return { time: g.time, score: g.score, missed: g.notes.filter(n => n.missed).length }; });
   const before = await snap();
   await page.waitForTimeout(300);
   assert.deepEqual(await snap(), before, 'nothing moves in pause');
-  await page.click('#btnResume');
+  await page.click('#btnPause');
   assert.ok(await sn(() => window.__sn.game.resumeIn > 0), 'count-in after resume');
   assert.equal(await sn(() => window.__sn.nav), 'countdown', 'the resume count-in is a Countdown');
   await page.waitForTimeout(150);
   assert.deepEqual(await snap(), before, 'the clock waits for the count-in');
   await page.click('#btnPause');
-  await page.click('#btnResume');
+  await page.click('#btnPause');
   assert.ok(await sn(() => window.__sn.game.resumeIn > 0), 'a pause during the count-in resumes into the count-in');
   await page.waitForFunction(() => window.__sn.game.resumeIn === 0, null, { timeout: 10000 });
   await page.waitForFunction(() => window.__sn.nav === 'playing');
@@ -591,7 +605,7 @@ try {
     assert.equal(await dsn(() => window.__sn.db.device.touch), true);
     assert.ok(await dp.locator('#micErr').isHidden());
     await dp.click('#btnPause');
-    await dp.click('#btnQuit');
+    await dp.click('#btnHudHome');
     await dp.locator('#home').waitFor({ state: 'visible' });
     await dsn(() => { window.__sn.db.device.touch = false; return window.__sn.save(); });
 
@@ -637,7 +651,7 @@ try {
       await tp.waitForFunction(() => window.__sn.state === 'playing');
       assert.equal(await tp.locator('.tfx').count(), 0, th + ': the effects are gone once the game starts');
       await tp.click('#btnPause');
-      await tp.click('#btnQuit');
+      await tp.click('#btnHudHome');
       await tp.locator('#home').waitFor({ state: 'visible' });
     }
     await tctx.close();
@@ -732,7 +746,7 @@ try {
 
     log('video card: armed on home, the next game is filmed to the end card and can be saved and deleted');
     await mp.click('#btnPause');
-    await mp.click('#btnQuit');
+    await mp.click('#btnHudHome');
     await mp.waitForFunction(() => window.__sn.state === 'home');
     assert.equal(await mp.locator('#home .qvcard').isVisible(), true, 'the last card is offered on home');
     await mp.click('#home .qrec');

@@ -229,15 +229,31 @@ function syncFull(){
 }
 document.addEventListener('fullscreenchange', syncFull);
 document.addEventListener('webkitfullscreenchange', syncFull);
-// Pause freezes the game under the dimmed #pause overlay; everything (time, notes, score, mode) stays in G.
+// Pause freezes the game and dims the field; everything (time, notes, score, mode) stays in G.
 // Only a running game (count-in, playing or waiting) can pause; anything else ignores it.
 export function pauseGame(){ return !!G && dispatch(E.PAUSE); }
-$('#btnPause').onclick = () => { if (is(S.PREVIEW)){ if (!can(E.HOME)) return; G.finished = true; goHome(); return; } pauseGame(); };
-$('#btnResume').onclick = () => { resumeGame(); };
+// Play/Pause: one button in the left HUD column, as in a media player. It pauses a running game and resumes a paused
+// one; in the listen-only preview it stops the preview and goes home.
+$('#btnPause').onclick = () => {
+  if (is(S.PREVIEW)){ if (!can(E.HOME)) return; G.finished = true; goHome(); return; }
+  if (is(S.PAUSED)) resumeGame(); else pauseGame();
+};
 $('#btnRestart').onclick = () => { if (dispatch(E.REPLAY)) startGame(false); };
-$('#btnQuit').onclick = () => { if (is(S.PAUSED)) goHome(); };
-// Home straight from the game screen: a running game pauses first, then leaves through the same Paused -> Home path
-// as the pause menu; the listen-only preview just ends. Ignored while the game screen is still sliding in.
+// The column follows the state: Pause + Home while the game runs; Resume (big, primary) + Restart + input mode + Home
+// while it is paused. The frozen field dims under it.
+function syncPlayback(s){
+  const p = s.name === S.PAUSED, b = $('#btnPause');
+  document.body.classList.toggle('paused', p);
+  b.classList.toggle('primary', p);
+  b.dataset.ta = p ? 'resume' : 'pause';
+  b.setAttribute('aria-label', tx(b.dataset.ta));
+  b.innerHTML = icon(p ? 'play' : 'pause', { fill: p });
+  $('#btnRestart').hidden = !p;
+  $('#hudCtl .qinput').hidden = !p;
+}
+flow.subscribe(syncPlayback); syncPlayback(flow.state);
+// Home straight from the game screen: a running game pauses first, then leaves through the same Paused -> Home path;
+// the listen-only preview just ends. Ignored while the game screen is still sliding in.
 $('#btnHudHome').onclick = () => {
   if (is(S.PREVIEW)){ if (!can(E.HOME)) return; G.finished = true; goHome(); return; }
   if (is(S.PAUSED) || pauseGame()) goHome();

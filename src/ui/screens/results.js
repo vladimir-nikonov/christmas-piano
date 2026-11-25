@@ -10,7 +10,7 @@ import { W, keys, hitY } from '../canvas.js';
 import { icon } from '../icons.js';
 import { TH } from '../theme.js';
 import { histHTML } from './home.js';
-import { state } from '../../game/game.js';
+import { state, paused } from '../../game/game.js';
 import { unlockFx, flyContent, flight, landFx, moveRight, fadeReset } from '../themefx.js';
 
 const reducedMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -96,7 +96,7 @@ $('#results').addEventListener('pointerdown', e => {
 const field = () => [$('#stage'), $('#hud')];
 let before = null;
 ['#btnNext', '#btnAgain', '#btnRestart'].forEach(id => {
-  $(id).addEventListener('click', () => { before = { results: !$('#results').hidden, pause: !$('#pause').hidden }; }, true);
+  $(id).addEventListener('click', () => { before = { results: !$('#results').hidden, pause: paused }; }, true);
   $(id).addEventListener('click', () => {
     const was = before; before = null;
     if (!was || !(was.results || was.pause) || state !== 'playing' || !$('#results').hidden) return;

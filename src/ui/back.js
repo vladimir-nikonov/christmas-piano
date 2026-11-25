@@ -1,6 +1,6 @@
 // System Back button (Android tablet): keeps one "trap" history entry while anything other than the plain
 // home screen is open, so Back acts inside the app instead of leaving the page.
-//   game -> pause, pause -> home, overlays (quick picker, settings, profiles, child's page, wizard, results) -> close,
+//   game -> pause, paused game -> home, overlays (quick picker, settings, profiles, child's page, wizard, results) -> close,
 //   plain home -> default browser behaviour (there is no trap entry to pop).
 // At most one trap entry exists: it is pushed when a context opens and consumed with history.back() when the app
 // returns home through its own buttons. The popstate caused by that history.back() is ignored, so there are no loops.
