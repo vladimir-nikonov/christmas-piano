@@ -8,7 +8,6 @@ import { tx } from '../../i18n/index.js';
 import { blockSVG } from '../art.js';
 import { W, keys, hitY } from '../canvas.js';
 import { icon } from '../icons.js';
-import { histHTML } from './home.js';
 import { state, paused } from '../../game/game.js';
 import { unlockFx, flyContent, flight, landFx, moveRight, fadeReset, particles } from '../themefx.js';
 
@@ -23,7 +22,8 @@ export function resultActions({ stars, levelUp, nextOpen }){
 }
 
 /* ================= Results screen ================= */
-export function showResults({ p, pr, key, song, level, metric, stars, record, levelUp }){
+// The child reads the stars; the % is a small caption, and the best % and past results live in the parent table.
+export function showResults({ p, pr, song, level, metric, stars, levelUp }){
   const o = p.opts;
   const nextOpen = level < LEVELS.length - 1 && unlocked(p, level + 1, song);
   const act = resultActions({ stars, levelUp, nextOpen });
@@ -35,7 +35,6 @@ export function showResults({ p, pr, key, song, level, metric, stars, record, le
   if (levelUp) lu.innerHTML = '<span class="blk">' + blockSVG(pr.level) + '<span class="lk">' + icon('lock') + '</span></span>';
   $('#resXp').innerHTML = (!levelUp && level === pr.level && pr.level < LEVELS.length - 1)
     ? '<span class="blk">' + blockSVG(pr.level + 1) + '</span><span class="pips"><i class="' + (pr.streak > 0 ? 'on' : '') + '"></i><i></i></span>' + (o.lockLevels ? icon('lock') : '') : '';
-  $('#resHist').innerHTML = histHTML(p, key, true) + (record ? '<span class="rec">' + tx('record') + '</span>' : '');
   $('#btnAgain').hidden = !act.again;
   $('#btnNext').hidden = !act.next;
   const main = $('#btnMain'), ta = act.main === 'next' ? 'playNew' : 'again';

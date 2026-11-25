@@ -1,4 +1,4 @@
-// Game session: timing, judging played notes, score, results; the main animation loop.
+// Game session: timing, judging played notes, results; the main animation loop.
 
 import { tone, tick } from '../audio/synth.js';
 import { LEVELS } from '../core/levels.js';
@@ -34,7 +34,7 @@ export function startGame(demo){
   const look = Math.max(2.2, 4 * beat);
   G = { demo, wait: L.wait && !demo, song: songKey(p), meter: S.meter, level: p.sel.level, part, beat, tol, notes, look,
         time: -Math.max(look, S.meter * beat) - 0.4, lastTickBeat: null, end: notes[notes.length - 1].t + notes[notes.length - 1].d + 0.8,
-        score:0, combo:0, bestCombo:0, hits:0, perfect:0, finished:false, waiting:false, resumeIn:0, resumeBeat:null,
+        hits:0, perfect:0, finished:false, waiting:false, resumeIn:0, resumeBeat:null,
         minTempo: o.tempo };
   $('#micPill').hidden = demo || !!dev().touch;
   updateHud(); updateHandsBtn(); requestWake();
@@ -58,11 +58,10 @@ export function onPlayed(midi, atMs, source){
   if (best) registerHit(best, bd <= G.tol * 0.35 ? 'perfect' : bd <= G.tol * 0.7 ? 'good' : 'ok');
   else if (near) wrongFx(midi, near);
 }
-const GRADE = { perfect:{ pts:100, icon:'star', size:60, fill:true }, good:{ pts:70, icon:'check', size:50 }, ok:{ pts:40, icon:'check', size:40 } };
+// The child sees one kind of success pop; stars stay reserved for the result. No points, no combo: a miss never takes anything away.
+const GRADE = { perfect:{ icon:'check', size:60 }, good:{ icon:'check', size:50 }, ok:{ icon:'check', size:44 } };
 function registerHit(n, grade){
   n.hit = true; n.grade = grade; G.hits++; if (grade === 'perfect') G.perfect++;
-  G.combo++; G.bestCombo = Math.max(G.bestCombo, G.combo);
-  G.score += GRADE[grade].pts * Math.min(4, 1 + Math.floor(G.combo / 8));
   const km = keyFor(n.midi), k = keys[km], col = PC_COLOR[n.midi % 12];
   fx.keyFlash[km] = { c: col, at: performance.now() };
   burst(k.x + k.w / 2, hitY, col, grade === 'perfect' ? 20 : 12);
@@ -71,13 +70,12 @@ function registerHit(n, grade){
   updateHud();
 }
 // A wrong note is never punished on screen: no cross, no red, no sound. The played key wobbles softly
-// and the expected key and lane pulse once more to show where to go. Timed levels still reset the combo (scoring rule).
+// and the expected key and lane pulse once more to show where to go.
 function wrongFx(midi, expected){
   const km = keyFor(midi); if (!keys[km]) return;
   const at = performance.now();
   fx.soft[km] = at;
   if (expected) fx.nudge = { key: keyFor(expected.midi), midi: expected.midi, at };
-  if (!G.wait) G.combo = 0;
   updateHud();
 }
 export function burst(x, y, c, n){
@@ -100,8 +98,6 @@ export function burst(x, y, c, n){
 }
 function updateHud(){
   if (!G) return;
-  $('#score').textContent = G.score.toLocaleString('ru-RU');
-  const mult = Math.min(4, 1 + Math.floor(G.combo / 8)); $('#combo').textContent = mult > 1 ? '×' + mult : '';
   $('#prog i').style.width = (G.notes.filter(n => n.hit || n.missed).length / G.notes.length * 100) + '%';
 }
 
@@ -113,9 +109,8 @@ function finish(){
   const metric = G.wait ? Math.round(G.notes.filter(n => n.hit && !n.wrong).length / total * 100) : Math.round(G.hits / total * 100);
   const stars = metric >= 95 ? 3 : metric >= 80 ? 2 : metric >= 50 ? 1 : 0;
   const key = bestKey(G.song, G.level, G.part); p.best[key] = Math.max(p.best[key] || 0, stars);
-  const prevTop = p.top[key], record = prevTop !== undefined && metric > prevTop;
-  p.top[key] = Math.max(prevTop || 0, metric);
-  (p.hist[key] = p.hist[key] || []).push({ at: Date.now(), pct: metric, stars, score: G.score });
+  p.top[key] = Math.max(p.top[key] || 0, metric);
+  (p.hist[key] = p.hist[key] || []).push({ at: Date.now(), pct: metric, stars });
   if (p.hist[key].length > HIST_MAX) p.hist[key].splice(0, p.hist[key].length - HIST_MAX);
   let levelUp = false;
   const pr = prog(p, G.song);
@@ -128,7 +123,7 @@ function finish(){
   G.levelUp = levelUp;   // home reads it to open the new level there too
   save();
   noteResult({ name: p.name, song: SONGS[G.song].title(), stars, metric });
-  showResults({ p, pr, key, song: G.song, level: G.level, metric, stars, record, levelUp });
+  showResults({ p, pr, song: G.song, level: G.level, metric, stars, levelUp });
   if (levelUp) dispatch(E.LEVEL_UP);
 }
 
@@ -156,14 +151,14 @@ function step(ts){
       for (const n of G.notes) if (!n.hit && G.time >= n.t){ n.hit = true; tone(n.midi, n.d); fx.keyFlash[n.midi] = { c: PC_COLOR[n.midi % 12], at: performance.now() };
         burst(keys[n.midi].x + keys[n.midi].w / 2, hitY, PC_COLOR[n.midi % 12], 8); updateHud(); }
     } else if (!G.wait){
-      for (const n of G.notes) if (!n.hit && !n.missed && G.time > n.t + G.tol + dev().latency / 1000){ n.missed = true; G.combo = 0; updateHud(); }
+      for (const n of G.notes) if (!n.hit && !n.missed && G.time > n.t + G.tol + dev().latency / 1000){ n.missed = true; updateHud(); }
     }
     if (G.time > G.end && G.notes.every(n => n.hit || n.missed)) finish();
   }
   draw(ts / 1000, dt);
 }
 // Leaves the pause. A timed level that was already running counts the child back in first, so there is
-// time to put the hands back on the keys; the time, notes, score and mode stay as they were.
+// time to put the hands back on the keys; the time, notes and mode stay as they were.
 // Waiting levels and a pause during the start count-in carry on directly (the start count-in just continues).
 // The navigation machine decides which (Paused -> source state or the resume count-in); returns false outside the pause.
 export const RESUME_BEATS = 3;

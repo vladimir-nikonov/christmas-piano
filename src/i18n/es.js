@@ -77,7 +77,6 @@ export default {
   sLockHelp: 'Si está activado, el siguiente bloque se abre tras dos partidas seguidas con 85% o más. Si no, todos los niveles están abiertos.',
   best: 'Mejor resultado',
   history: 'Resultados anteriores',
-  record: '¡Récord!',
   sProgress: 'Progreso del jugador',
   sReset: 'Reiniciar niveles',
   sDelete: 'Eliminar jugador',

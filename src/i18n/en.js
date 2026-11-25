@@ -77,7 +77,6 @@ export default {
   sLockHelp: 'If on, the next block opens after two games in a row at 85% or more. If off, all levels are open.',
   best: 'Best result',
   history: 'Previous results',
-  record: 'Record!',
   sProgress: 'Player progress',
   sReset: 'Reset levels',
   sDelete: 'Delete player',

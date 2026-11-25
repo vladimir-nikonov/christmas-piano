@@ -8,7 +8,7 @@ import { E, S, dispatch, can, is, flow } from '../../core/flow.js';
 import { homeHint } from '../../core/hint.js';
 import { $ } from '../../dom.js';
 import { G, startGame, setGame, resumeGame, setSpeed, SPEED } from '../../game/game.js';
-import { tx, fmtDate, fmtSpeed } from '../../i18n/index.js';
+import { tx, fmtSpeed } from '../../i18n/index.js';
 import { startMic, watchMicPermission, onMicLost } from '../../input/mic.js';
 import { avatarSVG, blockSVG, sheetSVG } from '../art.js';
 import { px } from '../canvas.js';
@@ -47,15 +47,6 @@ export function renderHome(){
     b.onclick = () => { if (!open){ b.animate([{ transform:'translateX(-6px)' }, { transform:'translateX(6px)' }, { transform:'none' }], 200); return; } const changed = p.sel.level !== i; p.sel.level = i; homePick = { id: p.id, song: songKey(p) }; save(); renderHome(); if (changed) showHint('pick'); };
     box.appendChild(b);
   });
-  $('#homeHist').innerHTML = histHTML(p, bestKey(songKey(p), p.sel.level, partFor(p, songKey(p), p.sel.level)), false);
-}
-// Best % and bars of the last results for one level+part.
-export function histHTML(p, key, markLast){
-  const h = p.hist[key] || []; if (!h.length) return '';
-  const top = p.top[key] || 0;
-  return '<span class="hbest" title="' + tx('best') + '" aria-label="' + tx('best') + ': ' + top + '%">' + icon('star', { fill: true }) + '<span>' + top + '%</span></span>' +
-    '<span class="hbars" role="img" aria-label="' + tx('history') + ': ' + h.map(e => e.pct + '%').join(', ') + '">' +
-    h.map((e, i) => '<i class="' + (e.pct === top ? 'top' : '') + (markLast && i === h.length - 1 ? ' now' : '') + '" style="height:' + Math.max(8, e.pct) + '%" title="' + fmtDate(e.at) + ': ' + e.pct + '%"></i>').join('') + '</span>';
 }
 // Home from anywhere that has a way home (player chosen, close, exit, end of the demo, results); otherwise ignored.
 // Without any player it opens the new player wizard instead.
@@ -229,7 +220,7 @@ function syncFull(){
 }
 document.addEventListener('fullscreenchange', syncFull);
 document.addEventListener('webkitfullscreenchange', syncFull);
-// Pause freezes the game and dims the field; everything (time, notes, score, mode) stays in G.
+// Pause freezes the game and dims the field; everything (time, notes, mode) stays in G.
 // Only a running game (count-in, playing or waiting) can pause; anything else ignores it.
 export function pauseGame(){ return !!G && dispatch(E.PAUSE); }
 // Play/Pause: one button in the left HUD column, as in a media player. It pauses a running game and resumes a paused

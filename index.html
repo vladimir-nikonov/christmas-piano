@@ -18,7 +18,6 @@
     <button class="b ico" id="btnHudHome" data-ta="home" data-icon="home"></button>
     <div id="prog" data-ta="progress"><i></i></div>
     <div class="pill" id="micPill" data-ta="mic"><span data-icon="mic"></span><span id="micbars"><i></i><i></i><i></i><i></i></span><span id="heard">—</span></div>
-    <div class="pill"><span class="rw" data-icon="star" data-fill="1"></span><span id="score">0</span><span id="combo"></span></div>
     <button class="b ico" id="btnRec"></button>
     <button class="b ico qhands" id="btnHands"></button>
     <button class="b ico qcam"></button>
@@ -70,7 +69,6 @@
   <div class="songs" id="songs"></div>
   <div class="levels" id="levels"></div>
   <div class="hint" id="homeHint" role="status" aria-live="polite"></div>
-  <div class="hist" id="homeHist"></div>
   <div class="playrow">
     <button class="b listen" id="btnListen" data-ta="listen" data-icon="eye"></button>
     <button class="b primary play" id="btnPlay" data-ta="play" data-icon="play" data-fill="1"></button>
@@ -141,9 +139,8 @@
   <div class="panel">
     <button class="b ico qvcard vcorner" hidden></button>
     <div class="stars-big" id="resStars"></div>
-    <div class="bignum" id="resPct">0%</div>
+    <div class="respct" id="resPct">0%</div>
     <div class="levelup" id="resLevelUp" hidden></div>
-    <div class="hist" id="resHist"></div>
     <div class="xprow" id="resXp"></div>
     <!-- Fixed slots: secondary icons on the left (Home, Replay, Next), the one primary action always on the right. -->
     <div class="btnrow resbtns">

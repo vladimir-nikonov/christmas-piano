@@ -51,7 +51,9 @@ function renderPlayerPick(p){
   });
 }
 // Songs as rows, levels as cells. A cell shows the length that level plays (sheet icon), the best stars and
-// best % for that length; the current level is outlined, locked levels are dimmed. Tapping a cell cycles the length.
+// best % and the last results (small bars) for that length; the current level is outlined, locked levels are dimmed. Tapping a cell cycles the length.
+// The last results of one cell as small bars (the best one highlighted), newest on the right.
+const histBars = h => h && h.length ? '<span class="chist" aria-hidden="true">' + h.map(e => '<i style="height:' + Math.max(12, e.pct) + '%" title="' + fmtDate(e.at) + ': ' + e.pct + '%"></i>').join('') + '</span>' : '';
 const starRow = on => [0,1,2].map(i => icon('star', { fill: i < on, cls: i < on ? '' : 'off' })).join('');
 function renderLenTable(p){
   const t = $('#sLen');
@@ -62,7 +64,7 @@ function renderLenTable(p){
       const part = partFor(p, song, i), key = bestKey(song, i, part), stars = p.best[key] || 0, top = p.top[key];
       const cls = 'b lencell' + (i === pr.level ? ' cur' : '') + (unlocked(p, i, song) ? '' : ' locked') + (part !== L.part ? ' changed' : '');
       return '<td><button class="' + cls + '" data-song="' + song + '" data-level="' + i + '" data-part="' + part + '">' +
-        '<span class="len">' + sheetSVG(part) + '</span><span class="cstars">' + starRow(stars) + '</span><span class="cpct">' + (top ? top + '%' : '—') + '</span></button></td>';
+        '<span class="len">' + sheetSVG(part) + '</span><span class="cstars">' + starRow(stars) + '</span><span class="cpct">' + (top ? top + '%' : '—') + '</span>' + histBars(p.hist[key]) + '</button></td>';
     }).join('') + '</tr>';
   });
   t.innerHTML = h + '</tbody>';
@@ -70,7 +72,8 @@ function renderLenTable(p){
   t.querySelectorAll('.lencell').forEach(b => {
     const song = b.dataset.song, i = +b.dataset.level, pr = prog(p, song), part = b.dataset.part, top = p.top[bestKey(song, i, part)];
     b.setAttribute('aria-label', SONGS[song].title() + ', ' + tx('levels')[i] + ': ' + tx('parts')[PART_KEYS.indexOf(part)] +
-      (i === pr.level ? ', ' + tx('sLenCur') : '') + (top ? ', ' + tx('best') + ' ' + top + '%' : ''));
+      (i === pr.level ? ', ' + tx('sLenCur') : '') + (top ? ', ' + tx('best') + ' ' + top + '%' : '') +
+      ((p.hist[bestKey(song, i, part)] || []).length ? ', ' + tx('history') + ': ' + p.hist[bestKey(song, i, part)].map(e => e.pct + '%').join(', ') : ''));
     b.onclick = () => { setPartFor(p, song, i, PART_KEYS[(PART_KEYS.indexOf(part) + 1) % PART_KEYS.length]); save(); renderLenTable(p); t.querySelector('[data-song="' + song + '"][data-level="' + i + '"]').focus(); };
   });
   $('#btnLenReset').hidden = !Object.keys(p.len || {}).length;

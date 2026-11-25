@@ -556,7 +556,7 @@ try {
   assert.equal(await sn(() => window.__sn.game.minTempo), 50, 'the slowest speed of the run is kept for the level-up rule');
   if (s0.tempo !== 130){ await page.focus('#spdRail'); for (let i = 0; i < (130 - s0.tempo) / 5; i++) await page.keyboard.press('ArrowDown'); }
   assert.equal((await pos()).tempo, s0.tempo);
-  const snap = () => sn(() => { const g = window.__sn.game; return { time: g.time, score: g.score, missed: g.notes.filter(n => n.missed).length }; });
+  const snap = () => sn(() => { const g = window.__sn.game; return { time: g.time, hits: g.hits, missed: g.notes.filter(n => n.missed).length }; });
   const before = await snap();
   await page.waitForTimeout(300);
   assert.deepEqual(await snap(), before, 'nothing moves in pause');

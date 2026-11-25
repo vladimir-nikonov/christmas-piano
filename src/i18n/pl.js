@@ -77,7 +77,6 @@ export default {
   sLockHelp: 'Gdy włączone, następny blok otwiera się po dwóch grach z rzędu na 85% lub więcej. Gdy wyłączone, wszystkie poziomy są otwarte.',
   best: 'Najlepszy wynik',
   history: 'Poprzednie wyniki',
-  record: 'Rekord!',
   sProgress: 'Postęp gracza',
   sReset: 'Resetuj poziomy',
   sDelete: 'Usuń gracza',
