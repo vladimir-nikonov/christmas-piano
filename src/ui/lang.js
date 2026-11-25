@@ -13,6 +13,7 @@ import { renderSettings } from './screens/settings.js';
 import { THEMES, THEME_KEYS } from './theme-data.js';
 import { updateInputMode } from './inputmode.js';
 import { updateCamera } from './camwin.js';
+import { updateRec } from './screens/vcard.js';
 import { applyTheme, themePreview } from './theme.js';
 import { flagSVG } from './flags.js';
 
@@ -44,6 +45,7 @@ export function updateQuick(){
   document.querySelectorAll('.qtheme').forEach(b => b.innerHTML = themePreview(th));
   updateInputMode();
   updateCamera();
+  updateRec();
 }
 let popMode = 'lang';
 function renderPop(){

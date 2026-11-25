@@ -15,6 +15,7 @@ import { draw } from '../ui/render.js';
 import { goHome } from '../ui/screens/home.js';
 import { showResults } from '../ui/screens/results.js';
 import { TH } from '../ui/theme.js';
+import { noteResult } from '../record/recorder.js';
 
 /* ================= Game ================= */
 // state / paused: the older app-wide state strings, derived from the navigation machine (src/core/flow.js).
@@ -123,6 +124,7 @@ function finish(){
   p.level = Math.max(p.level, pr.level);
   if (levelUp) p.sel.level = pr.level;
   save();
+  noteResult({ name: p.name, song: SONGS[G.song].title(), stars, metric });
   showResults({ p, pr, key, song: G.song, level: G.level, metric, stars, record, levelUp });
   if (levelUp) dispatch(E.LEVEL_UP);
 }

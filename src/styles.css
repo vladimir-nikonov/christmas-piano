@@ -326,3 +326,21 @@ svg.off{color:var(--border)}
 #cam .x svg{width:calc(24*var(--u));height:calc(24*var(--u))}
 #settings,#pop{z-index:30}
 .qcam[aria-pressed="true"]{color:var(--accent)}
+
+/* Video cards: record buttons and the card panel */
+.qrec svg,#btnRec svg{color:#E5484D}
+.qrec.armed{outline:calc(4*var(--u)) solid #E5484D;outline-offset:calc(3*var(--u))}
+#home .corner.r .qrec.armed{opacity:1}
+#btnRec.live{border-color:#E5484D;animation:recpulse 1.2s ease-in-out infinite}
+@keyframes recpulse{50%{box-shadow:var(--bevel),0 calc(5*var(--u)) 0 var(--accent-dark),0 0 0 calc(6*var(--u)) rgba(229,72,77,.45)}}
+.qvcard:not([hidden]){animation:bob 1.2s ease-in-out 3}
+#results .panel{position:relative}
+#results .vcorner{position:absolute;top:calc(14*var(--u));right:calc(14*var(--u));color:var(--reward)}
+#vcard{z-index:30}
+.vcp{position:relative;display:flex;flex-direction:column;align-items:center;gap:calc(16*var(--u));max-width:calc(100vw - 32px);box-sizing:border-box}
+.vcp .x{position:absolute;top:calc(12*var(--u));right:calc(12*var(--u))}
+.vcp video{display:block;width:min(calc(720*var(--u)),calc(100vw - 96px));max-height:calc(100vh - 300*var(--u));background:#000;border-radius:calc(var(--radius) * .6)}
+.vcp .btnrow .wide{display:flex;white-space:nowrap;gap:calc(10*var(--u));padding:0 calc(26*var(--u));font-size:calc(24*var(--u))}
+.vcmsg{margin:0;min-height:1.3em;font-size:calc(18*var(--u));opacity:.85;text-align:center}
+@media (prefers-reduced-motion: reduce){ #btnRec.live,.qvcard:not([hidden]){animation:none} }
+#home .corner.media{top:calc(14px + env(safe-area-inset-top,0px) + 76*var(--u));flex-direction:column}

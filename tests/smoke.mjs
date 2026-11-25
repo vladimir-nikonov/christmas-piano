@@ -652,6 +652,49 @@ try {
     assert.equal(await mp.locator('#cam').isVisible(), false);
     assert.equal(await mp.evaluate(() => window.__sn.camStream), null, 'closing releases the camera');
     assert.equal(await mp.evaluate(() => window.__sn.db.device.cam.on), false);
+
+    log('video card: the HUD button records during a game and stops on a second tap');
+    await mp.click('#hud .qcam');
+    await mp.waitForFunction(() => document.querySelector('#camVideo').videoWidth > 0, null, { timeout: 10000 });
+    await mp.click('#btnRec');
+    assert.equal(await mp.evaluate(() => window.__sn.recording), true);
+    assert.equal(await mp.getAttribute('#btnRec', 'aria-pressed'), 'true');
+    await mp.waitForTimeout(1500);
+    await mp.click('#btnRec');
+    await mp.waitForFunction(() => window.__sn.card && window.__sn.card.size > 0, null, { timeout: 10000 });
+    assert.equal(await mp.evaluate(() => window.__sn.recording), false);
+
+    log('video card: armed on home, the next game is filmed to the end card and can be saved and deleted');
+    await mp.click('#btnPause');
+    await mp.click('#btnQuit');
+    await mp.waitForFunction(() => window.__sn.state === 'home');
+    assert.equal(await mp.locator('#home .qvcard').isVisible(), true, 'the last card is offered on home');
+    await mp.click('#home .qrec');
+    assert.equal(await mp.getAttribute('#home .qrec', 'aria-pressed'), 'true');
+    await mp.click('#btnPlay');
+    await mp.waitForFunction(() => window.__sn.recording, null, { timeout: 10000 });
+    assert.equal(await mp.getAttribute('#home .qrec', 'aria-pressed'), 'false', 'arming is for one game only');
+    await mp.waitForFunction(() => window.__sn.game && window.__sn.game.time >= 0, null, { timeout: 10000 });
+    while (await mp.evaluate(() => window.__sn.state === 'playing')){
+      await mp.evaluate(() => { const g = window.__sn.game, n = g && g.notes.find(n => !n.hit && !n.missed); if (n) window.__sn.onPlayed(n.midi); });
+      await mp.waitForTimeout(60);
+    }
+    await mp.waitForFunction(() => window.__sn.state === 'results');
+    assert.equal(await mp.evaluate(() => window.__sn.recording), true, 'the end card is still being filmed');
+    await mp.waitForFunction(() => !window.__sn.recording, null, { timeout: 8000 });
+    await mp.waitForFunction(() => !document.querySelector('#results .qvcard').hidden);
+    await mp.click('#results .qvcard');
+    assert.equal(await mp.locator('#vcard').isVisible(), true);
+    await mp.waitForFunction(() => document.querySelector('#vcVideo').readyState >= 1, null, { timeout: 10000 });
+    const [vdl] = await Promise.all([mp.waitForEvent('download'), mp.click('#btnVcSave')]);
+    const card = await mp.evaluate(() => window.__sn.card);
+    assert.match(vdl.suggestedFilename(), new RegExp('^snezhnye-noty-Mic-\\d{4}-\\d\\d-\\d\\d-\\d{4}\\.' + card.ext + '$'));
+    assert.ok(card.size > 10000, 'the video has content: ' + card.size + ' bytes');
+    assert.notEqual(await mp.locator('#vcMsg').textContent(), '');
+    await mp.click('#btnVcDelete');
+    assert.equal(await mp.locator('#vcard').isVisible(), false);
+    assert.equal(await mp.evaluate(() => window.__sn.card), null);
+    assert.equal(await mp.locator('#results .qvcard').isVisible(), false);
   } finally { await micBrowser.close(); }
 
   assert.deepEqual(errors, []);

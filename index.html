@@ -18,6 +18,7 @@
   <div id="prog" data-ta="progress"><i></i></div>
   <div class="pill" id="micPill" data-ta="mic"><span data-icon="mic"></span><span id="micbars"><i></i><i></i><i></i><i></i></span><span id="heard">—</span></div>
   <div class="pill"><span class="rw" data-icon="star" data-fill="1"></span><span id="score">0</span><span id="combo"></span></div>
+  <button class="b ico" id="btnRec"></button>
   <button class="b ico qcam"></button>
   <button class="b ico qfull" data-ta="full" data-icon="fullscreen"></button>
 </div>
@@ -36,9 +37,14 @@
     <button class="b ico qtheme" data-ta="theme"></button>
     <button class="b ico" id="btnBackupNag" data-ta="backupNag" data-icon="arrow-down" hidden style="opacity:.6"></button>
     <button class="b ico qinput"></button>
-    <button class="b ico qcam"></button>
     <button class="b ico qfull" id="btnFull" data-ta="full" data-icon="fullscreen"></button>
     <button class="b ico" id="btnSettings" data-ta="settings" data-icon="gear"></button>
+  </div>
+  <!-- Camera and video cards: a column on the right edge under the corner buttons -->
+  <div class="corner r media">
+    <button class="b ico qcam"></button>
+    <button class="b ico qrec"></button>
+    <button class="b ico qvcard" hidden></button>
   </div>
   <div class="songs" id="songs"></div>
   <div class="levels" id="levels"></div>
@@ -88,6 +94,7 @@
 
 <div class="screen" id="results" hidden>
   <div class="panel">
+    <button class="b ico qvcard vcorner" hidden></button>
     <div class="stars-big" id="resStars"></div>
     <div class="bignum" id="resPct">0%</div>
     <div class="levelup" id="resLevelUp" hidden></div>
@@ -157,6 +164,21 @@
         <button class="b txtbtn" id="btnWipeNo" data-t="cancel"></button>
         <button class="b txtbtn danger" id="btnWipeYes" data-t="sWipeYes"></button></div></div>
     <p style="opacity:.75;font-size:13px;margin:14px 0 0" data-t="sNote"></p>
+  </div>
+</div>
+
+<!-- Video card: watch the last recording, save it as a file, send it or delete it -->
+<div class="screen" id="vcard" hidden>
+  <div class="panel vcp" role="dialog" aria-labelledby="vcTitle">
+    <button class="b ico x" id="btnVcClose" data-ta="close" data-icon="cross"></button>
+    <h2 class="poph" id="vcTitle" data-t="vcardTitle"></h2>
+    <video id="vcVideo" controls playsinline preload="metadata"></video>
+    <div class="btnrow">
+      <button class="b ico" id="btnVcDelete" data-ta="vcardDelete" data-icon="trash"></button>
+      <button class="b ico" id="btnVcShare" data-ta="vcardShare" data-icon="share" hidden></button>
+      <button class="b primary wide" id="btnVcSave" data-icon="arrow-down"><span data-t="vcardSave"></span></button>
+    </div>
+    <p class="vcmsg" id="vcMsg" role="status"></p>
   </div>
 </div>
 

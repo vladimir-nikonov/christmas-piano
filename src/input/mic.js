@@ -28,7 +28,7 @@ export function startMic(){
       const stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
       const a = audio(), src = a.createMediaStreamSource(stream), analyser = a.createAnalyser();
       analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0; src.connect(analyser);
-      mic = { analyser, buf: new Float32Array(2048), sr: a.sampleRate, calib: [], calibUntil: performance.now() + 700 };
+      mic = { src, analyser, buf: new Float32Array(2048), sr: a.sampleRate, calib: [], calibUntil: performance.now() + 700 };
       // An ended track never comes back: forget it so the next Play asks for the microphone again.
       const cur = mic;
       stream.getAudioTracks().forEach(t => {
@@ -82,6 +82,9 @@ export function micFrame(nowMs, emit){
     }
   }
 }
+// The live microphone as an audio node (null while it is off): the video-card recorder mixes it in,
+// so a real piano is heard in the video. It is never connected to the speakers.
+export const micNode = () => mic ? mic.src : null;
 let heardShown = null;
 function showHeard(m){ if (m === heardShown) return; heardShown = m; $('#heard').textContent = m == null ? '—' : noteName(m); }
 export function resetHeard(){ heardShown = undefined; }

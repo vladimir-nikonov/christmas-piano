@@ -14,6 +14,7 @@ src/data/                storage (IndexedDB + localStorage fallback) and backup 
 src/game/                game session: timing, judging notes, score, main loop
 src/input/               microphone and touch input; both call onPlayed(midi, atMs, source)
 src/audio/               sound output: tones and metronome
+src/record/              video-card recorder: game canvas + camera window + sound into one video file
 src/ui/                  canvas drawing, themes, icons, art, language picker; nav.js maps the navigation state to screens
 src/ui/screens/          home, players, results, parent settings
 src/i18n/                UI strings, one file per language

@@ -18,7 +18,7 @@ let ignorePop = false;
 // Does Back have something to do inside the app right now? The quick picker is an overlay outside the navigation
 // machine; everything else follows the navigation state.
 function wantTrap(){
-  if (shown('#pop')) return true;
+  if (shown('#pop') || shown('#vcard')) return true;
   const s = flow.state;
   switch (s.name){
     case S.BOOT: case S.HOME: case S.MIC_SETUP: return false;
@@ -36,6 +36,7 @@ function sync(){
 const click = s => { const b = $(s); if (b && !b.hidden) b.click(); };
 function onBack(){
   if (shown('#pop')){ $('#pop').hidden = true; return; }
+  if (shown('#vcard')){ $('#btnVcClose').click(); return; }
   const s = flow.state;
   switch (s.name){
     case S.SETTINGS: click('#btnSetClose'); break;
@@ -55,5 +56,5 @@ addEventListener('popstate', () => {
 });
 // Every navigation change goes through the machine; the quick picker is watched through its `hidden` attribute.
 flow.subscribe(sync);
-new MutationObserver(sync).observe($('#pop'), { attributes: true, attributeFilter: ['hidden'] });
+['#pop', '#vcard'].forEach(s => new MutationObserver(sync).observe($(s), { attributes: true, attributeFilter: ['hidden'] }));
 sync();
