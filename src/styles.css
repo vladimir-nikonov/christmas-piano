@@ -114,7 +114,9 @@ svg.off{color:var(--border)}
 /* A player's card in the list: the tile (choose) with Edit and Delete under it */
 .pcard{display:flex;flex-direction:column;gap:calc(8*var(--u))}
 .pcard .ptile{flex:1}
-.pacts{display:flex;justify-content:center;gap:calc(12*var(--u))}
+.pacts{display:flex;justify-content:center;gap:calc(12*var(--u));height:calc(56*var(--u));flex:none}
+/* The plus tile leaves room for the Edit/Delete row, so it is as tall as the player tiles next to it */
+#ptiles > .ptile.add{margin-bottom:calc(64*var(--u))}
 .pacts .ico{width:calc(56*var(--u));height:calc(56*var(--u))}
 .pacts .ico svg{width:calc(28*var(--u));height:calc(28*var(--u))}
 .pacts .pdel.armed{background:#d9342b;border-color:#8f1d17;color:#fff}

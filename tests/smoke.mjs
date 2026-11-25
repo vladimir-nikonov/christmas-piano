@@ -450,6 +450,7 @@ try {
   await visible('#profiles');
   assert.equal(await page.locator('#ptiles .ptile').count(), 2);
   assert.equal(await page.locator('#btnMe').count(), 0, 'no edit button on home');
+  assert.deepEqual(await sn(() => [document.querySelector('#ptiles .pcard .ptile'), document.querySelector('#ptiles > .ptile.add')].map(e => Math.round(e.getBoundingClientRect().height))).then(([a, b]) => a === b), true, 'the plus tile is as tall as a player tile');
   await page.locator('#ptiles .ptile').first().click();
   await visible('#home');
   await page.click('#btnWho');
