@@ -297,8 +297,8 @@ body.paused #stage{filter:brightness(.55) saturate(.8)}
 .minipick.th svg{width:64px;height:40px;border-radius:4px}
 
 /* Child's own page: name, avatar, theme (icons, big targets) */
-/* Player setup screens cover the game canvas: no piano keys behind the theme pictures */
-#newp,#profiles,#me{background:var(--bg)}
+/* Home and the player setup screens cover the game canvas: no piano keys behind them (the level entry fades this background out) */
+#home,#newp,#profiles,#me{background:var(--bg)}
 #me{justify-content:flex-start;padding-top:calc(96*var(--u) + env(safe-area-inset-top,0px))}
 .mehead{display:flex;align-items:center;gap:calc(18*var(--u));flex-wrap:wrap;justify-content:center}
 .mehead .av{display:block}
