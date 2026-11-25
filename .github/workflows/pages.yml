@@ -47,6 +47,8 @@ jobs:
           mkdir -p _site
           cp index.html _site/
           cp -r src _site/
+          # Version every module URL so a browser never mixes cached files of two deploys.
+          node scripts/stamp.mjs _site "${GITHUB_SHA::12}"
 
       - uses: actions/configure-pages@v6
 

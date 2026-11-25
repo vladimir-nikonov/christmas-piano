@@ -24,6 +24,17 @@ import './ui/screens/settings.js';
 import './ui/back.js';
 import './ui/nav.js';
 
+// Deploy version, written by scripts/stamp.mjs ('dev' when run from the repo). If the page that loaded this
+// module came from an older deploy (a cached index.html whose ?v= no longer matches the files on the server),
+// its markup may not fit this code: fetch a fresh page into the cache and reload once.
+const BUILD = 'dev';
+const pageBuild = new URL(import.meta.url).searchParams.get('v');
+if (pageBuild && pageBuild !== BUILD){
+  let first = true;
+  try { first = sessionStorage.getItem('sn-reloaded') !== BUILD; sessionStorage.setItem('sn-reloaded', BUILD); } catch(e){ /* storage blocked: reload anyway */ }
+  if (first) fetch(location.href, { cache: 'reload' }).catch(() => {}).then(() => location.reload());
+}
+
 // Resize / rotation: recompute canvas and re-render screens whose pixel sizes depend on U
 let rsT = 0;
 function onResize(){ layout(); clearTimeout(rsT); rsT = setTimeout(() => { if (state === 'home') renderHome(); else if (state === 'profiles') renderProfiles(); else if (state === 'newp') wizStep(wizAt); else if (state === 'me') renderMe(); }, 120); }
