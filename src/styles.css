@@ -9,11 +9,11 @@
 }
 @media (orientation: portrait){ :root{ --u: clamp(.5px, min(calc(100vw / 820), calc(100vh / 1180)), 1.6px); } }
 :root[data-theme="pixel"]{ --bg:#121C32; --panel:#263650; --border:#405775; --accent:#54D77C; --accent-dark:#1B854D; --reward:#FFD35C; --soft-error:#E9B878; --text:#F5F8FF; --on-accent:#0d2a1a;
-  --font-ui:"Golos Text",system-ui,sans-serif; --radius:3px; --cap:square; --join:miter; --bevel: inset -4px -4px 0 rgba(0,0,0,.28), inset 4px 4px 0 rgba(255,255,255,.18); }
+  --font-ui:"Golos Text",system-ui,sans-serif; --radius:4px; --cap:square; --join:miter; --icon-w:2.5; --bevel: inset -4px -4px 0 rgba(0,0,0,.28), inset 4px 4px 0 rgba(255,255,255,.18); }
 :root[data-theme="plastic"]{ --bg:#393477; --panel:#6256A6; --border:#9183D7; --accent:#5CE3AF; --accent-dark:#209B78; --reward:#FFDA6C; --soft-error:#FFD4A1; --text:#FFF9FF; --on-accent:#0f3a2c;
-  --font-ui:"Nunito",system-ui,sans-serif; --radius:28px; --cap:round; --join:round; --bevel: inset 0 6px 0 rgba(255,255,255,.18); }
-:root[data-theme="winter"]{ --bg:#153B4A; --panel:#285564; --border:#50808B; --accent:#FFD18A; --accent-dark:#A97738; --reward:#FFD18A; --soft-error:#EBC598; --text:#FFF6E4; --on-accent:#3d2a0c;
-  --font-ui:"Rubik",system-ui,sans-serif; --radius:8px; --cap:round; --join:round; --bevel: 0 0 0 transparent; }
+  --font-ui:"Nunito",system-ui,sans-serif; --radius:24px; --cap:round; --join:round; --bevel: inset 0 6px 0 rgba(255,255,255,.18); }
+:root[data-theme="winter"]{ --bg:#153B4A; --panel:#285564; --border:#50808B; --accent:#FFD18A; --accent-dark:#A97738; --reward:#FFE7A0; --soft-error:#EBC598; --text:#FFF6E4; --on-accent:#3d2a0c;
+  --font-ui:"Rubik",system-ui,sans-serif; --radius:12px; --cap:round; --join:round; --bevel: 0 0 0 transparent; }
 :root[data-theme="anime"]{ --bg:#171631; --panel:#302F53; --border:#8E7BCB; --accent:#F49AD1; --accent-dark:#A7458D; --reward:#FFD98D; --soft-error:#E8B6CD; --text:#FFF5FF; --on-accent:#3a1030;
   --font-ui:"Nunito",system-ui,sans-serif; --radius:20px; --cap:round; --join:round; --bevel: inset 0 5px 0 rgba(255,255,255,.12); }
 
@@ -24,7 +24,7 @@ canvas#stage{position:fixed;inset:0;width:100%;height:100%;display:block;touch-a
 button{font-family:var(--font-ui);font-weight:800;cursor:pointer;color:inherit;padding:0}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid var(--reward);outline-offset:3px}
 svg{display:block;flex:none}
-svg.i path{fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:var(--cap);stroke-linejoin:var(--join)}
+svg.i path{fill:none;stroke:currentColor;stroke-width:var(--icon-w,2);stroke-linecap:var(--cap);stroke-linejoin:var(--join)}
 svg.i.fill path{fill:currentColor}
 
 /* Buttons (theme studio style: panel, border, radius, accent-dark drop) */
@@ -55,7 +55,8 @@ h1.title{margin:0;font-size:calc(54*var(--u));font-weight:900;letter-spacing:.01
 .tile .blk{display:block;width:calc(96*var(--u));height:calc(96*var(--u));border-radius:calc(var(--radius) * .6);overflow:hidden;box-shadow:0 calc(6*var(--u)) 0 rgba(0,0,0,.35)}
 .tile .blk svg{width:100%;height:100%}
 /* Toy blocks and gems draw their own shape and shadow, so their frame neither clips nor casts a square shadow */
-:root[data-theme="plastic"] .blk,:root[data-theme="anime"] .blk{overflow:visible;box-shadow:none;border-radius:0}
+.tile .blk{overflow:visible;box-shadow:none;border-radius:0}
+.tile .blk svg.block{filter:drop-shadow(0 calc(5*var(--u)) 0 rgba(0,0,0,.3))}
 .tile.locked .blk svg.block{filter:grayscale(1) brightness(.45)}
 .tile .lock{position:absolute;left:0;right:0;top:calc(14*var(--u));height:calc(96*var(--u));display:grid;place-items:center;color:var(--text)}
 .tile .lock svg{width:calc(42*var(--u));height:calc(42*var(--u))}
