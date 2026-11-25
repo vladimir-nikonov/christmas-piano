@@ -88,6 +88,8 @@ try {
     for (let i = 0; i < n; i++){
       await waitAtNextNote();
       await sn(() => { const n = window.__sn.game.notes.find(n => !n.hit && !n.missed); window.__sn.onPlayed(n.midi); });
+      // A played note evaporates: it lets off vapour and stops being drawn above the key.
+      if (i === 0) await page.waitForFunction(() => window.__sn.fx.parts.some(p => p.kind === 'vapour'), null, { timeout: 2000 });
     }
     await visible('#results');
   };

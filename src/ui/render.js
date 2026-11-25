@@ -6,7 +6,7 @@ import { cuesFor } from '../core/levels.js';
 import { fingerFor } from '../core/songs.js';
 import { tx } from '../i18n/index.js';
 import { opts } from '../data/storage.js';
-import { state, G, fx, nextUnhit, keyFor } from '../game/game.js';
+import { state, G, fx, nextUnhit, keyFor, inZone } from '../game/game.js';
 import { ctx, W, H, DPR, U, LO, HI, isBlack, keys, kbTop, kbH, hitY, topY, bgCache, setBgCache } from './canvas.js';
 import { HAND_PARTS, HAND_ORDER } from './hand-art.js';
 import { ICON } from './icons.js';
@@ -141,6 +141,23 @@ function laneGlow(now){
   ctx.fillRect(k.x, hitY * 0.35, lw, hitY * 0.65); ctx.fillRect(k.x + k.w - lw, hitY * 0.35, lw, hitY * 0.65);
   ctx.globalAlpha = 1;
 }
+// Evaporation of a played note: the head swells, lifts and fades to white; on the first frame it lets off
+// a few puffs of vapour in its colour (none with reduced motion: then it only fades).
+const EVAP_MS = 380;
+function evaporate(n, k, yt, yb, e, rad){
+  const col = colOf(n.midi), w0 = Math.round(Math.min(115 * U, k.w * (k.black ? 0.9 : 0.82))), h0 = Math.min(yb - yt, 56 * U);
+  const cx = k.x + k.w / 2, cy = yb - h0 / 2 - (reducedMotion ? 0 : e * 26 * U), sc = reducedMotion ? 1 : 1 + 0.35 * e;
+  const w = w0 * sc, h = h0 * sc * (1 - 0.4 * e);
+  if (!n.vapour){ n.vapour = true;
+    if (!reducedMotion) for (let i = 0; i < 9; i++){ const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2, v = (60 + Math.random() * 90) * U;
+      fx.parts.push({ kind:'vapour', x: cx + (Math.random() - 0.5) * w0 * 0.8, y: yb - h0 * Math.random(), vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+        c: col, life: 0.45 + Math.random() * 0.25, age: 0, r: (8 + Math.random() * 8) * U }); }
+  }
+  ctx.globalAlpha = 1 - e; ctx.shadowColor = col; ctx.shadowBlur = 24 * U;
+  noteBlock(cx - w / 2, cy - h / 2, w, h, col, rad); ctx.shadowBlur = 0;
+  ctx.globalAlpha = (1 - e) * Math.min(1, e * 2.5); rrect(cx - w / 2, cy - h / 2, w, h, rad); ctx.fillStyle = '#FFFFFF'; ctx.fill();
+  ctx.globalAlpha = 1;
+}
 // What the last frame drew (read by the smoke test through window.__sn).
 export const drawn = { flakes: 0, particles: 0, glows: 0 };
 export function draw(now, dt){
@@ -156,18 +173,29 @@ export function draw(now, dt){
     laneGlow(now);
     for (const n of G.notes){
       const k = keys[keyFor(n.midi)];
-      let yb = hitY - (n.t - G.time) * pps; const yt = hitY - (n.t + n.d * 0.88 - G.time) * pps;
+      // A played note evaporates where it was played: it swells, rises and fades within EVAP_MS (the demo just shows the song).
+      const ev = n.hit && n.hitAt && !G.demo ? (performance.now() - n.hitAt) / EVAP_MS : 0;
+      if (ev >= 1) continue;
+      const tn = ev ? n.hitTime : G.time;
+      let yb = hitY - (n.t - tn) * pps; const yt = hitY - (n.t + n.d * 0.88 - tn) * pps;
       if (yt > hitY || yb < -20) continue;
       if (n.hit) yb = Math.min(yb, hitY);
       if (yb - yt < 2) continue;
+      if (ev){ evaporate(n, k, yt, yb, ev, rad); continue; }
+      const zone = state === 'playing' && inZone(n), blink = zone ? (reducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(now * 14)) : 0;
       const col = n.missed ? TH.border : colOf(n.midi);
       const w = Math.round(Math.min(115 * U, k.w * (k.black ? 0.9 : 0.82))), x = Math.round(k.x + (k.w - w) / 2);
       const headH = Math.min(yb - yt, 56 * U);
       ctx.globalAlpha = n.missed ? 0.45 : 1;
       if (yb - yt > headH + 2){ noteTail(x + w / 2, yt, yb - headH + 6, col, (n.missed ? 0.45 : 1) * (n.hit ? 0.95 : 0.55)); ctx.globalAlpha = n.missed ? 0.45 : 1; }
       if (n.hit || n === nu){ ctx.shadowColor = col; ctx.shadowBlur = n.hit ? 24 : reducedMotion ? 20 : 16 + Math.sin(now * 8) * 10; }
+      else if (zone){ ctx.shadowColor = col; ctx.shadowBlur = (14 + 16 * blink) * U; }
       noteBlock(x, yb - headH, w, headH, col, rad);
       ctx.shadowBlur = 0;
+      if (zone){ // blinking: the note flashes white and gets a white rim while it can be played (steady with reduced motion)
+        ctx.globalAlpha = 0.55 * blink; rrect(x, yb - headH, w, headH, rad); ctx.fillStyle = '#FFFFFF'; ctx.fill();
+        ctx.globalAlpha = 0.6 + 0.4 * blink; ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 3 * U; ctx.stroke(); ctx.globalAlpha = 1;
+      }
       if (n === nu && focus.midi !== null && !n.hit){ // pulsing outline around the expected note
         const gp = (4 + 2 * pulse(now, 6) + (reducedMotion ? 0 : 6 * focus.nudge)) * U; // reduced motion: the nudge brightens, the outline does not grow
         rrect(x - gp, yb - headH - gp, w + gp * 2, headH + gp * 2, rad + gp); ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 3 * U; ctx.stroke();
@@ -202,6 +230,9 @@ export function draw(now, dt){
       for (let j = 0; j <= 6; j++){ const a = a0 + j * Math.PI / 3; if (j) ctx.lineTo(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r); else ctx.moveTo(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r); }
       for (let j = 0; j < 6; j++){ const a = a0 + j * Math.PI / 3; ctx.moveTo(p.x + Math.cos(a) * r * 0.55, p.y + Math.sin(a) * r * 0.55); ctx.lineTo(p.x + Math.cos(a) * r * 0.85, p.y + Math.sin(a) * r * 0.85); }
       ctx.stroke(); continue; }
+    if (p.kind === 'vapour'){ p.vx *= 0.94; p.vy -= 60 * dt * U; p.x += p.vx * dt; p.y += p.vy * dt; const r = p.r * (1 + 1.6 * t);
+      ctx.globalAlpha = (1 - t) * 0.55; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7); ctx.fill();
+      ctx.globalAlpha = (1 - t) * 0.5; ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(p.x - r * 0.25, p.y - r * 0.25, r * 0.45, 0, 7); ctx.fill(); continue; }
     if (p.kind === 'star'){ p.vy += 260 * dt * U; p.x += p.vx * dt; p.y += p.vy * dt; sparkle(p.x, p.y, p.r * (1 - t * 0.5), Math.floor(p.age * 12) % 2 ? '#fff' : TH.reward); continue; }
     if (p.kind === 'bubbles') p.vy -= 200 * dt * U; else p.vy += 420 * dt * U;
     p.x += p.vx * dt; p.y += p.vy * dt;
@@ -300,7 +331,7 @@ function drawKeyboard(now){
   const nowMs = performance.now(), kr = Math.min(TH.radius, 12) * U;
   ctx.fillStyle = KEY_COLORS[THK].bed; ctx.fillRect(0, kbTop, W, kbH);
   let hint = null; const fk = focus.key, fp = focus.waiting ? 1 : 0;
-  if (cue.key && G && state === 'playing'){ const n = nextUnhit(); if (n && n.t - G.time < G.beat * 1.2){ hint = keyFor(n.midi); } }
+  if (cue.key && G && state === 'playing'){ const n = nextUnhit(); if (n && inZone(n)){ hint = keyFor(n.midi); } }
   handHint.key = handHint.hand = handHint.finger = null; let hand = null;
   // The hand shows as soon as the next note appears at the top of the field, so the child can get the finger ready.
   const hn = cue.hand && G && (state === 'playing' || state === 'demo') ? nextUnhit() : null;

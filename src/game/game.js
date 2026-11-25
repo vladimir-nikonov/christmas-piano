@@ -42,6 +42,12 @@ export function startGame(demo){
   updateHud(); updateHandsBtn(); requestWake();
 }
 export const nextUnhit = () => G.notes.find(n => !n.hit && !n.missed);
+// A note is in the hit zone while playing it now would count: the key lights up and the falling note itself
+// blinks, so the child sees which note to play. Waiting levels: only the next note, from up to a beat before it
+// reaches the line (onPlayed takes it from 1 s before). Timed levels: inside the timing window.
+export const inZone = n => !!G && !n.hit && !n.missed && (G.wait ? n === nextUnhit() && n.t - G.time < Math.min(1.0, G.beat * 1.2) : n.t - G.time <= G.tol);
+// A played note evaporates instead of staying above the key; hitAt / hitTime freeze where it was when played.
+const markHit = n => { n.hit = true; n.hitAt = performance.now(); n.hitTime = Math.min(G.time, n.t); };
 // The hit flash follows the level's colour cue, so Diamond stays in one colour.
 const hitCol = m => noteColor(m, cuesFor(G.level, opts(), G.demo).colors);
 const same = (a, b) => opts().anyOct ? (a % 12) === (b % 12) : a === b;
@@ -65,7 +71,7 @@ export function onPlayed(midi, atMs, source){
 // The child sees one kind of success pop; stars stay reserved for the result. No points, no combo: a miss never takes anything away.
 const GRADE = { perfect:{ icon:'check', size:60 }, good:{ icon:'check', size:50 }, ok:{ icon:'check', size:44 } };
 function registerHit(n, grade){
-  n.hit = true; n.grade = grade; G.hits++; if (grade === 'perfect') G.perfect++;
+  markHit(n); n.grade = grade; G.hits++; if (grade === 'perfect') G.perfect++;
   const km = keyFor(n.midi), k = keys[km], col = hitCol(n.midi);
   fx.keyFlash[km] = { c: col, at: performance.now() };
   burst(k.x + k.w / 2, hitY, col, grade === 'perfect' ? 20 : 12);
@@ -152,7 +158,7 @@ function step(ts){
     }
     if (G.time < 0){ const b = Math.floor(G.time / G.beat); if (b !== G.lastTickBeat && -b <= G.meter){ G.lastTickBeat = b; tick(-b === G.meter); } }
     if (G.demo){
-      for (const n of G.notes) if (!n.hit && G.time >= n.t){ n.hit = true; tone(n.midi, n.d); fx.keyFlash[n.midi] = { c: hitCol(n.midi), at: performance.now() };
+      for (const n of G.notes) if (!n.hit && G.time >= n.t){ markHit(n); tone(n.midi, n.d); fx.keyFlash[n.midi] = { c: hitCol(n.midi), at: performance.now() };
         burst(keys[n.midi].x + keys[n.midi].w / 2, hitY, hitCol(n.midi), 8); updateHud(); }
     } else if (!G.wait){
       for (const n of G.notes) if (!n.hit && !n.missed && G.time > n.t + G.tol + dev().latency / 1000){ n.missed = true; updateHud(); }
