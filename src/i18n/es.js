@@ -1,6 +1,8 @@
 // Spanish UI strings. Every key must exist in all five languages (tests/unit/i18n.test.js).
 export default {
   handL: 'I', // short mark of the left hand on the fingering hint
+  handsOn: 'Mostrar con qué dedo tocar', // HUD switch of the fingering hint
+  handsOff: 'Ocultar las manos',
   handR: 'D',
   songBirthday: 'Cumpleaños feliz',
   myPage: 'Mi página',

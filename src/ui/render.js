@@ -217,7 +217,7 @@ export function draw(now, dt){
   }
 }
 /* ===== Fingering hint =====
-   On the key that lights up, a hand seen from above (right hand: thumb on the left; left hand: mirrored)
+   On the key of the next note (from the moment it appears on the field, before the key lights up), a hand seen from above (right hand: thumb on the left; left hand: mirrored)
    with the finger to press filled in the note's colour, the finger number on the palm and a short L/R mark. */
 // Finger shapes of a right hand in a 1x1.2 box: [x, top y, bottom y] per finger 2..5; the thumb is a slanted capsule.
 const FINGERS = [[0.36, 0.14, 0.7], [0.54, 0.04, 0.7], [0.72, 0.1, 0.7], [0.9, 0.26, 0.72]];
@@ -286,9 +286,12 @@ function keyDecor(x, y, w, h, black, now){
 function drawKeyboard(now){
   const nowMs = performance.now(), o = opts(), kr = Math.min(TH.radius, 12) * U;
   ctx.fillStyle = KEY_COLORS[THK].bed; ctx.fillRect(0, kbTop, W, kbH);
-  let hint = null, hintMidi = null; const fk = focus.key, fp = focus.waiting ? 1 : 0;
-  if (o.hint && G && state === 'playing'){ const n = nextUnhit(); if (n && n.t - G.time < G.beat * 1.2){ hint = keyFor(n.midi); hintMidi = n.midi; } }
+  let hint = null; const fk = focus.key, fp = focus.waiting ? 1 : 0;
+  if (o.hint && G && state === 'playing'){ const n = nextUnhit(); if (n && n.t - G.time < G.beat * 1.2){ hint = keyFor(n.midi); } }
   handHint.key = handHint.hand = handHint.finger = null; let hand = null;
+  // The hand shows as soon as the next note appears at the top of the field, so the child can get the finger ready.
+  const hn = o.hands !== false && G && (state === 'playing' || state === 'demo') ? nextUnhit() : null;
+  const handKey = hn && hn.t - G.time < G.look ? keyFor(hn.midi) : null;
   const drawKey = m => {
     const sd = decay(fx.soft[m], SOFT_MS);
     const k = keys[m], h = k.black ? Math.round(kbH * 0.58) : kbH - 8 * U, x = Math.round(k.x + (k.black ? 0 : 2) + wobble(sd)), w = Math.round(k.w - (k.black ? 0 : 4));
@@ -301,10 +304,9 @@ function drawKeyboard(now){
     if (fx.heardKey[m] && nowMs - fx.heardKey[m] < 160 && !fa){ ctx.fillStyle = 'rgba(120,140,220,.4)'; ctx.fillRect(x, kbTop, w, h + 2); }
     if (fa){ ctx.globalAlpha = fa; ctx.fillStyle = fl.c; ctx.fillRect(x, kbTop, w, h + 2); ctx.globalAlpha = 1; }
     ctx.restore();
-    if (m === fk || m === hint){ // space between the top decor and the note label (white) or the letter (black); drawn over the black keys
+    if (m === handKey){ // space between the top decor and the note label (white) or the letter (black); drawn over the black keys
       const t0 = kbTop + 2 + (k.black ? 4 : 8) * U, t1 = kbTop + 2 + h - (k.black ? 22 * U : Math.round(Math.min(30 * U, h * 0.16)) + 8 * U);
-      const midi = m === fk ? focus.midi : hintMidi;
-      hand = () => fingerHint(m, midi, x, t0, w, t1 - t0, now);
+      hand = () => fingerHint(m, hn.midi, x, t0, w, t1 - t0, now);
     }
     if (m === fk){ const lw = (4 + 1.5 * pulse(now, 6) * fp + 3 * focus.nudge) * U; rrect(x + lw / 2, kbTop + 2 + lw / 2, w - lw, h - lw, kr); ctx.strokeStyle = FOCUS_EDGE; ctx.lineWidth = lw; ctx.stroke(); }
     if (sd){ ctx.globalAlpha = sd; rrect(x + 1.5 * U, kbTop + 2 + 1.5 * U, w - 3 * U, h - 3 * U, kr); ctx.strokeStyle = NEUTRAL; ctx.lineWidth = 3 * U; ctx.stroke(); ctx.globalAlpha = 1; }

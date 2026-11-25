@@ -402,6 +402,7 @@ body.paused #stage{filter:brightness(.55) saturate(.8)}
 #cam .x svg{width:calc(24*var(--u));height:calc(24*var(--u))}
 #settings,#pop{z-index:30}
 .qcam[aria-pressed="true"]{color:var(--accent)}
+.qhands[aria-pressed="false"]{opacity:.7}
 
 /* Video cards: record buttons and the card panel */
 .qrec svg,#btnRec svg{color:#E5484D}

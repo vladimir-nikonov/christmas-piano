@@ -12,6 +12,7 @@ import { renderProfiles, pickTheme, wizAt, wizStep, renderMe } from './screens/p
 import { renderSettings } from './screens/settings.js';
 import { THEMES, THEME_KEYS } from './theme-data.js';
 import { updateInputMode } from './inputmode.js';
+import { updateHandsBtn } from './hands.js';
 import { updateCamera } from './camwin.js';
 import { updateRec } from './screens/vcard.js';
 import { applyTheme, themePreview } from './theme.js';
@@ -44,6 +45,7 @@ export function updateQuick(){
   const p = P(), th = state === 'newp' ? pickTheme : (p ? p.theme : 'pixel');
   document.querySelectorAll('.qtheme').forEach(b => b.innerHTML = themePreview(th));
   updateInputMode();
+  updateHandsBtn();
   updateCamera();
   updateRec();
 }

@@ -1,6 +1,8 @@
 // English UI strings. Every key must exist in all five languages (tests/unit/i18n.test.js).
 export default {
   handL: 'L', // short mark of the left hand on the fingering hint
+  handsOn: 'Show which finger to press', // HUD switch of the fingering hint
+  handsOff: 'Hide the hands',
   handR: 'R',
   songBirthday: 'Happy Birthday',
   myPage: 'My page',

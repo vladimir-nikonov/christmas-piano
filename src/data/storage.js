@@ -7,7 +7,7 @@ import { THEMES } from '../ui/theme-data.js';
 
 /* ================= Storage: per-child profiles + device settings ================= */
 const DB_KEY = 'snezhnye-noty-v2';
-export const DEF_OPTS = { tempo:100, tolMs:0, labels:'native', anyOct:true, hint:true, lockLevels:false };
+export const DEF_OPTS = { tempo:100, tolMs:0, labels:'native', anyOct:true, hint:true, hands:true, lockLevels:false };
 export const DEF_DEV = { latency:80, sens:5, touch:false };
 // Primary store: IndexedDB (db 'snezhnye-noty', store 'kv', key 'db'). localStorage[DB_KEY] is the legacy
 // store, migrated once on first run and used as a fallback when IndexedDB is unavailable or a write fails.

@@ -16,6 +16,7 @@ import { goHome } from '../ui/screens/home.js';
 import { showResults } from '../ui/screens/results.js';
 import { TH } from '../ui/theme.js';
 import { noteResult } from '../record/recorder.js';
+import { updateHandsBtn } from '../ui/hands.js';
 
 /* ================= Game ================= */
 // state / paused: the older app-wide state strings, derived from the navigation machine (src/core/flow.js).
@@ -36,7 +37,7 @@ export function startGame(demo){
         score:0, combo:0, bestCombo:0, hits:0, perfect:0, finished:false, waiting:false, resumeIn:0, resumeBeat:null,
         minTempo: o.tempo };
   $('#micPill').hidden = demo || !!dev().touch;
-  updateHud(); requestWake();
+  updateHud(); updateHandsBtn(); requestWake();
 }
 export const nextUnhit = () => G.notes.find(n => !n.hit && !n.missed);
 const same = (a, b) => opts().anyOct ? (a % 12) === (b % 12) : a === b;

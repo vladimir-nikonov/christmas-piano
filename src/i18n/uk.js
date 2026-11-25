@@ -1,6 +1,8 @@
 // Ukrainian UI strings. Every key must exist in all five languages (tests/unit/i18n.test.js).
 export default {
   handL: 'Л', // short mark of the left hand on the fingering hint
+  handsOn: 'Показувати, яким пальцем грати', // HUD switch of the fingering hint
+  handsOff: 'Сховати руки',
   handR: 'П',
   songBirthday: 'З днем народження',
   myPage: 'Моя сторінка',
