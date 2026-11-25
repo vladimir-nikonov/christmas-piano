@@ -12,7 +12,7 @@ export default {
   full: 'Pantalla completa',
   fullExit: 'Salir de pantalla completa',
   settings: 'Ajustes para padres',
-  listen: 'Escuchar la melodía',
+  listen: 'Mira y escucha la melodía',
   play: 'Jugar',
   hLevelUp: '¡Nuevo nivel: {level}! Toca ▶',
   hOneMore: 'Una buena partida más y se abre {level}',

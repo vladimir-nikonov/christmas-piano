@@ -12,7 +12,7 @@ export default {
   full: 'Full screen',
   fullExit: 'Exit full screen',
   settings: 'Parent settings',
-  listen: 'Listen to the tune',
+  listen: 'Watch and listen to the tune',
   play: 'Play',
   hLevelUp: 'New level: {level}! Tap ▶',
   hOneMore: 'One more good game opens {level}',
