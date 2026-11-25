@@ -41,14 +41,17 @@ export function normHist(h){
   });
   return out;
 }
-// Progress to the next level is kept per song: p.prog[song] = { level, streak }. Records made before
+// Progress to the next level is kept per song: p.prog[song] = { level, streak } (streak is always 0 now). Records made before
 // that have only p.level / p.streak, which every song inherits so nobody loses a level.
 // p.level stays as the highest level across songs (profile badge, older app versions).
 export function normProg(p){
   const old = p.prog && typeof p.prog === 'object' && !Array.isArray(p.prog) ? p.prog : {}, top = LEVELS.length - 1;
   p.prog = {};
   SONG_KEYS.forEach(k => { const o = old[k] && typeof old[k] === 'object' ? old[k] : { level: p.level, streak: p.streak };
-    p.prog[k] = { level: Math.max(0, Math.min(top, Math.floor(+o.level) || 0)), streak: Math.max(0, Math.floor(+o.streak) || 0) }; });
+    const level = Math.max(0, Math.min(top, Math.floor(+o.level) || 0)), streak = Math.max(0, Math.floor(+o.streak) || 0);
+    // Earlier versions needed two good games in a row; one good game now opens the next level, so a record
+    // with one good game already counted gets that level (streak is kept at 0 from now on, for older app versions).
+    p.prog[k] = { level: streak > 0 ? Math.min(top, level + 1) : level, streak: 0 }; });
   p.level = Math.max(0, ...SONG_KEYS.map(k => p.prog[k].level));
 }
 // Song length per song and level, set by a parent: p.len["song:level"] = 'short' | 'half' | 'full'.

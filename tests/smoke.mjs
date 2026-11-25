@@ -234,35 +234,49 @@ try {
   log('results fit every tablet viewport');
   await checkLayout('#results');
   assert.equal(await sn(() => window.__sn.db.profiles[0].best['0:short']), 3);
-  assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.jingle), { level: 0, streak: 1 });
+  log('one game with three stars opens the next level of this song only');
+  assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.jingle), { level: 1, streak: 0 });
   assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.birthday), { level: 0, streak: 0 });
-
-  log('results with 3 stars and no new level: replay is the one primary action, next level is a small icon');
-  const r3 = await resultsButtons();
-  assert.deepEqual(r3.primaries, ['btnMain']);
-  assert.equal(r3.go, 'again');
-  assert.deepEqual([r3.again, r3.next, r3.levelUp], [false, true, false]);
-
-  log('Enter on the results replays (a short fade of the field); a second clean game opens the next level');
-  await page.keyboard.press('Enter');
-  assert.ok(await sn(() => document.getElementById('stage').getAnimations().length > 0), 'replay fades the field in');
-  await playLevel1Perfectly();
+  log('100%: one star with a halo instead of three');
+  assert.equal(await page.locator('#resStars .perfect').count(), 1);
+  assert.equal(await page.locator('#resStars svg').count(), 1);
   const rUp = await resultsButtons();
   assert.deepEqual(rUp.primaries, ['btnMain']);
   assert.equal(rUp.go, 'next');
   assert.ok(['levelUp', 'results'].includes(await sn(() => window.__sn.nav)), 'a new level: LevelUp, then Results');
   assert.deepEqual([rUp.again, rUp.next, rUp.levelUp], [true, false, true]);
   assert.equal(await page.locator('#btnMain').getAttribute('aria-label'), 'Play the new level');
-  assert.deepEqual(rUp.x, r3.x, 'Home, Replay and the primary keep their slots');
-  assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.jingle), { level: 1, streak: 0 });
+  assert.equal(await page.locator('#resXp').innerHTML(), '', 'no gauge once the next level is open');
 
-  log('home hint: back home after a new level, its lock leaves the tile and Play pulses');
+  log('home after a new level: its lock leaves the tile, Play pulses, the path to it is filled');
   await page.click('#btnHome');
   await visible('#home');
   assert.equal(await hint(), 'hLevelUp');
   await page.waitForFunction(() => !!document.querySelector('#levels .tile.cur .lk') && document.querySelector('#btnPlay').classList.contains('nudge'));
+  assert.deepEqual(await sn(() => [...document.querySelectorAll('#levels .link')].map(l => l.className)), ['link done', 'link cur', 'link todo', 'link todo'], 'the levels are one path');
+  assert.equal(await page.locator('#levels .tile').nth(0).locator('.stars .perfect').count(), 1, 'the perfect level keeps its halo star');
+  assert.equal(await page.locator('#levelXp .gauge .mk.on').count(), 0, 'the new level has an empty gauge');
   await page.locator('#levels .tile').nth(0).click({ force: true });
   assert.equal(await hint(), 'hReplay', 'an earlier level is a replay for the stars');
+
+  log('results with 3 stars and no new level: replay is the one primary action, next level is a small icon');
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => window.__sn.state === 'playing');
+  await playLevel1Perfectly();
+  const r3 = await resultsButtons();
+  assert.deepEqual(r3.primaries, ['btnMain']);
+  assert.equal(r3.go, 'again');
+  assert.deepEqual([r3.again, r3.next, r3.levelUp], [false, true, false]);
+  assert.deepEqual(rUp.x, r3.x, 'Home, Replay and the primary keep their slots');
+  assert.deepEqual(await sn(() => window.__sn.db.profiles[0].prog.jingle), { level: 1, streak: 0 }, 'a replayed level opens nothing');
+
+  log('Enter on the results replays (a short fade of the field)');
+  await page.keyboard.press('Enter');
+  assert.ok(await sn(() => document.getElementById('stage').getAnimations().length > 0), 'replay fades the field in');
+  await page.waitForFunction(() => ['waiting', 'playing'].includes(window.__sn.nav));
+  await page.click('#btnHudHome');
+  await visible('#home');
+  await page.locator('#levels .tile').nth(0).click({ force: true });
 
   log('a wrong note in level 1 is counted against the note, with soft feedback only (key hint off)');
   await sn(() => { window.__sn.db.profiles[0].opts.hint = false; });

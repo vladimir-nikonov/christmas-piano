@@ -26,3 +26,12 @@ export function cuesFor(level, o, demo){
   const c = !demo && LEVELS[level] ? LEVELS[level].cues : ALL;
   return { hand: c.hand && o.hands !== false, key: c.key && !!o.hint, names: c.names && o.labels !== 'none', colors: c.colors };
 }
+
+// Stars for a result (% of notes played right). Three stars is the goal of a level: one game with three stars
+// (at the level's own tempo and timing) opens the next level. 100% is a perfect game, shown as one special star.
+export const STAR_AT = Object.freeze([50, 70, 85]);
+export const GOAL = STAR_AT[2];
+export const PERFECT = 100;
+export const starsFor = pct => STAR_AT.filter(t => pct >= t).length;
+// How far a best result is towards the goal, 0..1 (the progress gauge on home: full = three stars = next level).
+export const goalPart = pct => Math.max(0, Math.min(1, (+pct || 0) / GOAL));

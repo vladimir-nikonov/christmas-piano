@@ -3,14 +3,14 @@
 import { LETTERS, NOTE_NATIVE } from '../../core/music.js';
 import { BACKUP_FORMAT, BACKUP_EVERY, parseBackup } from '../../data/backup.js';
 import { db, persisted, normalizeDB, save, askPersist, P, dev, setDB, freshProg, wipeDB, prog, unlocked, partFor, setPartFor } from '../../data/storage.js';
-import { LEVELS } from '../../core/levels.js';
+import { LEVELS, starsFor, PERFECT } from '../../core/levels.js';
 import { SONGS, SONG_KEYS, PART_KEYS, bestKey } from '../../core/songs.js';
 import { $ } from '../../dom.js';
 import { E, dispatch } from '../../core/flow.js';
 import { LANGS, LANG, tx, fmtDate, fmtSpeed } from '../../i18n/index.js';
 import { resetHeard } from '../../input/mic.js';
 import { avatarSVG, blockSVG, sheetSVG } from '../art.js';
-import { icon } from '../icons.js';
+import { starsHTML } from '../progress.js';
 import { setScreenInput } from '../inputmode.js';
 import { setLang } from '../lang.js';
 import { goHome } from './home.js';
@@ -54,7 +54,6 @@ function renderPlayerPick(p){
 // best % and the last results (small bars) for that length; the current level is outlined, locked levels are dimmed. Tapping a cell cycles the length.
 // The last results of one cell as small bars (the best one highlighted), newest on the right.
 const histBars = h => h && h.length ? '<span class="chist" aria-hidden="true">' + h.map(e => '<i style="height:' + Math.max(12, e.pct) + '%" title="' + fmtDate(e.at) + ': ' + e.pct + '%"></i>').join('') + '</span>' : '';
-const starRow = on => [0,1,2].map(i => icon('star', { fill: i < on, cls: i < on ? '' : 'off' })).join('');
 function renderLenTable(p){
   const t = $('#sLen');
   let h = '<thead><tr><th></th>' + LEVELS.map((L, i) => '<th scope="col"><span class="blk" role="img" aria-label="' + tx('levels')[i] + '">' + blockSVG(i, p.theme) + '</span></th>').join('') + '</tr></thead><tbody>';
@@ -64,7 +63,7 @@ function renderLenTable(p){
       const part = partFor(p, song, i), key = bestKey(song, i, part), stars = p.best[key] || 0, top = p.top[key];
       const cls = 'b lencell' + (i === pr.level ? ' cur' : '') + (unlocked(p, i, song) ? '' : ' locked') + (part !== L.part ? ' changed' : '');
       return '<td><button class="' + cls + '" data-song="' + song + '" data-level="' + i + '" data-part="' + part + '">' +
-        '<span class="len">' + sheetSVG(part) + '</span><span class="cstars">' + starRow(stars) + '</span><span class="cpct">' + (top ? top + '%' : '—') + '</span>' + histBars(p.hist[key]) + '</button></td>';
+        '<span class="len">' + sheetSVG(part) + '</span><span class="cstars">' + starsHTML(Math.max(stars, starsFor(top || 0)), top >= PERFECT) + '</span><span class="cpct">' + (top ? top + '%' : '—') + '</span>' + histBars(p.hist[key]) + '</button></td>';
     }).join('') + '</tr>';
   });
   t.innerHTML = h + '</tbody>';

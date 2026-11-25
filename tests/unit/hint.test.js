@@ -5,15 +5,14 @@ import { homeHint } from '../../src/core/hint.js';
 const base = { sel: 1, cur: 1, last: 4 };
 
 test('a new level opened: the level opens on home and Play pulses', () => {
-  assert.deepEqual(homeHint({ ...base, from: 'results', cur: 2, sel: 2, played: 1, levelUp: true, streak: 0 }),
+  assert.deepEqual(homeHint({ ...base, from: 'results', cur: 2, sel: 2, played: 1, levelUp: true }),
     { key: 'hLevelUp', level: 2, play: true, tile: 'unlock' });
 });
 
-test('one more good game opens the next level: the progress pip pulses', () => {
-  assert.deepEqual(homeHint({ ...base, from: 'results', played: 1, levelUp: false, streak: 1 }), { key: 'hOneMore', level: 2, tile: 'pip' });
-  assert.equal(homeHint({ ...base, from: 'results', played: 1, levelUp: false, streak: 0 }), null, 'no streak yet');
-  assert.equal(homeHint({ ...base, from: 'results', played: 0, levelUp: false, streak: 1 }), null, 'a replayed level does not count');
-  assert.equal(homeHint({ ...base, from: 'results', cur: 4, sel: 4, played: 4, levelUp: false, streak: 1 }), null, 'the top level has no next one');
+test('the current level played without a new level: the goal star of the gauge pulses', () => {
+  assert.deepEqual(homeHint({ ...base, from: 'results', played: 1, levelUp: false }), { key: 'hGoal', level: 2, tile: 'gauge' });
+  assert.equal(homeHint({ ...base, from: 'results', played: 0, levelUp: false }), null, 'a replayed level does not count');
+  assert.equal(homeHint({ ...base, from: 'results', cur: 4, sel: 4, played: 4, levelUp: false }), null, 'the top level has no next one');
 });
 
 test('after listening, for a new player and a player switch: Play pulses', () => {

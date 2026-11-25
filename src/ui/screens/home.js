@@ -2,7 +2,7 @@
 
 import { audio } from '../../audio/synth.js';
 import { LEVELS } from '../../core/levels.js';
-import { SONGS, SONG_KEYS, songKey, bestKey, PART_KEYS } from '../../core/songs.js';
+import { SONGS, SONG_KEYS, songKey, PART_KEYS } from '../../core/songs.js';
 import { db, save, P, dev, prog, unlocked, partFor } from '../../data/storage.js';
 import { E, S, dispatch, can, is, flow } from '../../core/flow.js';
 import { homeHint } from '../../core/hint.js';
@@ -11,6 +11,7 @@ import { G, startGame, setGame, resumeGame, setSpeed, SPEED } from '../../game/g
 import { tx, fmtSpeed } from '../../i18n/index.js';
 import { startMic, watchMicPermission, onMicLost } from '../../input/mic.js';
 import { avatarSVG, blockSVG, sheetSVG } from '../art.js';
+import { PATH_STYLE, levelBest, starsHTML, gaugeHTML, linkHTML, barHTML, xpHTML, goalPart } from '../progress.js';
 import { px } from '../canvas.js';
 import { icon } from '../icons.js';
 import { syncLang, updateQuick } from '../lang.js';
@@ -24,7 +25,6 @@ import { entryTiming, entryFrames, entryFx, dropLayer, zoomOutFrames, fxLayer, u
 // Level the child picked by hand during this home visit; while it is set, coming back to home keeps it.
 // Otherwise home selects the current level of the song (the one the child is working on).
 let homePick = null;
-const starRow = on => [0,1,2].map(i => icon('star', { fill: i < on, cls: i < on ? '' : 'off' })).join('');
 export function renderHome(){
   const p = P(); applyTheme(p.theme); updateQuick();
   $('#btnWho').innerHTML = avatarSVG(p.avatar, px(50), p.theme) + '<span class="nm"></span>'; $('#btnWho .nm').textContent = p.name || '';
@@ -35,18 +35,25 @@ export function renderHome(){
     b.textContent = SONGS[k].title(); b.onclick = () => { const changed = songKey(p) !== k; p.sel.song = k; p.sel.level = prog(p, k).level; homePick = null; save(); renderHome(); if (changed) showHint('song'); };
     songs.appendChild(b);
   });
-  const box = $('#levels'), pr = prog(p); box.textContent = '';
+  // The levels as one path (src/ui/progress.js): tiles joined by links, the current level carrying the gauge to three stars
+  const box = $('#levels'), pr = prog(p), song = songKey(p), kind = PATH_STYLE[p.theme] || 'xp', last = LEVELS.length - 1;
+  const cb = levelBest(p, song, pr.level), f = goalPart(cb.top);
+  box.textContent = ''; box.dataset.path = kind;
   LEVELS.forEach((L, i) => {
     const open = unlocked(p, i), b = document.createElement('button');
-    const cur = i === pr.level, part = partFor(p, songKey(p), i);
-    b.className = 'b tile' + (open ? '' : ' locked') + (cur ? ' cur' : ''); if (cur) b.dataset.current = '1'; b.setAttribute('aria-pressed', i === p.sel.level); b.setAttribute('aria-label', tx('level') + ' ' + (i + 1) + ': ' + tx('levels')[i] + ', ' + tx('parts')[PART_KEYS.indexOf(part)]); b.dataset.part = part;
-    const stars = Math.max(0, ...PART_KEYS.map(k => p.best[bestKey(songKey(p), i, k)] || 0));
-    b.innerHTML = (i === p.sel.level ? '<span class="curmark">' + icon('play', { fill: true }) + '</span>' : '') + '<span class="blk">' + blockSVG(i) + '</span>' + (open ? '' : '<span class="lock">' + icon('lock') + '</span>') +
-      '<span class="meta"><span class="len">' + sheetSVG(part) + '</span><span class="stars">' + (open ? starRow(stars) : '') + '</span></span>' +
-      (i === pr.level && i < LEVELS.length - 1 ? '<span class="pips"><i class="' + (pr.streak > 0 ? 'on' : '') + '"></i><i></i></span>' : '');
+    const cur = i === pr.level, part = partFor(p, song, i), best = levelBest(p, song, i);
+    b.className = 'b tile' + (open ? '' : ' locked') + (cur ? ' cur' : '') + (i < pr.level ? ' done' : ''); if (cur) b.dataset.current = '1'; b.setAttribute('aria-pressed', i === p.sel.level);
+    b.setAttribute('aria-label', tx('level') + ' ' + (i + 1) + ': ' + tx('levels')[i] + ', ' + tx('parts')[PART_KEYS.indexOf(part)] + (open ? ', ' + tx('starsN').replace('{n}', best.stars) : '')); b.dataset.part = part;
+    const ring = cur && kind === 'ring' ? gaugeHTML('ring', f) : '';
+    b.innerHTML = (i === p.sel.level ? '<span class="curmark">' + icon('play', { fill: true }) + '</span>' : '') + '<span class="blk">' + blockSVG(i) + ring + '</span>' + (open ? '' : '<span class="lock">' + icon('lock') + '</span>') +
+      '<span class="meta"><span class="len">' + sheetSVG(part) + '</span><span class="stars">' + (open ? starsHTML(best.stars, best.perfect) : '') + '</span></span>' +
+      (kind === 'bar' ? barHTML(i <= pr.level ? 1 : 0) : '');
     b.onclick = () => { if (!open){ b.animate([{ transform:'translateX(-6px)' }, { transform:'translateX(6px)' }, { transform:'none' }], 200); return; } const changed = p.sel.level !== i; p.sel.level = i; homePick = { id: p.id, song: songKey(p) }; save(); renderHome(); if (changed) showHint('pick'); };
     box.appendChild(b);
+    if (i < last) box.insertAdjacentHTML('beforeend', linkHTML(i, pr.level, f, kind));
   });
+  const xp = $('#levelXp'); xp.hidden = kind !== 'xp';
+  xp.innerHTML = kind === 'xp' ? xpHTML(p.theme, pr.level, f) : '';
 }
 // Home from anywhere that has a way home (player chosen, close, exit, end of the demo, results); otherwise ignored.
 // Without any player it opens the new player wizard instead.
@@ -76,7 +83,7 @@ export function showHint(from, g){
   const p = P(); if (!p) return;
   clearHint();
   const pr = prog(p), h = homeHint({ from, sel: p.sel.level, cur: pr.level, last: LEVELS.length - 1,
-    played: g ? g.level : null, levelUp: !!(g && g.levelUp), streak: pr.streak, name: p.name });
+    played: g ? g.level : null, levelUp: !!(g && g.levelUp), name: p.name });
   if (from === 'idle') idleDone = true;
   armIdle();
   if (!h) return;
@@ -101,9 +108,10 @@ function hintGesture(h){
     hintLayer = fxLayer($('#home')); unlockFx(blk, hintLayer);
     tile.animate([{ transform: 'scale(.85)' }, { transform: 'scale(1.12)', offset: 0.55 }, { transform: 'none' }], { duration: 700, easing: 'cubic-bezier(.3,1.6,.5,1)' });
     const l = hintLayer; setTimeout(() => { lk.remove(); if (hintLayer === l){ dropLayer(l); hintLayer = null; } }, 1400);
-  } else if (h.tile === 'pip'){
-    const pip = tile.querySelector('.pips i:not(.on)');
-    if (pip) pip.animate([{ transform: 'none' }, { transform: 'scale(1.5)', background: 'var(--reward)' }, { transform: 'none' }], { duration: 600, iterations: 3, easing: 'ease-in-out' });
+  } else if (h.tile === 'gauge'){
+    // The gauge to the next level: its goal star pulses (on the ring, the trail, the bar or the XP bar)
+    const goal = $('#home').querySelector('.gauge .mk.goal');
+    if (goal) goal.animate([{ scale: 1 }, { scale: 1.7 }, { scale: 1 }], { duration: 600, iterations: 3, easing: 'ease-in-out' });
   } else if (h.tile === 'cur'){
     tile.animate([{ transform: 'none' }, { transform: 'translateY(calc(-14 * var(--u)))' }, { transform: 'none' }], { duration: 420, iterations: 2, easing: 'ease-out' });
   }

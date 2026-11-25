@@ -1,7 +1,7 @@
 // Game session: timing, judging played notes, results; the main animation loop.
 
 import { tone, tick } from '../audio/synth.js';
-import { LEVELS, cuesFor } from '../core/levels.js';
+import { LEVELS, cuesFor, starsFor, GOAL } from '../core/levels.js';
 import { noteColor } from '../core/music.js';
 import { SONGS, songKey, bestKey } from '../core/songs.js';
 import { HIST_MAX, save, P, opts, dev, prog, partFor } from '../data/storage.js';
@@ -117,17 +117,17 @@ function finish(){
   dispatch(E.FINISH);
   const p = P(), total = G.notes.length, o = p.opts;
   const metric = G.wait ? Math.round(G.notes.filter(n => n.hit && !n.wrong).length / total * 100) : Math.round(G.hits / total * 100);
-  const stars = metric >= 95 ? 3 : metric >= 80 ? 2 : metric >= 50 ? 1 : 0;
+  const stars = starsFor(metric);
   const key = bestKey(G.song, G.level, G.part); p.best[key] = Math.max(p.best[key] || 0, stars);
   p.top[key] = Math.max(p.top[key] || 0, metric);
   (p.hist[key] = p.hist[key] || []).push({ at: Date.now(), pct: metric, stars });
   if (p.hist[key].length > HIST_MAX) p.hist[key].splice(0, p.hist[key].length - HIST_MAX);
   let levelUp = false;
   const pr = prog(p, G.song);
-  if (G.level === pr.level && !o.tolMs && G.minTempo >= 100){
-    if (metric >= 85){ pr.streak++; if (pr.streak >= 2 && pr.level < LEVELS.length - 1){ pr.level++; pr.streak = 0; levelUp = true; } }
-    else pr.streak = 0;
-  }
+  // One game with three stars on the current level opens the next one, if it was played at the level's own
+  // tempo and timing (a parent's slower tempo or wider timing window does not count).
+  if (G.level === pr.level && !o.tolMs && G.minTempo >= 100 && metric >= GOAL && pr.level < LEVELS.length - 1){ pr.level++; levelUp = true; }
+  pr.streak = 0;
   p.level = Math.max(p.level, pr.level);
   if (levelUp) p.sel.level = pr.level;
   G.levelUp = levelUp;   // home reads it to open the new level there too

@@ -67,7 +67,11 @@
     <button class="b ico qvcard" hidden></button>
   </div>
   <div class="songs" id="songs"></div>
-  <div class="levels" id="levels"></div>
+  <!-- The level path on a frosted panel: the theme world behind it is blurred, so the path reads as one layer -->
+  <div class="pathbox">
+    <div class="levels" id="levels"></div>
+    <div class="levelxp" id="levelXp" aria-hidden="true" hidden></div>
+  </div>
   <div class="hint" id="homeHint" role="status" aria-live="polite"></div>
   <div class="playrow">
     <button class="b listen" id="btnListen" data-ta="listen" data-icon="eye"></button>

@@ -49,16 +49,21 @@ test('result history is cleaned, capped and feeds the best result', () => {
   assert.equal(r.profiles[0].top['0:short'], 90);
 });
 
-test('per-song progress: old records give every song their level and streak', () => {
+test('per-song progress: old records give every song their level; a good game already counted opens the next one', () => {
   const [p] = normalizeDB({ profiles: [{ id: 'a', level: 2, streak: 1 }] }).profiles;
-  for (const k of SONG_KEYS) assert.deepEqual(p.prog[k], { level: 2, streak: 1 });
-  assert.equal(p.level, 2);
+  for (const k of SONG_KEYS) assert.deepEqual(p.prog[k], { level: 3, streak: 0 });
+  assert.equal(p.level, 3);
+  const [q] = normalizeDB({ profiles: [{ id: 'b', level: 2, streak: 0 }] }).profiles;
+  for (const k of SONG_KEYS) assert.deepEqual(q.prog[k], { level: 2, streak: 0 });
+  const [t] = normalizeDB({ profiles: [{ id: 'c', level: LEVELS.length - 1, streak: 1 }] }).profiles;
+  assert.equal(t.prog.jingle.level, LEVELS.length - 1, 'the top level stays the top level');
+  assert.deepEqual(normalizeDB(normalizeDB({ profiles: [{ id: 'a', level: 2, streak: 1 }] })).profiles[0].prog.jingle, { level: 3, streak: 0 }, 'normalizing twice opens nothing more');
 });
 
 test('per-song progress is clamped and p.level is the highest song level', () => {
   const [p] = normalizeDB({ profiles: [{ id: 'a', level: 0, prog: { jingle: { level: 99, streak: -3 }, birthday: { level: 1, streak: 1 } } }] }).profiles;
   assert.deepEqual(p.prog.jingle, { level: LEVELS.length - 1, streak: 0 });
-  assert.deepEqual(p.prog.birthday, { level: 1, streak: 1 });
+  assert.deepEqual(p.prog.birthday, { level: 2, streak: 0 });
   assert.equal(p.level, LEVELS.length - 1);
   assert.deepEqual(freshProg(), Object.fromEntries(SONG_KEYS.map(k => [k, { level: 0, streak: 0 }])));
 });

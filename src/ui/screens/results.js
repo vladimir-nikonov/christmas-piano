@@ -1,11 +1,12 @@
 // Results screen shown after a game.
 
-import { LEVELS } from '../../core/levels.js';
+import { LEVELS, PERFECT, goalPart } from '../../core/levels.js';
 import { unlocked } from '../../data/storage.js';
 import { $ } from '../../dom.js';
 import { keyFor, G } from '../../game/game.js';
 import { tx } from '../../i18n/index.js';
 import { blockSVG } from '../art.js';
+import { xpHTML } from '../progress.js';
 import { W, keys, hitY } from '../canvas.js';
 import { icon } from '../icons.js';
 import { state, paused } from '../../game/game.js';
@@ -24,17 +25,18 @@ export function resultActions({ stars, levelUp, nextOpen }){
 /* ================= Results screen ================= */
 // The child reads the stars; the % is a small caption, and the best % and past results live in the parent table.
 export function showResults({ p, pr, song, level, metric, stars, levelUp }){
-  const o = p.opts;
   const nextOpen = level < LEVELS.length - 1 && unlocked(p, level + 1, song);
   const act = resultActions({ stars, levelUp, nextOpen });
   const calm = reducedMotion();
   clearFly();
-  $('#resStars').innerHTML = [0,1,2].map(i => '<span' + (i < stars && !calm ? ' class="wait"' : '') + '>' + icon('star', { fill: i < stars, cls: i < stars ? '' : 'off' }) + '</span>').join('');
+  // A perfect game: one star with a halo instead of three
+  $('#resStars').innerHTML = metric >= PERFECT ? '<span class="perfect' + (calm ? '' : ' wait') + '">' + icon('star', { fill: true }) + '</span>'
+    : [0,1,2].map(i => '<span' + (i < stars && !calm ? ' class="wait"' : '') + '>' + icon('star', { fill: i < stars, cls: i < stars ? '' : 'off' }) + '</span>').join('');
   $('#resPct').textContent = metric + '%';
   const lu = $('#resLevelUp'); lu.hidden = !levelUp;
   if (levelUp) lu.innerHTML = '<span class="blk">' + blockSVG(pr.level) + '<span class="lk">' + icon('lock') + '</span></span>';
-  $('#resXp').innerHTML = (!levelUp && level === pr.level && pr.level < LEVELS.length - 1)
-    ? '<span class="blk">' + blockSVG(pr.level + 1) + '</span><span class="pips"><i class="' + (pr.streak > 0 ? 'on' : '') + '"></i><i></i></span>' + (o.lockLevels ? icon('lock') : '') : '';
+  // Not there yet: how close this game came to the next level (the same gauge as on home, three stars at its end)
+  $('#resXp').innerHTML = (!levelUp && level === pr.level && pr.level < LEVELS.length - 1) ? xpHTML(p.theme, level, goalPart(metric)) : '';
   $('#btnAgain').hidden = !act.again;
   $('#btnNext').hidden = !act.next;
   const main = $('#btnMain'), ta = act.main === 'next' ? 'playNew' : 'again';
