@@ -253,7 +253,9 @@ try {
   await visible('#home');
   assert.equal(await hint(), 'hLevelUp');
   await page.waitForFunction(() => !!document.querySelector('#levels .tile.cur .lk') && document.querySelector('#btnPlay').classList.contains('nudge'));
-  assert.deepEqual(await sn(() => [...document.querySelectorAll('#levels .link')].map(l => l.className)), ['link done', 'link cur', 'link todo', 'link todo'], 'the levels are one path');
+  assert.deepEqual(await sn(() => [...document.querySelectorAll('#levels .link')].map(l => l.className)), ['link done', 'link todo', 'link todo', 'link todo'], 'the levels are one path');
+  assert.equal(await page.locator('.pathbox .cnbeam polygon').count(), 1, 'a beam joins the selected level to its gauge');
+  assert.equal(await sn(() => window.getComputedStyle(document.querySelectorAll('#levels .tile')[0]).filter), 'brightness(0.6) saturate(0.7)', 'levels not selected are dimmed');
   assert.equal(await page.locator('#levels .tile').nth(0).locator('.stars .perfect').count(), 1, 'the perfect level keeps its halo star');
   assert.equal(await page.locator('#levelXp .gauge .mk.on').count(), 0, 'the new level has an empty gauge');
   await page.locator('#levels .tile').nth(0).click({ force: true });

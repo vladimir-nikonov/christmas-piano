@@ -66,25 +66,28 @@
     <button class="b ico qrec"></button>
     <button class="b ico qvcard" hidden></button>
   </div>
-  <div class="songs" id="songs"></div>
-  <!-- The level path on a frosted panel: the theme world behind it is blurred, so the path reads as one layer -->
-  <div class="pathbox">
-    <div class="levels" id="levels"></div>
-    <div class="levelxp" id="levelXp" aria-hidden="true" hidden></div>
-  </div>
-  <div class="hint" id="homeHint" role="status" aria-live="polite"></div>
-  <div class="playrow">
-    <button class="b listen" id="btnListen" data-ta="listen" data-icon="eye"></button>
-    <button class="b primary play" id="btnPlay" data-ta="play" data-icon="play" data-fill="1"></button>
-  </div>
-  <div class="micstate" id="micErr" role="alert" hidden>
-    <span class="micbadge" data-icon="mic"><span class="x" data-icon="cross"></span></span>
-    <div class="micbody">
-      <div class="micacts">
-        <button class="b primary micretry" id="btnMicRetry" data-icon="retry"><span data-t="micRetry"></span></button>
-        <button class="b mictouch" id="btnMicTouch" data-icon="play"><span data-t="micTouch"></span></button>
+  <!-- Everything in the middle of home stands on one framed, frosted card that blurs the world behind it -->
+  <div class="homecard" id="homeCard">
+    <div class="songs" id="songs"></div>
+    <!-- The level path on a frosted panel: the theme world behind it is blurred, so the path reads as one layer -->
+    <div class="pathbox">
+      <div class="levels" id="levels"></div>
+      <div class="levelxp" id="levelXp" aria-hidden="true" hidden></div>
+    </div>
+    <div class="hint" id="homeHint" role="status" aria-live="polite"></div>
+    <div class="playrow">
+      <button class="b listen" id="btnListen" data-ta="listen" data-icon="eye"></button>
+      <button class="b primary play" id="btnPlay" data-ta="play" data-icon="play" data-fill="1"></button>
+    </div>
+    <div class="micstate" id="micErr" role="alert" hidden>
+      <span class="micbadge" data-icon="mic"><span class="x" data-icon="cross"></span></span>
+      <div class="micbody">
+        <div class="micacts">
+          <button class="b primary micretry" id="btnMicRetry" data-icon="retry"><span data-t="micRetry"></span></button>
+          <button class="b mictouch" id="btnMicTouch" data-icon="play"><span data-t="micTouch"></span></button>
+        </div>
+        <p class="michint" id="micHint" data-t="micDenied"></p>
       </div>
-      <p class="michint" id="micHint" data-t="micDenied"></p>
     </div>
   </div>
 </div>

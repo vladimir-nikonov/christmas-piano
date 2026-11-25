@@ -11,7 +11,7 @@ import { G, startGame, setGame, resumeGame, setSpeed, SPEED } from '../../game/g
 import { tx, fmtSpeed } from '../../i18n/index.js';
 import { startMic, watchMicPermission, onMicLost } from '../../input/mic.js';
 import { avatarSVG, blockSVG, sheetSVG } from '../art.js';
-import { PATH_STYLE, levelBest, starsHTML, gaugeHTML, linkHTML, barHTML, xpHTML, goalPart } from '../progress.js';
+import { PATH_STYLE, levelBest, starsHTML, linkHTML, xpHTML, beamSVG, goalPart } from '../progress.js';
 import { px } from '../canvas.js';
 import { icon } from '../icons.js';
 import { syncLang, updateQuick } from '../lang.js';
@@ -35,26 +35,39 @@ export function renderHome(){
     b.textContent = SONGS[k].title(); b.onclick = () => { const changed = songKey(p) !== k; p.sel.song = k; p.sel.level = prog(p, k).level; homePick = null; save(); renderHome(); if (changed) showHint('song'); };
     songs.appendChild(b);
   });
-  // The levels as one path (src/ui/progress.js): tiles joined by links, the current level carrying the gauge to three stars
+  // The levels as one path (src/ui/progress.js): tiles joined by links, the selected level's gauge under the row
+  // and a beam joining that tile to its gauge
   const box = $('#levels'), pr = prog(p), song = songKey(p), kind = PATH_STYLE[p.theme] || 'xp', last = LEVELS.length - 1;
-  const cb = levelBest(p, song, pr.level), f = goalPart(cb.top);
-  box.textContent = ''; box.dataset.path = kind;
+  box.textContent = ''; box.dataset.path = kind; $('.pathbox').dataset.path = kind;
   LEVELS.forEach((L, i) => {
     const open = unlocked(p, i), b = document.createElement('button');
     const cur = i === pr.level, part = partFor(p, song, i), best = levelBest(p, song, i);
     b.className = 'b tile' + (open ? '' : ' locked') + (cur ? ' cur' : '') + (i < pr.level ? ' done' : ''); if (cur) b.dataset.current = '1'; b.setAttribute('aria-pressed', i === p.sel.level);
     b.setAttribute('aria-label', tx('level') + ' ' + (i + 1) + ': ' + tx('levels')[i] + ', ' + tx('parts')[PART_KEYS.indexOf(part)] + (open ? ', ' + tx('starsN').replace('{n}', best.stars) : '')); b.dataset.part = part;
-    const ring = cur && kind === 'ring' ? gaugeHTML('ring', f) : '';
-    b.innerHTML = (i === p.sel.level ? '<span class="curmark">' + icon('play', { fill: true }) + '</span>' : '') + '<span class="blk">' + blockSVG(i) + ring + '</span>' + (open ? '' : '<span class="lock">' + icon('lock') + '</span>') +
-      '<span class="meta"><span class="len">' + sheetSVG(part) + '</span><span class="stars">' + (open ? starsHTML(best.stars, best.perfect) : '') + '</span></span>' +
-      (kind === 'bar' ? barHTML(i <= pr.level ? 1 : 0) : '');
+    b.innerHTML = (i === p.sel.level ? '<span class="curmark">' + icon('play', { fill: true }) + '</span>' : '') + '<span class="blk">' + blockSVG(i) + '</span>' + (open ? '' : '<span class="lock">' + icon('lock') + '</span>') +
+      '<span class="meta"><span class="len">' + sheetSVG(part) + '</span><span class="stars">' + (open ? starsHTML(best.stars, best.perfect) : '') + '</span></span>';
     b.onclick = () => { if (!open){ b.animate([{ transform:'translateX(-6px)' }, { transform:'translateX(6px)' }, { transform:'none' }], 200); return; } const changed = p.sel.level !== i; p.sel.level = i; homePick = { id: p.id, song: songKey(p) }; save(); renderHome(); if (changed) showHint('pick'); };
     box.appendChild(b);
-    if (i < last) box.insertAdjacentHTML('beforeend', linkHTML(i, pr.level, f, kind));
+    if (i < last) box.insertAdjacentHTML('beforeend', linkHTML(i, pr.level));
   });
-  const xp = $('#levelXp'); xp.hidden = kind !== 'xp';
-  xp.innerHTML = kind === 'xp' ? xpHTML(p.theme, pr.level, f) : '';
+  const sel = p.sel.level, xp = $('#levelXp');
+  xp.hidden = false;
+  xp.innerHTML = xpHTML(p.theme, sel, goalPart(levelBest(p, song, sel).top), sel < last && unlocked(p, sel + 1));
+  drawBeam();
 }
+// The beam from the selected tile to its gauge. Measured from the layout (offsets, not screen boxes), so the zoom of
+// home coming back does not bend it; redrawn whenever the path box changes size (shown, resized, fonts loaded).
+function boxIn(el, root){
+  let x = 0, y = 0;
+  for (let e = el; e && e !== root; e = e.offsetParent){ x += e.offsetLeft; y += e.offsetTop; }
+  return { left: x, top: y, right: x + el.offsetWidth, bottom: y + el.offsetHeight };
+}
+function drawBeam(){
+  const pb = $('.pathbox'), old = pb.querySelector('.cnbeam'); if (old) old.remove();
+  const tile = $('#levels .tile[aria-pressed="true"]'), gauge = $('#levelXp .gauge');
+  if (tile && gauge && pb.offsetWidth) pb.insertAdjacentHTML('afterbegin', beamSVG(boxIn(tile, pb), boxIn(gauge, pb)));
+}
+if (window.ResizeObserver) new ResizeObserver(() => drawBeam()).observe($('.pathbox'));
 // Home from anywhere that has a way home (player chosen, close, exit, end of the demo, results); otherwise ignored.
 // Without any player it opens the new player wizard instead.
 export function goHome(){
@@ -163,8 +176,12 @@ function enterGame(demo){
     tile.style.zIndex = '2';
     list.push(anim(tile, entryFrames(dx, dy), { ...opts, easing: et.easing }));
     layer = entryFx({ x: b.left + b.width / 2, y: b.top + b.height / 2 }, { x: innerWidth / 2, y: innerHeight / 2 }, dur);
-    [...home.children].forEach(el => { if (el.id !== 'levels') fade(el); });
-    [...$('#levels').children].forEach(el => { if (el !== tile) fade(el); });
+    // Everything fades except the tile: siblings fade along the way from the tile up to home, and the card and
+    // frames it stands on lose their fill, frame and blur (fading them would fade the tile too)
+    for (let el = tile; el !== home; el = el.parentElement){
+      [...el.parentElement.children].forEach(c => { if (c !== el) fade(c); });
+      if (el.parentElement !== home) list.push(anim(el.parentElement, [{}, { backgroundColor: 'transparent', borderColor: 'transparent', boxShadow: 'none', backdropFilter: 'blur(0px)' }], opts));
+    }
     list.push(anim(home, [{}, { backgroundColor: 'transparent' }], opts));
   } else fade(home);
   setTimeout(() => {

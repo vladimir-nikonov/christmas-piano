@@ -64,70 +64,82 @@ h1.title{margin:0;font-size:calc(54*var(--u));font-weight:900;letter-spacing:.01
 .tile .stars svg{width:calc(20*var(--u));height:calc(20*var(--u))}
 svg.off{color:var(--border)}
 
-/* Level path (src/ui/progress.js): tiles joined by links; the link from the current level fills with its best result.
+/* Level path (src/ui/progress.js): tiles joined by links (filled up to the current level), the selected level's gauge
+   under the row, and a soft beam of the theme's light from the selected tile's edges down to the gauge's edges.
    --ly = the middle of a tile's block, where the links run. */
 .levels{--ly:calc(62*var(--u));--lh:calc(10*var(--u))}
-/* The path stands on one frosted panel: the theme world behind it is strongly blurred and dimmed,
-   so the links, gauges and stars never mix with the decor of the layers underneath */
-.pathbox{display:flex;flex-direction:column;align-items:center;gap:calc(18*var(--u));width:min(calc(1200*var(--u)),100%);box-sizing:border-box;padding:calc(18*var(--u)) calc(18*var(--u)) calc(16*var(--u));
-  border-radius:calc(var(--radius) * 1.2 + 6*var(--u));background:color-mix(in srgb,var(--bg) 74%,transparent);
-  border:calc(2*var(--u)) solid color-mix(in srgb,var(--border) 45%,transparent);
-  -webkit-backdrop-filter:blur(calc(22*var(--u))) saturate(.7);backdrop-filter:blur(calc(22*var(--u))) saturate(.7)}
-.tile .blk{position:relative}
+/* Home's middle (songs, the level path, the hint, Play) stands on one framed, frosted card: the world behind it is
+   strongly blurred and dimmed, so the controls read as one layer apart from the decor underneath.
+   The level path sits in a calmer inner frame on the card. */
+.homecard{display:flex;flex-direction:column;align-items:center;gap:calc(14*var(--u));width:min(calc(1220*var(--u)),100%);box-sizing:border-box;
+  padding:calc(16*var(--u)) calc(20*var(--u)) calc(18*var(--u));border-radius:calc(var(--radius) * 1.2 + 10*var(--u));
+  background:color-mix(in srgb,var(--bg) 72%,transparent);border:calc(3*var(--u)) solid color-mix(in srgb,var(--border) 70%,transparent);
+  box-shadow:0 calc(10*var(--u)) calc(30*var(--u)) rgba(0,0,0,.35),inset 0 0 0 calc(1*var(--u)) color-mix(in srgb,var(--text) 10%,transparent);
+  -webkit-backdrop-filter:blur(calc(24*var(--u))) saturate(.7);backdrop-filter:blur(calc(24*var(--u))) saturate(.7)}
+/* Landscape: the card keeps clear of the corner columns on both sides (camera and video card on the right) */
+@media (orientation: landscape){ .homecard{width:min(calc(1060*var(--u)),calc(100% - 2 * (84*var(--u) + 12px)))} }
+.pathbox{position:relative;display:flex;flex-direction:column;align-items:center;gap:calc(34*var(--u));width:100%;box-sizing:border-box;padding:calc(20*var(--u)) calc(14*var(--u)) calc(4*var(--u));
+  border-radius:calc(var(--radius) * 1.2 + 4*var(--u));background:color-mix(in srgb,var(--panel) 35%,transparent);
+  border:calc(2*var(--u)) solid color-mix(in srgb,var(--border) 40%,transparent)}
 .link{position:relative;flex:1 1 calc(56*var(--u));min-width:calc(16*var(--u));max-width:calc(110*var(--u))}
 .link::before,.link>.fill{content:'';position:absolute;left:calc(-4*var(--u));top:var(--ly);height:var(--lh);margin-top:calc(var(--lh) / -2);border-radius:calc(var(--lh) / 2)}
 .link::before{right:calc(-4*var(--u));background:var(--border);opacity:.7}
 .link>.fill{width:calc((100% + 8*var(--u)) * var(--f));background:var(--accent)}
-/* The gauge: a fill up to --f (of the goal) and three star marks at the star thresholds; the last one is the goal */
-.gauge{position:relative;display:block;--mk:calc(22*var(--u))}
-.gauge>.fill{position:absolute;left:0;top:0;bottom:0;width:calc(var(--f) * 100%);background:var(--accent);border-radius:inherit}
-.gauge .mk{position:absolute;left:calc(var(--at) * 100%);top:50%;width:var(--mk);height:var(--mk);transform:translate(-50%,-50%);color:var(--text);opacity:.55;z-index:1}
-.gauge .mk.on{color:var(--reward);opacity:1}
-.gauge .mk.goal{--mk:calc(32*var(--u));opacity:.9}
-.gauge .mk svg{display:block;width:100%;height:100%;filter:drop-shadow(0 calc(2*var(--u)) 0 rgba(0,0,0,.45))}
-/* pixel: a dotted pixel road and an XP bar under the row, from this level's block to the next one */
-[data-path="xp"] .link::before{background:repeating-linear-gradient(90deg,var(--border) 0 calc(10*var(--u)),transparent 0 calc(16*var(--u)));border-radius:0;opacity:1}
-[data-path="xp"] .link>.fill{background:repeating-linear-gradient(90deg,var(--accent) 0 calc(10*var(--u)),transparent 0 calc(16*var(--u)));border-radius:0}
-.levelxp{display:flex;align-items:center;gap:calc(14*var(--u));width:min(calc(620*var(--u)),100%)}
+/* Levels other than the selected one step back, so the selected tile, its beam and its gauge read as one thing */
+.levels .tile{transition:filter .2s}
+.levels .tile:not([aria-pressed="true"]){filter:brightness(.6) saturate(.7)}
+/* The beam: an SVG trapezoid under everything in the path box, drawn by home.js from the two rectangles */
+.cnbeam{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible}
+.cnbeam .f0{stop-color:var(--cn);stop-opacity:var(--cn0,.55)}
+.cnbeam .f1{stop-color:var(--cn);stop-opacity:var(--cn1,.12)}
+.cnbeam .edge{fill:none;stroke:var(--cn);stroke-opacity:.55;stroke-width:calc(2*var(--u));stroke-linecap:round}
+.levels,.levelxp{position:relative;z-index:1}
+/* The gauge row: the selected level's block, the gauge, the next level's block (grey while locked) or a star on the top level */
+.levelxp{display:flex;align-items:flex-start;gap:calc(16*var(--u));width:min(calc(620*var(--u)),100%);padding-bottom:calc(40*var(--u))}
 .levelxp[hidden]{display:none}
-.xpend{flex:none;width:calc(48*var(--u));height:calc(48*var(--u))}
+.xpend{flex:none;width:calc(48*var(--u));height:calc(48*var(--u));margin-top:calc(-11*var(--u))}
 .xpend svg{display:block;width:100%;height:100%}
 .xpend svg.i{color:var(--reward)}
 .xpend.locked svg.block{filter:grayscale(1) brightness(.5)}
-.g-xp{flex:1;height:calc(26*var(--u));background:var(--panel);border:calc(3*var(--u)) solid var(--border);border-radius:calc(4*var(--u))}
+/* The gauge: a fill up to --f (of the goal); the three star marks stand under the line at the star thresholds, the last one is the goal */
+.gauge{position:relative;display:block;flex:1;height:calc(26*var(--u));--mk:calc(24*var(--u))}
+.gauge>.fill{position:absolute;left:0;top:0;bottom:0;width:calc(var(--f) * 100%);background:var(--accent);border-radius:inherit}
+.gauge .mk{position:absolute;left:calc(var(--at) * 100%);top:calc(100% + 8*var(--u));width:var(--mk);height:var(--mk);transform:translateX(-50%);color:var(--text);opacity:.5;z-index:1}
+.gauge .mk::before{content:'';position:absolute;left:50%;bottom:100%;width:calc(2*var(--u));height:calc(8*var(--u));margin-left:calc(-1*var(--u));background:currentColor;opacity:.6}
+.gauge .mk.on{color:var(--reward);opacity:1}
+.gauge .mk.goal{--mk:calc(32*var(--u));opacity:.85}
+.gauge .mk.goal.on{opacity:1}
+.gauge .mk svg{display:block;width:100%;height:100%;filter:drop-shadow(0 calc(2*var(--u)) 0 rgba(0,0,0,.45))}
+.walker{position:absolute;left:calc(var(--f) * 100%);bottom:100%;transform:translateX(-50%);z-index:2;pointer-events:none}
+/* pixel: a dotted pixel road, a segmented XP bar and a stepped, dashed beam */
+[data-path="xp"]{--cn:var(--accent)}
+[data-path="xp"] .link::before{background:repeating-linear-gradient(90deg,var(--border) 0 calc(10*var(--u)),transparent 0 calc(16*var(--u)));border-radius:0;opacity:1}
+[data-path="xp"] .link>.fill{background:repeating-linear-gradient(90deg,var(--accent) 0 calc(10*var(--u)),transparent 0 calc(16*var(--u)));border-radius:0}
+[data-path="xp"] .cnbeam{shape-rendering:crispEdges}
+[data-path="xp"] .cnbeam .edge{stroke-dasharray:calc(6*var(--u)) calc(6*var(--u));stroke-linecap:butt}
+.g-xp{background:var(--panel);border:calc(3*var(--u)) solid var(--border);border-radius:calc(4*var(--u))}
 .g-xp>.fill{border-radius:0;background:repeating-linear-gradient(90deg,var(--accent) 0 calc(16*var(--u)),var(--accent-dark) 0 calc(20*var(--u)))}
-/* plastic: a soft thick tube and a ring around the current block, starting at 3 o'clock so the goal points to the next level */
-[data-path="ring"]{--lh:calc(18*var(--u))}
-.g-ring{position:absolute;inset:calc(-10*var(--u));border-radius:50%;--mk:calc(20*var(--u))}
-.g-ring::before{content:'';position:absolute;inset:0;border-radius:50%;
-  background:conic-gradient(from 90deg,var(--accent) calc(var(--f) * 360deg),color-mix(in srgb,var(--border) 55%,transparent) 0);
-  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 9*var(--u)),#000 calc(100% - 9*var(--u)));mask:radial-gradient(farthest-side,transparent calc(100% - 9*var(--u)),#000 calc(100% - 9*var(--u)))}
-.g-ring>.fill{display:none}
-.g-ring .mk{left:50%;transform:translate(-50%,-50%) rotate(calc(90deg + var(--at) * 1turn)) translateY(calc(-53.5*var(--u))) rotate(calc(-90deg - var(--at) * 1turn))}
-.g-ring .mk.goal{--mk:calc(28*var(--u))}
-/* winter: a trail of footprints; the trail from the current level is the gauge, a snowman walks along it */
-[data-path="trail"] .link{flex-basis:calc(90*var(--u));max-width:calc(150*var(--u))}
+/* plastic: a soft thick tube between the tiles, a glossy tube gauge and a soft round beam with no edges */
+[data-path="tube"]{--lh:calc(18*var(--u));--cn:var(--accent);--cn0:.75;--cn1:.15}
+[data-path="tube"] .cnbeam .edge{display:none}
+.g-tube{height:calc(28*var(--u));border-radius:calc(14*var(--u));background:color-mix(in srgb,var(--border) 45%,transparent);box-shadow:inset 0 calc(3*var(--u)) 0 rgba(0,0,0,.18)}
+.g-tube>.fill{min-width:calc(28*var(--u));box-shadow:inset 0 calc(5*var(--u)) 0 rgba(255,255,255,.35),0 calc(3*var(--u)) 0 var(--accent-dark)}
+.g-tube[style*="--f:0.000"]>.fill{display:none}
+/* winter: a footprint trail between the tiles and as the gauge, a snowman walking along it, a frosty white beam */
+[data-path="trail"]{--cn:#fff;--cn0:.34;--cn1:.06}
 [data-path="trail"] .link::before{background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--text) 55%,transparent) 0 calc(7*var(--u)),transparent 0 calc(15*var(--u)));opacity:1}
 [data-path="trail"] .link>.fill{background:var(--reward)}
-[data-path="trail"] .link.cur::before{display:none}
-[data-path="trail"] .link.cur,[data-path="bar"] .link.cur{flex:4 1 calc(240*var(--u));min-width:calc(120*var(--u));max-width:calc(320*var(--u))}
-.g-trail{position:absolute;left:calc(-4*var(--u));right:calc(-4*var(--u));top:var(--ly);height:var(--lh);margin-top:calc(var(--lh) / -2);border-radius:calc(var(--lh) / 2);
-  background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--text) 55%,transparent) 0 calc(7*var(--u)),transparent 0 calc(15*var(--u)));--mk:calc(22*var(--u))}
+.g-trail{height:calc(10*var(--u));margin-top:calc(8*var(--u));border-radius:calc(5*var(--u));background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--text) 55%,transparent) 0 calc(8*var(--u)),transparent 0 calc(16*var(--u)))}
 .g-trail>.fill{background:var(--reward)}
-.g-trail .mk{top:calc(100% + 14*var(--u))}
-.g-trail .mk.goal{--mk:calc(30*var(--u))}
-.walker{position:absolute;left:calc(var(--f) * 100%);bottom:calc(var(--lh) / 2);width:calc(36*var(--u));height:calc(48*var(--u));transform:translateX(-50%);z-index:2;filter:drop-shadow(0 calc(2*var(--u)) 0 rgba(0,0,0,.35))}
-/* anime: a thin glowing constellation line and one shared bar under all levels */
-[data-path="bar"]{--lh:calc(4*var(--u));padding-bottom:calc(34*var(--u))}
-[data-path="bar"] .link>.fill{box-shadow:0 0 calc(10*var(--u)) var(--accent)}
-.tile>.seg,.link>.seg,.link>.g-bar{position:absolute;left:0;right:0;bottom:calc(-30*var(--u));height:calc(14*var(--u));background:var(--panel);border-top:calc(2*var(--u)) solid var(--border);border-bottom:calc(2*var(--u)) solid var(--border)}
-.link>.seg,.link>.g-bar{left:calc(-1*var(--u));right:calc(-1*var(--u))}
-.seg>.fill{position:absolute;left:0;top:0;bottom:0;width:calc(var(--f) * 100%);background:var(--accent)}
-[data-path="bar"] .tile:first-child>.seg{border-left:calc(2*var(--u)) solid var(--border);border-radius:calc(9*var(--u)) 0 0 calc(9*var(--u))}
-[data-path="bar"] .tile:last-child>.seg{border-right:calc(2*var(--u)) solid var(--border);border-radius:0 calc(9*var(--u)) calc(9*var(--u)) 0}
-.g-bar{--mk:calc(24*var(--u))}
-.g-bar>.fill{border-radius:0}
-.g-bar .mk.goal{--mk:calc(32*var(--u))}
+.walker.snow{width:calc(34*var(--u));height:calc(46*var(--u));filter:drop-shadow(0 calc(2*var(--u)) 0 rgba(0,0,0,.35))}
+/* anime: thin glowing constellation lines, a glowing beam gauge with a sparkle at its tip, a light beam with glowing edges */
+[data-path="beam"]{--lh:calc(4*var(--u));--cn:var(--accent);--cn0:.6;--cn1:.08}
+[data-path="beam"] .link>.fill{box-shadow:0 0 calc(10*var(--u)) var(--accent)}
+[data-path="beam"] .cnbeam .edge{filter:drop-shadow(0 0 calc(4*var(--u)) var(--accent));stroke-opacity:.8}
+.g-beam{height:calc(8*var(--u));margin-top:calc(9*var(--u));border-radius:calc(4*var(--u));background:color-mix(in srgb,var(--border) 45%,transparent)}
+.g-beam>.fill{box-shadow:0 0 calc(12*var(--u)) var(--accent)}
+.walker.spark{width:calc(28*var(--u));height:calc(28*var(--u));bottom:auto;top:50%;transform:translate(-50%,-50%);filter:drop-shadow(0 0 calc(6*var(--u)) var(--accent))}
+.tile .blk{position:relative}
 /* A perfect game: one star with a pulsing halo instead of three */
 .perfect{position:relative;display:grid;place-items:center;color:var(--reward)}
 .perfect::before{content:'';position:absolute;inset:-35%;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--reward) 80%,transparent) 0,color-mix(in srgb,var(--reward) 25%,transparent) 45%,transparent 70%);animation:halo 1.6s ease-in-out infinite}
@@ -139,8 +151,8 @@ svg.off{color:var(--border)}
 @keyframes twinkle{50%{transform:scale(1.15);filter:brightness(1.35)}}
 @keyframes bob{50%{transform:translateY(calc(-5*var(--u)))}}
 /* The selected level: a ring, a soft pulsing glow and a marker above the tile, so it does not rely on colour alone.
-   The marker follows the child's pick; the current level (the one being worked on) is the tile with progress pips. */
-.tile[aria-pressed="true"]{box-shadow:var(--bevel),0 calc(5*var(--u)) 0 var(--accent-dark),0 0 0 calc(4*var(--u)) var(--reward);animation:bob 1.2s ease-in-out infinite,curglow 1.8s ease-in-out infinite}
+   The tile stays in place (no bob), so the path's links and gauge stay joined to it. */
+.tile[aria-pressed="true"]{box-shadow:var(--bevel),0 calc(5*var(--u)) 0 var(--accent-dark),0 0 0 calc(4*var(--u)) var(--reward);animation:curglow 1.8s ease-in-out infinite}
 @keyframes curglow{50%{box-shadow:var(--bevel),0 calc(5*var(--u)) 0 var(--accent-dark),0 0 0 calc(4*var(--u)) var(--reward),0 0 calc(28*var(--u)) calc(8*var(--u)) color-mix(in srgb, var(--reward) 70%, transparent)}}
 .tile .curmark{position:absolute;top:calc(-22*var(--u));left:50%;width:calc(34*var(--u));height:calc(34*var(--u));margin-left:calc(-17*var(--u));
   display:grid;place-items:center;border-radius:50%;background:var(--reward);color:var(--accent-dark);border:2px solid var(--accent-dark);z-index:1}
@@ -162,9 +174,8 @@ svg.off{color:var(--border)}
   .tile .meta{gap:calc(5*var(--u))}
   .tile .len{width:calc(28*var(--u));height:calc(24*var(--u))}
   .tile .stars svg{width:calc(16*var(--u));height:calc(16*var(--u))}
-  [data-path="trail"] .link.cur,[data-path="bar"] .link.cur{flex-basis:calc(120*var(--u));min-width:calc(84*var(--u))}
-  .g-ring .mk{transform:translate(-50%,-50%) rotate(calc(90deg + var(--at) * 1turn)) translateY(calc(-43.5*var(--u))) rotate(calc(-90deg - var(--at) * 1turn))}
-  .pathbox{padding-left:calc(10*var(--u));padding-right:calc(10*var(--u))}
+  .homecard{padding-left:calc(10*var(--u));padding-right:calc(10*var(--u))}
+  .pathbox{padding-left:calc(8*var(--u));padding-right:calc(8*var(--u))}
 }
 /* Home corner (language, theme, backup, full screen, settings): same places and touch size, but calmer than Play */
 #home .corner.r .b{background:color-mix(in srgb, var(--panel) 45%, transparent);border-color:transparent;box-shadow:none;opacity:.72}
@@ -320,7 +331,7 @@ body.paused #stage{filter:brightness(.55) saturate(.8)}
 .stars-big span{display:block;animation:pop .35s cubic-bezier(.3,1.8,.5,1) both}
 @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
 .respct{font-size:calc(24*var(--u));font-weight:800;opacity:.6;font-variant-numeric:tabular-nums}
-.xprow{display:flex;align-items:center;gap:calc(14*var(--u));width:min(calc(460*var(--u)),100%)}
+.xprow{display:flex;align-items:flex-start;gap:calc(14*var(--u));width:min(calc(460*var(--u)),100%);padding:calc(14*var(--u)) 0 calc(40*var(--u))}
 .xprow:empty{display:none}
 .stars-big .perfect svg{width:calc(110*var(--u));height:calc(110*var(--u))}
 .stars-big .perfect.wait::before{animation:none}

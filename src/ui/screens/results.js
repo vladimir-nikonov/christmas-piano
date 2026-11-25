@@ -36,7 +36,7 @@ export function showResults({ p, pr, song, level, metric, stars, levelUp }){
   const lu = $('#resLevelUp'); lu.hidden = !levelUp;
   if (levelUp) lu.innerHTML = '<span class="blk">' + blockSVG(pr.level) + '<span class="lk">' + icon('lock') + '</span></span>';
   // Not there yet: how close this game came to the next level (the same gauge as on home, three stars at its end)
-  $('#resXp').innerHTML = (!levelUp && level === pr.level && pr.level < LEVELS.length - 1) ? xpHTML(p.theme, level, goalPart(metric)) : '';
+  $('#resXp').innerHTML = (!levelUp && level === pr.level && pr.level < LEVELS.length - 1) ? xpHTML(p.theme, level, goalPart(metric), false) : '';
   $('#btnAgain').hidden = !act.again;
   $('#btnNext').hidden = !act.next;
   const main = $('#btnMain'), ta = act.main === 'next' ? 'playNew' : 'again';
