@@ -82,7 +82,14 @@
   </div>
 </div>
 
-<div class="screen" id="profiles" hidden><div class="grid" id="ptiles"></div></div>
+<!-- Player list: a popup over home, like the quick picker; close with the cross, a tap outside or Back -->
+<div class="screen" id="profiles" hidden>
+  <div class="panel popp" role="dialog" aria-labelledby="pTitle">
+    <button class="b ico x" id="btnProfClose" data-ta="close" data-icon="cross"></button>
+    <h2 class="poph" id="pTitle" data-t="who"></h2>
+    <div class="grid" id="ptiles"></div>
+  </div>
+</div>
 
 <!-- New player wizard: 1) how the game looks and speaks (language + theme), 2) avatar and name, 3) a short how-to-play intro that can be skipped -->
 <div class="screen" id="newp" hidden>
@@ -108,14 +115,17 @@
   </div>
 </div>
 
-<!-- Child's own page: change name, avatar and theme -->
+<!-- Child's own page: change name, avatar and theme. A popup over home; close with the cross, a tap outside or Back -->
 <div class="screen" id="me" hidden>
-  <div class="corner l"><button class="b ico" id="btnMeBack" data-ta="home" data-icon="home"></button></div>
-  <div class="corner r"><button class="b ico qlang" data-ta="language"></button></div>
-  <div class="mehead"><span id="meAv"></span><input class="name-in" id="meName" type="text" maxlength="14" data-tp="name" data-ta="name" autocomplete="off"></div>
-  <div class="avpick" id="meAvPick"></div>
-  <div class="themes" id="meThemes"></div>
-  <button class="b primary go" id="btnMeOk" data-ta="done" data-icon="check"></button>
+  <div class="panel popp mep" role="dialog" aria-labelledby="meTitle">
+    <button class="b ico x" id="btnMeBack" data-ta="close" data-icon="cross"></button>
+    <button class="b ico qlang" data-ta="language"></button>
+    <h2 class="poph" id="meTitle" data-t="myPage"></h2>
+    <div class="mehead"><span id="meAv"></span><input class="name-in" id="meName" type="text" maxlength="14" data-tp="name" data-ta="name" autocomplete="off"></div>
+    <div class="avpick" id="meAvPick"></div>
+    <div class="themes small" id="meThemes"></div>
+    <button class="b primary go" id="btnMeOk" data-ta="done" data-icon="check"></button>
+  </div>
 </div>
 
 <div class="screen" id="results" hidden>

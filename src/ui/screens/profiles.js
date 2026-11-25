@@ -97,7 +97,10 @@ $('#btnWho').onclick = openProfiles;
 // handler hides home; the second listener runs after it and animates only if the list really opened.
 let whoRect = null;
 $('#btnWho').addEventListener('click', e => { whoRect = e.currentTarget.getBoundingClientRect(); }, true);
-$('#btnWho').addEventListener('click', () => { const r = whoRect; whoRect = null; if (!$('#profiles').hidden) expandFrom($('#profiles'), r); });
+$('#btnWho').addEventListener('click', () => { const r = whoRect; whoRect = null; if (!$('#profiles').hidden) expandFrom($('#profiles .panel'), r); });
+// Close the player list: the cross or a tap on the dimmed home around it.
+$('#btnProfClose').onclick = goHome;
+$('#profiles').addEventListener('click', e => { if (e.target.id === 'profiles') goHome(); });
 
 /* Child's own page: name, avatar, theme. Saved on every tap. */
 export function openMe(){ if (!dispatch(E.ME)) return; renderMe(); updateQuick(); }
@@ -118,4 +121,5 @@ export function renderMe(){
 $('#btnMe').onclick = openMe;
 $('#btnMeBack').onclick = goHome;
 $('#btnMeOk').onclick = goHome;
+$('#me').addEventListener('click', e => { if (e.target.id === 'me') goHome(); });
 $('#meName').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });

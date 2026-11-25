@@ -325,7 +325,7 @@ try {
   await visible('#home');
   await page.click('#btnWho');
   await visible('#profiles');
-  assert.ok(await sn(() => document.getElementById('profiles').getAnimations().length > 0), 'the player list expands from the avatar');
+  assert.ok(await sn(() => document.querySelector('#profiles .panel').getAnimations().length > 0), 'the player list expands from the avatar');
   await page.goBack();
   await visible('#home');
   // Going home through the app's own buttons consumes the history entry, so entries never pile up.
@@ -445,6 +445,15 @@ try {
   assert.equal(await page.locator('#ptiles button').count(), 2);
   await page.locator('#ptiles button').first().click();
   await visible('#home');
+  await page.click('#btnWho');
+  await visible('#profiles');
+  assert.ok(await page.locator('#home').isVisible(), 'the player list is a popup over home');
+  await page.click('#btnProfClose');
+  await page.locator('#profiles').waitFor({ state: 'hidden' });
+  await page.click('#btnMe');
+  await visible('#me');
+  await page.click('#btnMeBack');
+  await page.locator('#me').waitFor({ state: 'hidden' });
   await page.click('#btnMe');
   await visible('#me');
   await page.fill('#meName', 'Kid');

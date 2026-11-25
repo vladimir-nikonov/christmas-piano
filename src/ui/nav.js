@@ -5,9 +5,9 @@ import { showOnly } from '../dom.js';
 
 function screensFor(s){
   switch (s.name){
-    case S.PROFILES: return ['#profiles'];
+    case S.PROFILES: return ['#home', '#profiles'];                    // popups over home
     case S.NEW_PLAYER: return ['#newp'];
-    case S.ME: return ['#me'];
+    case S.ME: return ['#home', '#me'];
     case S.HOME: case S.MIC_SETUP: return ['#home'];
     case S.SETTINGS: return ['#home', '#settings'];                    // a panel over home
     case S.COUNTDOWN: case S.PREVIEW: return [s.data.entering ? '#home' : '#hud']; // home stays during the entry transition
