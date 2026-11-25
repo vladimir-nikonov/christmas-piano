@@ -69,7 +69,8 @@ svg.off{color:var(--border)}
 @keyframes bob{50%{transform:translateY(calc(-5*var(--u)))}}
 /* Current level (the one the child is working on): a ring and a soft glow that pulses, plus a marker above the tile,
    so it does not rely on colour alone. The selected tile keeps its outline and bob. */
-.tile.cur{box-shadow:var(--bevel),0 calc(5*var(--u)) 0 var(--accent-dark),0 0 0 calc(4*var(--u)) var(--reward);animation:curglow 1.8s ease-in-out infinite}
+/* The current level keeps a still ring; only the selected tile moves, so the pulse follows the pick */
+.tile.cur{box-shadow:var(--bevel),0 calc(5*var(--u)) 0 var(--accent-dark),0 0 0 calc(4*var(--u)) var(--reward)}
 .tile.cur[aria-pressed="true"]{animation:bob 1.2s ease-in-out infinite,curglow 1.8s ease-in-out infinite}
 @keyframes curglow{50%{box-shadow:var(--bevel),0 calc(5*var(--u)) 0 var(--accent-dark),0 0 0 calc(4*var(--u)) var(--reward),0 0 calc(28*var(--u)) calc(8*var(--u)) color-mix(in srgb, var(--reward) 70%, transparent)}}
 .tile .curmark{position:absolute;top:calc(-22*var(--u));left:50%;width:calc(34*var(--u));height:calc(34*var(--u));margin-left:calc(-17*var(--u));
