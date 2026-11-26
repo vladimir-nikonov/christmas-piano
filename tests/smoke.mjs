@@ -906,10 +906,13 @@ try {
       if (t === 0){ await pp.click('#ptyBody [data-a="pass"]'); assert.equal(await nav(), 'partyTurn'); }
     }
     assert.match(await body(), /That was the last turn/);
+    // Count the clap bursts the fireworks bring
+    await pp.evaluate(() => { window.__claps = 0; const B = window.AudioBufferSourceNode.prototype, st = B.start; B.start = function(...a){ window.__claps++; return st.apply(this, a); }; });
     await pp.click('#ptyBody [data-a="pass"]');
     assert.equal(await nav(), 'partyFinal');
-    log('together: 700 of 800 = 88%, big fireworks for the whole team');
+    log('together: 700 of 800 = 88%, big fireworks and applause for the whole team');
     assert.match(await body(), /Big fireworks![\s\S]*88%/);
+    assert.ok(await pp.evaluate(() => window.__claps) > 50, 'the hall applauds the fireworks');
     assert.equal(await pp.locator('#ptyBody .ptyteam svg').count(), 2);
     await checkLayoutOn(pp, ['#party']);
     log('together: each player kept their own results; home comes back to the player who opened Together');

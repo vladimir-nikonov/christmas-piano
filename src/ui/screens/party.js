@@ -8,7 +8,7 @@
 // The rules and the score live in src/core/party.js; the game itself is the ordinary one (src/game/game.js), which
 // reports each finished party try here through partyTry().
 
-import { audio } from '../../audio/synth.js';
+import { applause, audio } from '../../audio/synth.js';
 import * as PT from '../../core/party.js';
 import { SONGS, SONG_KEYS, songKey } from '../../core/songs.js';
 import { E, S, dispatch, can, is, flow } from '../../core/flow.js';
@@ -253,8 +253,9 @@ const VIEWS = {
 /* ---- Fireworks: the tier sets how many bursts, how often and how big; the golden tier adds gold to the team colours.
    Reduced motion: a few bursts that appear and fade in place. ---- */
 const FW = [{ n: 4, every: 900, size: 0.8 }, { n: 10, every: 520, size: 1 }, { n: 22, every: 280, size: 1.3 }, { n: 40, every: 150, size: 1.5 }];
-let fwRaf = 0, fwT = 0, parts = [];
+let fwRaf = 0, fwT = 0, parts = [], hush = null;
 function stopFw(){
+  if (hush){ hush(); hush = null; }
   clearInterval(fwT); cancelAnimationFrame(fwRaf); parts = [];
   const c = $('#ptyFw'); c.getContext('2d').clearRect(0, 0, c.width, c.height);
 }
@@ -264,6 +265,8 @@ function startFw(tier){
   c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
   const team = pt.order.map((_, i) => COLORS[i]), cols = tier === 3 ? ['#FFE7A0', '#FFD35C', '#FFF6E4', ...team] : team;
   let left = reducedMotion ? Math.min(3, f.n) : f.n;
+  // The whole hall applauds the team, louder and longer for bigger fireworks
+  hush = applause(tier);
   const boom = () => {
     if (left-- <= 0){ clearInterval(fwT); return; }
     const bx = c.width * (0.12 + Math.random() * 0.76), by = c.height * (0.1 + Math.random() * 0.4), col = cols[Math.floor(Math.random() * cols.length)];
