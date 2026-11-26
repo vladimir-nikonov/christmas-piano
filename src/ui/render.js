@@ -1,7 +1,7 @@
 // Canvas drawing: falling notes, keyboard, effects, count-in.
 
 import { letterFor } from '../core/keymap.js';
-import { noteColor } from '../core/music.js';
+import { noteColor, octaveDots } from '../core/music.js';
 import { cuesFor } from '../core/levels.js';
 import { fingerFor } from '../core/songs.js';
 import { tx } from '../i18n/index.js';
@@ -405,6 +405,13 @@ function drawKeyboard(now){
       const cx = x + w / 2, sh = Math.round(Math.min(30 * U, h * 0.16)), sw = Math.round(w * 0.86), cy = kbTop + h - sh - 6 * U;
       rrect(cx - sw / 2, cy, sw, sh, Math.min(kr, sh / 2)); ctx.fillStyle = colOf(m); ctx.fill();
       if (cue.names){ ctx.fillStyle = '#182335'; ctx.font = '800 ' + Math.round(Math.min(24 * U, w * 0.24)) + 'px ' + LBL(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(noteName(m), cx, cy + sh / 2 + 1); }
+    }
+    // The octave dots of the printed key stickers, so the child finds the same octave on the real keyboard.
+    if (!k.black){
+      const n = octaveDots(m), r = Math.max(2, Math.min(4.5 * U, w * 0.045)), gap = r * 2.8, sh = Math.round(Math.min(30 * U, h * 0.16));
+      const y = kbTop + h - sh - 6 * U - r - 5 * U, x0 = x + w / 2 - gap * (n - 1) / 2;
+      ctx.fillStyle = 'rgba(24,35,53,.55)';
+      for (let i = 0; i < n; i++){ ctx.beginPath(); ctx.arc(x0 + i * gap, y, r, 0, Math.PI * 2); ctx.fill(); }
     }
   };
   for (let m = LO; m <= HI; m++) if (!isBlack(m)) drawKey(m);

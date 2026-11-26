@@ -119,7 +119,7 @@ export default {
   sBackupLoad: 'Restore from file',
   sStickers: 'Key stickers',
   sStickersGet: 'Download PDF',
-  sStickersHelp: 'Colour stickers for the white keys of a real keyboard, three octaves. Print at 100 % scale.',
+  sStickersHelp: 'Colour stickers for every white key of a 61-key keyboard. The game plays on the ●●● octave from middle C; its keys show the same dots. Print at 100 % scale.',
   cancel: 'Cancel',
   replace: 'Replace',
   bLast: 'Last backup: {d}. ',

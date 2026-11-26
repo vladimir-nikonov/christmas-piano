@@ -19,7 +19,7 @@ src/ui/                  canvas drawing, themes, icons, art, language picker; na
 src/ui/screens/          home, players, results, parent settings, Together (party) mode
 src/i18n/                UI strings, one file per language
 src/platform/            browser APIs that differ per platform (wake lock)
-src/print/               printable files offered in parent settings; key-stickers.pdf is built by scripts/key-stickers.mjs from the note colours and names in src/core/music.js
+src/print/               printable files offered in parent settings; key-stickers.pdf (61-key keyboard) is built by scripts/key-stickers.mjs from the note colours, names and octave dots in src/core/music.js
 tests/unit/              node:test unit tests for core/, data/ and i18n/
 tests/smoke.mjs          headless Chrome run through the main flows, including the microphone
 ```

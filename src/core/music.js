@@ -11,3 +11,9 @@ export const NOTE_PLAIN = '#A9B8D6';
 // The note's colour while the level shows colours, otherwise the plain one.
 export const noteColor = (midi, colors) => colors ? PC_COLOR[((midi % 12) + 12) % 12] : NOTE_PLAIN;
 export const PC_COLOR = (() => { const out = []; [0,2,4,5,7,9,11].forEach((pc, i) => out[pc] = NOTE_COLORS[i]); [1,3,6,8,10].forEach(pc => out[pc] = out[pc - 1]); return out; })();
+// Keys of the game keyboard: middle C (C4) up to the next C (C5).
+export const KEY_LO = 60, KEY_HI = 72;
+// Octave marks of the printed key stickers for a 61-key keyboard (C2..C7): C2..B2 have one dot, C3..B3 two, and so on.
+// The game shows the same dots on its keys, so the child finds the octave to play on the real keyboard.
+export const STICKER_LOW = 36, STICKER_HIGH = 96;
+export const octaveDots = midi => Math.floor((midi - STICKER_LOW) / 12) + 1;

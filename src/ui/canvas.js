@@ -1,11 +1,12 @@
 // Game canvas: size, scale (U) and keyboard geometry for the design grid 1280x800.
 
 import { $ } from '../dom.js';
+import { KEY_LO, KEY_HI } from '../core/music.js';
 
 /* ================= Canvas layout (design grid 1280x800) ================= */
 export const cv = $('#stage'), ctx = cv.getContext('2d');
 export let W = 0, H = 0, DPR = 1, U = 1;
-export const LO = 60, HI = 72;
+export const LO = KEY_LO, HI = KEY_HI;
 export const isBlack = m => [1,3,6,8,10].includes(m % 12);
 export let keys = {}, kbTop = 0, kbH = 0, hitY = 0, topY = 0;
 export function layout(){

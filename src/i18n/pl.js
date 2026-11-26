@@ -119,7 +119,7 @@ export default {
   sBackupLoad: 'Przywróć z pliku',
   sStickers: 'Naklejki na klawisze',
   sStickersGet: 'Pobierz PDF',
-  sStickersHelp: 'Kolorowe naklejki na białe klawisze keyboardu, trzy oktawy. Drukuj w skali 100 %.',
+  sStickersHelp: 'Kolorowe naklejki na wszystkie białe klawisze keyboardu 61-klawiszowego. Gra używa oktawy ●●● od środkowego C, klawisze w grze mają te same kropki. Drukuj w skali 100 %.',
   cancel: 'Anuluj',
   replace: 'Zastąp',
   bLast: 'Ostatnia kopia: {d}. ',

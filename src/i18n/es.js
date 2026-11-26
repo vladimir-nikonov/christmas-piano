@@ -119,7 +119,7 @@ export default {
   sBackupLoad: 'Restaurar desde archivo',
   sStickers: 'Pegatinas para teclas',
   sStickersGet: 'Descargar PDF',
-  sStickersHelp: 'Pegatinas de colores para las teclas blancas de un teclado, tres octavas. Imprimir a escala 100 %.',
+  sStickersHelp: 'Pegatinas de colores para todas las teclas blancas de un teclado de 61 teclas. El juego usa la octava ●●● desde el Do central; sus teclas muestran los mismos puntos. Imprimir a escala 100 %.',
   cancel: 'Cancelar',
   replace: 'Reemplazar',
   bLast: 'Última copia: {d}. ',
